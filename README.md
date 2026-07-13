@@ -9,7 +9,7 @@ API REST Spring Boot pour une plateforme e-commerce de produits reconditionnés.
 
 ## Modules implémentés
 
-### 🔐 Authentification — `/api/auth`
+### Authentification — `/api/auth`
 | Endpoint | Description |
 |---|---|
 | `POST /register` | Inscription |
@@ -22,7 +22,7 @@ API REST Spring Boot pour une plateforme e-commerce de produits reconditionnés.
 
 ---
 
-### 📦 Produits — `/api/products`
+### Produits — `/api/products`
 | Endpoint | Auth |
 |---|---|
 | `GET /` — liste paginée avec filtres (catégorie, marque, condition, prix) | Public |
@@ -32,7 +32,7 @@ API REST Spring Boot pour une plateforme e-commerce de produits reconditionnés.
 
 ---
 
-### 📊 Stock — `/api/stock` *(ADMIN uniquement)*
+### Stock — `/api/stock` *(ADMIN uniquement)*
 | Endpoint | Description |
 |---|---|
 | `GET /` | Tout l'inventaire paginé |
@@ -44,7 +44,7 @@ API REST Spring Boot pour une plateforme e-commerce de produits reconditionnés.
 
 ---
 
-### 🛒 Commandes — `/api/orders`
+### Commandes — `/api/orders`
 | Endpoint | Auth |
 |---|---|
 | `POST /` — créer une commande | Connecté |
