@@ -1,0 +1,138 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-1-create-inventory-table
+      author: maram
+      changes:
+        - createTable:
+            tableName: inventory
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: product_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    unique: true
+                    foreignKeyName: fk_inventory_product
+                    references: products(id)
+                    deleteCascade: true
+              - column:
+                  name: quantity
+                  type: INTEGER
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reserved_quantity
+                  type: INTEGER
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: min_threshold
+                  type: INTEGER
+                  defaultValueNumeric: 5
+                  constraints:
+                    nullable: false
+              - column:
+                  name: warehouse_location
+                  type: VARCHAR(100)
+              - column:
+                  name: last_updated
+                  type: TIMESTAMP
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 004-2-add-inventory-check-constraints
+      author: maram
+      changes:
+        - sql:
+            sql: ALTER TABLE inventory ADD CONSTRAINT chk_inventory_quantity CHECK (quantity >= 0);
+        - sql:
+            sql: ALTER TABLE inventory ADD CONSTRAINT chk_inventory_reserved CHECK (reserved_quantity >= 0);
+
+  - changeSet:
+      id: 004-3-create-inventory-movements-table
+      author: maram
+      changes:
+        - createTable:
+            tableName: inventory_movements
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: product_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_movement_product
+                    references: products(id)
+              - column:
+                  name: movement_type
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: quantity
+                  type: INTEGER
+                  constraints:
+                    nullable: false
+              - column:
+                  name: quantity_after
+                  type: INTEGER
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reference_id
+                  type: BIGINT
+              - column:
+                  name: reference_type
+                  type: VARCHAR(30)
+              - column:
+                  name: notes
+                  type: VARCHAR(500)
+              - column:
+                  name: created_by
+                  type: BIGINT
+                  constraints:
+                    foreignKeyName: fk_movement_created_by
+                    references: users(id)
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 004-4-create-inventory-indexes
+      author: maram
+      changes:
+        - createIndex:
+            indexName: idx_inventory_product
+            tableName: inventory
+            columns:
+              - column:
+                  name: product_id
+        - createIndex:
+            indexName: idx_movements_product
+            tableName: inventory_movements
+            columns:
+              - column:
+                  name: product_id
+              - column:
+                  name: created_at
+                  descending: true

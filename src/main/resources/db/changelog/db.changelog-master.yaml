@@ -10,3 +10,6 @@ databaseChangeLog:
   # Module Catalogue (categories, brands, products, tags)
   - include:
       file: db/changelog/changes/003-create-catalog-tables.yaml
+
+  - include:
+      file: db/changelog/changes/004-create-stock-tables.yaml
