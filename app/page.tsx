@@ -1,65 +1,47 @@
-import Image from "next/image";
+import { Navbar } from '@/components/layout/navbar'
+import { Footer } from '@/components/layout/footer'
+import { Hero } from '@/components/home/hero'
+import { ValueProps } from '@/components/home/value-props'
+import { ProductSection } from '@/components/home/product-section'
+import { WhyChoose } from '@/components/home/why-choose'
+import type { SimpleProduct } from '@/components/home/product-section'
 
-export default function Home() {
+const FEATURED: SimpleProduct[] = [
+  { id: 1, name: 'HP EliteBook 840 G8', spec: 'i5-1135G7 / 8 Go / 256 Go SSD', price: '1 250 TND', priceNum: 1250, condition: 'Reconditionné' },
+  { id: 2, name: 'Dell Latitude 5420', spec: 'i7-1165G7 / 16 Go / 512 Go SSD', price: '1 890 TND', priceNum: 1890, condition: 'Reconditionné' },
+  { id: 3, name: 'Lenovo ThinkPad T14', spec: 'i5-10210U / 8 Go / 256 Go SSD', price: '980 TND', priceNum: 980, condition: 'Occasion' },
+  { id: 4, name: 'HP 15s-fq2', spec: 'i3-1115G4 / 8 Go / 256 Go SSD', price: '799 TND', priceNum: 799, condition: 'Neuf' },
+]
+
+const NEW_ARRIVALS: SimpleProduct[] = [
+  { id: 5, name: 'Asus VivoBook 15', spec: 'Ryzen 5 5500U / 8 Go / 512 Go', price: '920 TND', priceNum: 920, condition: 'Neuf' },
+  { id: 6, name: 'Dell Inspiron 15 3520', spec: 'i5-1235U / 12 Go / 512 Go SSD', price: '1 050 TND', priceNum: 1050, condition: 'Neuf' },
+  { id: 7, name: 'Lenovo IdeaPad 5', spec: 'i7-1165G7 / 16 Go / 512 Go SSD', price: '1 450 TND', priceNum: 1450, condition: 'Reconditionné' },
+  { id: 8, name: 'HP ProBook 450 G8', spec: 'i5-1135G7 / 8 Go / 256 Go SSD', price: '1 100 TND', priceNum: 1100, condition: 'Reconditionné' },
+]
+
+export default function HomePage() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="min-h-screen bg-[#F5F5F3]">
+      <Navbar />
+      <main>
+        <Hero />
+        <ValueProps />
+        <ProductSection
+          id="catalogue"
+          title="Produits Vedettes"
+          products={FEATURED}
+          background="page"
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+        <ProductSection
+          title="Nouveautés"
+          products={NEW_ARRIVALS}
+          background="white"
+          scrollOnMobile
+        />
+        <WhyChoose />
       </main>
+      <Footer />
     </div>
-  );
+  )
 }
