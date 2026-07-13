@@ -1,0 +1,12 @@
+databaseChangeLog:
+  # Module Utilisateurs
+  - include:
+      file: db/changelog/changes/001-create-users-table.yaml
+
+  # Module Authentification (refresh tokens, verification tokens, OAuth)
+  - include:
+      file: db/changelog/changes/002-create-auth-tables.yaml
+
+  # Module Catalogue (categories, brands, products, tags)
+  - include:
+      file: db/changelog/changes/003-create-catalog-tables.yaml
