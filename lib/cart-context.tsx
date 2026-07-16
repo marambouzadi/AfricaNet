@@ -1,12 +1,14 @@
 'use client'
 
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react'
 
 export type CartItem = {
   id: number
   name: string
   price: number
   quantity: number
+  image?: string
+  condition?: string
 }
 
 type CartContextType = {
@@ -19,6 +21,7 @@ type CartContextType = {
   clearCart: () => void
   notification: string | null
   clearNotification: () => void
+  isLoaded: boolean
 }
 
 const CartContext = createContext<CartContextType | null>(null)
@@ -26,6 +29,27 @@ const CartContext = createContext<CartContextType | null>(null)
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([])
   const [notification, setNotification] = useState<string | null>(null)
+  const [isLoaded, setIsLoaded] = useState(false)
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('africanet_cart')
+      if (saved) {
+        setItems(JSON.parse(saved))
+      }
+    } catch (e) {
+      console.error('Failed to load cart from localStorage', e)
+    }
+    setIsLoaded(true)
+  }, [])
+
+  // Save to localStorage whenever items change
+  useEffect(() => {
+    if (isLoaded) {
+      localStorage.setItem('africanet_cart', JSON.stringify(items))
+    }
+  }, [items, isLoaded])
 
   const clearNotification = useCallback(() => setNotification(null), [])
 
@@ -74,6 +98,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         clearCart,
         notification,
         clearNotification,
+        isLoaded,
       }}
     >
       {children}

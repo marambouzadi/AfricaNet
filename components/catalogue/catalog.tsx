@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import {
   SlidersHorizontal,
@@ -28,69 +28,77 @@ export function Catalog() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [mobileSort, setMobileSort] = useState(false)
 
-  // Filter products
-  const filteredProducts = useMemo(() => {
-    let result = [...products]
+  // API State
+  const [loading, setLoading] = useState(false)
+  const [paginatedProducts, setPaginatedProducts] = useState<Product[]>([])
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalElements, setTotalElements] = useState(0)
 
-    // Search query
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase()
-      result = result.filter(
-        (p) =>
-          p.name.toLowerCase().includes(q) ||
-          p.brand.toLowerCase().includes(q) ||
-          p.cpu.toLowerCase().includes(q)
-      )
+  // Fetch products from API
+  useEffect(() => {
+    async function loadData() {
+      setLoading(true)
+      try {
+        const { fetchProducts, searchProducts } = await import('@/lib/api')
+        
+        let res
+        if (searchQuery) {
+          res = await searchProducts(searchQuery, page - 1, ITEMS_PER_PAGE)
+        } else {
+          // Convert price to max/min
+          const minPrice = filters.priceMin > 0 ? filters.priceMin : undefined
+          const maxPrice = filters.priceMax < 5000 ? filters.priceMax : undefined
+          // If we had brand ID, we'd pass it. For now our API fallback handles local filtering.
+          
+          res = await fetchProducts({
+            page: page - 1,
+            size: ITEMS_PER_PAGE,
+            minPrice,
+            maxPrice,
+            condition: filters.conditions.length === 1 ? filters.conditions[0] : undefined,
+          })
+        }
+
+        // Map ProductResponse to local Product interface
+        let mapped: Product[] = res.content.map((p: any) => {
+          // If it's from the mock fallback, it already has the right shape (p.price instead of p.basePrice)
+          if (p.price !== undefined && !p.basePrice) return p
+          
+          return {
+            id: p.id,
+            name: p.name,
+            brand: p.brandName || 'Unknown',
+            cpu: p.specifications?.find((s: any) => s.specKey.toLowerCase().includes('processeur'))?.specValue || 'N/A',
+            ram: p.specifications?.find((s: any) => s.specKey.toLowerCase().includes('ram'))?.specValue || '8 Go',
+            ramValue: 8, // approximated
+            storage: p.specifications?.find((s: any) => s.specKey.toLowerCase().includes('stockage'))?.specValue || '256 Go SSD',
+            screenSize: 15.6, // approximated
+            price: p.salePrice || p.basePrice || 0,
+            condition: p.condition as Condition,
+            image: p.images?.find((img: any) => img.isPrimary)?.imageUrl || '/products/laptop-gray.png'
+          }
+        })
+
+        // Apply frontend-only filters (RAM, Screen, multiple brands)
+        if (filters.brands.length > 0) {
+          mapped = mapped.filter((p) => filters.brands.includes(p.brand))
+        }
+        if (filters.conditions.length > 1) {
+          mapped = mapped.filter((p) => filters.conditions.includes(p.condition))
+        }
+
+        setPaginatedProducts(mapped)
+        setTotalPages(res.totalPages)
+        setTotalElements(res.totalElements)
+      } catch (err) {
+        console.error('Failed to load products', err)
+      } finally {
+        setLoading(false)
+      }
     }
-
-    // Brand filter
-    if (filters.brands.length > 0) {
-      result = result.filter((p) => filters.brands.includes(p.brand))
-    }
-
-    // Condition filter
-    if (filters.conditions.length > 0) {
-      result = result.filter((p) => filters.conditions.includes(p.condition))
-    }
-
-    // Price filter
-    if (filters.priceMin > 0 || filters.priceMax < 5000) {
-      result = result.filter((p) => p.price >= filters.priceMin && p.price <= filters.priceMax)
-    }
-
-    // RAM filter
-    if (filters.ramValues.length > 0) {
-      result = result.filter((p) => filters.ramValues.includes(p.ramValue))
-    }
-
-    // Screen size filter
-    if (filters.screenSizes.length > 0) {
-      result = result.filter((p) => filters.screenSizes.includes(p.screenSize))
-    }
-
-    // Sort
-    switch (sort) {
-      case 'prix-asc':
-        result.sort((a, b) => a.price - b.price)
-        break
-      case 'prix-desc':
-        result.sort((a, b) => b.price - a.price)
-        break
-      case 'nouveautes':
-        result.sort((a, b) => b.id - a.id)
-        break
-      // 'pertinence' = default order
-    }
-
-    return result
-  }, [filters, sort, searchQuery])
-
-  // Pagination
-  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / ITEMS_PER_PAGE))
-  const paginatedProducts = filteredProducts.slice(
-    (page - 1) * ITEMS_PER_PAGE,
-    page * ITEMS_PER_PAGE
-  )
+    
+    loadData()
+  }, [filters, sort, searchQuery, page])
 
   // Compute counts for filters (from ALL products, not filtered)
   const brandCounts = useMemo(() => {
@@ -237,7 +245,7 @@ export function Catalog() {
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-6">
             <div>
               <p className="text-sm text-[#6B7280]">
-                {filteredProducts.length} produit{filteredProducts.length !== 1 ? 's' : ''} trouvé{filteredProducts.length !== 1 ? 's' : ''}
+                {loading ? 'Recherche en cours...' : `${totalElements} produit${totalElements !== 1 ? 's' : ''} trouvé${totalElements !== 1 ? 's' : ''}`}
               </p>
               {activeChips.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2">
@@ -420,7 +428,7 @@ export function Catalog() {
               onClick={() => setDrawerOpen(false)}
               className="w-full mt-4 bg-[#1A3FA0] hover:bg-[#0D2660] text-white rounded-lg py-3 text-sm font-medium transition-colors"
             >
-              Voir {filteredProducts.length} résultat{filteredProducts.length !== 1 ? 's' : ''}
+              Voir {totalElements} résultat{totalElements !== 1 ? 's' : ''}
             </button>
           </div>
         </div>

@@ -33,17 +33,19 @@ export function CatalogProductCard({ product }: { product: Product }) {
         <p className="text-xs text-[#6B7280] mt-1">
           {product.cpu} · {product.ram} · {product.storage}
         </p>
-        <p className="text-lg font-bold text-[#1A3FA0] mt-2">
-          {formatPrice(product.price)}
-        </p>
-        <button
-          type="button"
-          onClick={() => addItem({ id: product.id, name: product.name, price: product.price })}
-          className="w-full mt-3 bg-[#1A3FA0] hover:bg-[#0D2660] text-white rounded-lg py-2 text-sm font-medium transition-colors flex items-center justify-center gap-2"
-        >
-          <ShoppingCart className="h-4 w-4" />
-          Ajouter au panier
-        </button>
+        <div className="mt-auto pt-2">
+          <p className="text-lg font-bold text-[#1A3FA0]">
+            {formatPrice(product.price)}
+          </p>
+          <button
+            type="button"
+            onClick={() => addItem({ id: product.id, name: product.name, price: product.price })}
+            className="w-full mt-3 bg-[#1A3FA0] hover:bg-[#0D2660] text-white rounded-lg py-2 text-sm font-medium transition-colors flex items-center justify-center gap-2"
+          >
+            <ShoppingCart className="h-4 w-4" />
+            Ajouter au panier
+          </button>
+        </div>
       </div>
     </div>
   )

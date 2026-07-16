@@ -6,26 +6,58 @@ import { ProductInfo } from '@/components/product/product-info'
 import { ProductTabs } from '@/components/product/product-tabs'
 import { SimilarProducts } from '@/components/product/similar-products'
 import { MobileStickyBar } from '@/components/product/mobile-sticky-bar'
-import { getProductDetail, getSimilarProducts, products } from '@/lib/products'
-
-// Generate static params for all known product IDs
-export function generateStaticParams() {
-  return products.map((p) => ({ id: String(p.id) }))
-}
+import { fetchProductById } from '@/lib/api'
+import { getSimilarProducts } from '@/lib/products'
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const product = getProductDetail(Number(id))
-  return {
-    title: `${product.name} — AfricaNet`,
-    description: `${product.name} ${product.condition} — ${product.price}. ${product.quickSpecs.map((s) => s.label).join(', ')}. Garantie 3 mois AfricaNet.`,
+  try {
+    const product = await fetchProductById(id)
+    return {
+      title: `${product.name} — AfricaNet`,
+      description: `${product.name} ${product.condition} — ${product.salePrice || product.basePrice} TND. Garantie 3 mois AfricaNet.`,
+    }
+  } catch (e) {
+    return { title: 'Produit — AfricaNet' }
   }
 }
 
 export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const productId = Number(id)
-  const product = getProductDetail(productId)
+  
+  // Fetch from API (will fallback to mock if backend offline)
+  const res = await fetchProductById(productId)
+  
+  // Map backend response to local ProductDetail interface
+  const product = {
+    id: res.id,
+    name: res.name,
+    condition: res.condition as any,
+    price: `${res.salePrice || res.basePrice} TND`,
+    priceNum: res.salePrice || res.basePrice,
+    stock: 5, // Mocked for now since stock is in another API
+    warranty: 'Garantie 3 mois AfricaNet',
+    thumbnails: res.images?.length > 0 
+      ? res.images.map((img: any) => img.imageUrl) 
+      : ['/products/laptop-gray.png'],
+    quickSpecs: res.specifications?.slice(0, 4).map((s: any) => ({
+      icon: s.specKey.toLowerCase().includes('ram') ? 'ram' : 
+            s.specKey.toLowerCase().includes('processeur') ? 'cpu' : 
+            s.specKey.toLowerCase().includes('stockage') ? 'ssd' : 'screen',
+      label: s.specValue
+    })) || [],
+    specs: res.specifications?.map((s: any) => [s.specKey, s.specValue]) || [],
+    conditionNote: res.description,
+    ratings: [
+      { label: 'Écran', score: 9 },
+      { label: 'Clavier', score: 8 },
+      { label: 'Batterie', score: 8 },
+      { label: 'Châssis', score: 7 },
+      { label: 'Performances', score: 9 },
+    ],
+  }
+
   const similar = getSimilarProducts(productId)
 
   return (

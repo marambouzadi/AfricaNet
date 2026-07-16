@@ -1,8 +1,8 @@
 export const NAV_LINKS = [
   { label: 'Catalogue', href: '/catalogue' },
-  { label: 'Échange', href: '#echange' },
-  { label: 'À propos', href: '#a-propos' },
-  { label: 'Contact', href: '#contact' },
+  { label: 'Échange', href: '/reprise' },
+  { label: 'À propos', href: '/a-propos' },
+  { label: 'Contact', href: '/contact' },
 ]
 
 export const COMPANY = {
