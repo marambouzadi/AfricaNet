@@ -24,7 +24,7 @@ export function Hero() {
               Voir le catalogue
             </Link>
             <Link
-              href="#echange"
+              href="/reprise"
               className="rounded-lg border border-[#1A3FA0] px-6 py-3 text-center text-sm font-medium text-[#1A3FA0] transition-colors duration-200 hover:bg-[#E8EDF8]"
             >
               Vendre mon PC
