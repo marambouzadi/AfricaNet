@@ -216,13 +216,13 @@ export function Navbar() {
               )}
             </Link>
             <Link
-              href="/dashboard"
+              href="/connexion"
               className="hidden items-center gap-1.5 text-sm font-medium text-[#1A1A1A] transition-colors duration-200 hover:text-[#1A3FA0] sm:flex"
             >
               <User className="h-5 w-5" />
               Connexion
             </Link>
-            <Link href="/dashboard" className="text-[#1A1A1A] sm:hidden" aria-label="Connexion">
+            <Link href="/connexion" className="text-[#1A1A1A] sm:hidden" aria-label="Connexion">
               <User className="h-5 w-5" />
             </Link>
           </div>
@@ -276,7 +276,7 @@ export function Navbar() {
 
             <div className="mt-4 border-t border-[#E2E2DF] pt-4">
               <Link
-                href="/dashboard"
+                href="/connexion"
                 className="flex items-center gap-2 rounded-lg px-3 py-3 text-base font-medium text-[#1A1A1A] transition-colors hover:bg-[#F5F5F3]"
                 onClick={() => setMenuOpen(false)}
               >
