@@ -57,30 +57,31 @@ export default function InscriptionPage() {
   return (
     <div className="min-h-screen bg-[#F5F5F3] flex flex-col">
       {/* Top bar */}
-      <header className="px-6 py-4 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2">
+      <header className="px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
+        <Link href="/" className="flex items-center gap-2 shrink-0">
           <Image src="/africanet-logo.jpg" alt="AfricaNet" width={36} height={36} className="rounded-full" />
           <span className="font-serif text-lg font-bold text-[#1A1A1A]">AfricaNet</span>
         </Link>
-        <Link href="/connexion" className="text-sm font-medium text-[#1A3FA0] hover:underline">
-          Déjà inscrit ? Se connecter
+        <Link href="/connexion" className="text-sm font-medium text-[#1A3FA0] hover:underline text-right shrink-0">
+          <span className="hidden sm:inline">Déjà inscrit ? Se connecter</span>
+          <span className="sm:hidden">Se connecter</span>
         </Link>
       </header>
 
       {/* Form Card */}
-      <main className="flex-1 flex items-center justify-center px-4 py-12">
+      <main className="flex-1 flex items-start sm:items-center justify-center px-4 py-8 sm:py-12">
         <div className="w-full max-w-lg">
-          <div className="bg-white rounded-2xl shadow-lg border border-[#E2E2DF] p-8 sm:p-10">
-            <div className="mb-8 text-center">
-              <h1 className="text-3xl font-serif font-bold text-[#1A1A1A] mb-2">Créer un compte</h1>
-              <p className="text-[#6B7280]">Rejoignez des milliers de clients AfricaNet</p>
+          <div className="bg-white rounded-2xl shadow-lg border border-[#E2E2DF] p-5 sm:p-10">
+            <div className="mb-6 text-center">
+              <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[#1A1A1A] mb-2">Créer un compte</h1>
+              <p className="text-[#6B7280] text-sm sm:text-base">Rejoignez des milliers de clients AfricaNet</p>
             </div>
 
             {/* Benefits */}
-            <div className="bg-[#E8EDF8] rounded-xl p-4 mb-8 grid grid-cols-1 sm:grid-cols-3 gap-2 text-center">
+            <div className="bg-[#E8EDF8] rounded-xl p-3 mb-6 flex flex-wrap justify-center gap-x-4 gap-y-2">
               {['Garantie 3 mois', 'Livraison rapide', 'SAV dédié'].map(b => (
-                <div key={b} className="flex items-center gap-2 justify-center text-[#1A3FA0]">
-                  <CheckCircle2 className="h-4 w-4 shrink-0" />
+                <div key={b} className="flex items-center gap-1.5 text-[#1A3FA0]">
+                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
                   <span className="text-xs font-medium">{b}</span>
                 </div>
               ))}
@@ -93,8 +94,8 @@ export default function InscriptionPage() {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="grid grid-cols-2 gap-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label htmlFor="firstName" className="text-sm font-medium text-[#1A1A1A]">Prénom</label>
                   <div className="relative">
