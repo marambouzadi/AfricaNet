@@ -125,13 +125,29 @@ export function FiltersPanel({
         <p className="text-sm font-medium text-[#1A3FA0] mb-3">
           {filters.priceMin} TND — {filters.priceMax} TND
         </p>
-        <div className="relative h-1.5 rounded-full bg-[#E8EDF8] mb-4">
+        <div className="relative h-1.5 rounded-full bg-[#E8EDF8] mb-4 mt-2">
           <div
             className="absolute h-1.5 rounded-full bg-[#1A3FA0]"
             style={{
               left: `${(filters.priceMin / 5000) * 100}%`,
               right: `${100 - (filters.priceMax / 5000) * 100}%`,
             }}
+          />
+          <input
+            type="range"
+            min={0}
+            max={5000}
+            value={filters.priceMin}
+            onChange={(e) => onChange({ ...filters, priceMin: Math.min(Number(e.target.value), filters.priceMax) })}
+            className="absolute -top-1.5 w-full appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#1A3FA0]"
+          />
+          <input
+            type="range"
+            min={0}
+            max={5000}
+            value={filters.priceMax}
+            onChange={(e) => onChange({ ...filters, priceMax: Math.max(Number(e.target.value), filters.priceMin) })}
+            className="absolute -top-1.5 w-full appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#1A3FA0]"
           />
         </div>
         <div className="flex items-center gap-2">

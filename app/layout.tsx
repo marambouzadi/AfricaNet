@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter, Lora } from 'next/font/google'
 import { CartProvider } from '@/lib/cart-context'
+import { UserProvider } from '@/lib/user-context'
 import { CartNotification } from '@/components/shared/cart-notification'
+import { Chatbot } from '@/components/shared/chatbot'
 import './globals.css'
 
 const inter = Inter({
@@ -38,10 +40,13 @@ export default function RootLayout({
   return (
     <html lang="fr" className={`${inter.variable} ${lora.variable}`}>
       <body className="antialiased bg-[#F5F5F3] font-sans">
-        <CartProvider>
-          {children}
-          <CartNotification />
-        </CartProvider>
+        <UserProvider>
+          <CartProvider>
+            {children}
+            <CartNotification />
+            <Chatbot />
+          </CartProvider>
+        </UserProvider>
       </body>
     </html>
   )

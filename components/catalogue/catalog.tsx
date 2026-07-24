@@ -61,37 +61,66 @@ export function Catalog() {
 
         // Map ProductResponse to local Product interface
         let mapped: Product[] = res.content.map((p: any) => {
-          // If it's from the mock fallback, it already has the right shape (p.price instead of p.basePrice)
           if (p.price !== undefined && !p.basePrice) return p
+          
+          const ramSpec = p.specifications?.find((s: any) => s.specKey.toLowerCase().includes('ram'))?.specValue || '8 Go'
+          const screenSpec = p.specifications?.find((s: any) => s.specKey.toLowerCase().includes('écran') || s.specKey.toLowerCase().includes('ecran'))?.specValue || '15.6'
           
           return {
             id: p.id,
             name: p.name,
             brand: p.brandName || 'Unknown',
             cpu: p.specifications?.find((s: any) => s.specKey.toLowerCase().includes('processeur'))?.specValue || 'N/A',
-            ram: p.specifications?.find((s: any) => s.specKey.toLowerCase().includes('ram'))?.specValue || '8 Go',
-            ramValue: 8, // approximated
+            ram: ramSpec,
+            ramValue: parseInt(ramSpec, 10) || 8,
             storage: p.specifications?.find((s: any) => s.specKey.toLowerCase().includes('stockage'))?.specValue || '256 Go SSD',
-            screenSize: 15.6, // approximated
+            screenSize: parseFloat(screenSpec.replace(',', '.')) || 15.6,
             price: p.salePrice || p.basePrice || 0,
             condition: p.condition as Condition,
             image: p.images?.find((img: any) => img.isPrimary)?.imageUrl || '/products/laptop-gray.png'
           }
         })
 
-        // Apply frontend-only filters (RAM, Screen, multiple brands)
+        // Apply frontend-only filters (Price, RAM, Screen, multiple brands, conditions)
+        mapped = mapped.filter((p) => p.price >= filters.priceMin && p.price <= filters.priceMax)
         if (filters.brands.length > 0) {
           mapped = mapped.filter((p) => filters.brands.includes(p.brand))
         }
-        if (filters.conditions.length > 1) {
+        if (filters.conditions.length > 0) {
           mapped = mapped.filter((p) => filters.conditions.includes(p.condition))
+        }
+        if (filters.ramValues.length > 0) {
+          mapped = mapped.filter((p) => filters.ramValues.includes(p.ramValue))
+        }
+        if (filters.screenSizes.length > 0) {
+          mapped = mapped.filter((p) => filters.screenSizes.includes(p.screenSize) || filters.screenSizes.some(s => Math.abs(p.screenSize - s) < 0.5))
         }
 
         setPaginatedProducts(mapped)
         setTotalPages(res.totalPages)
         setTotalElements(res.totalElements)
-      } catch (err) {
-        console.error('Failed to load products', err)
+      } catch (err: any) {
+        console.warn('Failed to load products from API, falling back to local data. Reason:', err.message)
+        // Fallback to local mock data
+        let mapped = products
+        
+        mapped = mapped.filter((p) => p.price >= filters.priceMin && p.price <= filters.priceMax)
+        if (filters.brands.length > 0) {
+          mapped = mapped.filter((p) => filters.brands.includes(p.brand))
+        }
+        if (filters.conditions.length > 0) {
+          mapped = mapped.filter((p) => filters.conditions.includes(p.condition))
+        }
+        if (filters.ramValues.length > 0) {
+          mapped = mapped.filter((p) => filters.ramValues.includes(p.ramValue))
+        }
+        if (filters.screenSizes.length > 0) {
+          mapped = mapped.filter((p) => filters.screenSizes.includes(p.screenSize) || filters.screenSizes.some(s => Math.abs(p.screenSize - s) < 0.5))
+        }
+        
+        setPaginatedProducts(mapped.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE))
+        setTotalPages(Math.ceil(mapped.length / ITEMS_PER_PAGE))
+        setTotalElements(mapped.length)
       } finally {
         setLoading(false)
       }

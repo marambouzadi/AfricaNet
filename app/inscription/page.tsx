@@ -5,6 +5,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { Eye, EyeOff, Mail, Lock, User, Phone, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react'
+import { register } from '@/lib/api'
+import { useUser } from '@/lib/user-context'
 
 function PasswordStrength({ password }: { password: string }) {
   const strength = password.length === 0 ? 0 : password.length < 6 ? 1 : password.length < 10 ? 2 : /[A-Z]/.test(password) && /[0-9]/.test(password) ? 4 : 3
@@ -29,12 +31,13 @@ function PasswordStrength({ password }: { password: string }) {
 
 export default function InscriptionPage() {
   const router = useRouter()
+  const { loginUser } = useUser()
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', password: '', acceptTerms: false })
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
 
@@ -48,10 +51,26 @@ export default function InscriptionPage() {
     }
 
     setLoading(true)
-    // Simulate register — replace with real API call when backend ready
-    setTimeout(() => {
+    try {
+      const response = await register({
+        firstName: form.firstName,
+        lastName: form.lastName,
+        email: form.email,
+        phone: form.phone,
+        password: form.password
+      })
+      
+      if (response.accessToken) {
+        loginUser(response.accessToken, response.user)
+      }
+      
       router.push('/dashboard')
-    }, 1500)
+    } catch (err: any) {
+      console.error(err)
+      setError(err.response?.data?.message || 'Une erreur est survenue lors de l\'inscription.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (

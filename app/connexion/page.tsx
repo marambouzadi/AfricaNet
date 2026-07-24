@@ -5,28 +5,40 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { Eye, EyeOff, Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react'
+import { login } from '@/lib/api'
+import { useUser } from '@/lib/user-context'
 
 export default function ConnexionPage() {
   const router = useRouter()
+  const { loginUser } = useUser()
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [form, setForm] = useState({ email: '', password: '' })
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setLoading(true)
 
-    // Simulate auth — replace with real API call when backend ready
-    setTimeout(() => {
-      if (form.email && form.password.length >= 6) {
+    try {
+      const response = await login({
+        email: form.email,
+        password: form.password
+      })
+      
+      if (response.accessToken) {
+        loginUser(response.accessToken, response.user)
         router.push('/dashboard')
       } else {
-        setError('Email ou mot de passe incorrect. Veuillez réessayer.')
-        setLoading(false)
+        throw new Error('No access token received')
       }
-    }, 1200)
+    } catch (err: any) {
+      console.error(err)
+      setError(err.response?.data?.message || 'Email ou mot de passe incorrect. Veuillez réessayer.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { UploadCloud, CheckCircle2, Laptop, HardDrive, Smartphone, ChevronRight, ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
+import { submitTradeIn } from '@/lib/api'
 
 type Step = 1 | 2 | 3 | 4
 
@@ -23,13 +24,19 @@ export function MultiStepForm() {
   const handleNext = () => setStep((s) => Math.min(s + 1, 4) as Step)
   const handlePrev = () => setStep((s) => Math.max(s - 1, 1) as Step)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
-    setTimeout(() => {
-      setIsSubmitting(false)
+    
+    try {
+      await submitTradeIn(formData)
       setStep(4) // Success step
-    }, 2000)
+    } catch (err) {
+      console.error('Failed to submit trade-in request', err)
+      alert('Une erreur est survenue. Veuillez réessayer.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (

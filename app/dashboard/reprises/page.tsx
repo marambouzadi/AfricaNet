@@ -1,17 +1,35 @@
+'use client'
+
 import Link from 'next/link'
-import { RefreshCw, Search, Plus, ArrowRight } from 'lucide-react'
+import { RefreshCw, Search, Plus, ArrowRight, Loader2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { getUserTradeIns } from '@/lib/api'
 
 export default function TradeInsPage() {
-  const tradeIns = [
-    {
-      id: 'TR-8472',
-      date: '15 Juillet 2026',
-      device: 'MacBook Pro 2019 (Core i7, 16Go RAM)',
-      estimatedValue: 'En cours d\'estimation',
-      status: 'Analyse IA',
-      statusColor: 'bg-blue-100 text-blue-800',
+  const [tradeIns, setTradeIns] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchTradeIns() {
+      try {
+        const data = await getUserTradeIns()
+        setTradeIns(data || [])
+      } catch (err) {
+        console.error('Erreur lors du chargement des reprises:', err)
+      } finally {
+        setLoading(false)
+      }
     }
-  ]
+    fetchTradeIns()
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-[#1A3FA0]" />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -48,11 +66,13 @@ export default function TradeInsPage() {
                 {tradeIns.map((trade) => (
                   <tr key={trade.id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="px-6 py-4 font-bold text-[#1A1A1A]">{trade.id}</td>
-                    <td className="px-6 py-4 text-sm text-[#6B7280]">{trade.date}</td>
-                    <td className="px-6 py-4 text-sm font-medium text-[#1A1A1A]">{trade.device}</td>
-                    <td className="px-6 py-4 text-sm text-[#6B7280] italic">{trade.estimatedValue}</td>
+                    <td className="px-6 py-4 text-sm text-[#6B7280]">{new Date(trade.createdAt).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 text-sm font-medium text-[#1A1A1A]">{trade.brand} {trade.model}</td>
+                    <td className="px-6 py-4 text-sm text-[#6B7280] italic">
+                      {trade.estimatedValue ? `${trade.estimatedValue} TND` : "En cours d'estimation"}
+                    </td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${trade.statusColor}`}>
+                      <span className="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                         {trade.status}
                       </span>
                     </td>

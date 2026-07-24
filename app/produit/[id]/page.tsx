@@ -7,7 +7,8 @@ import { ProductTabs } from '@/components/product/product-tabs'
 import { SimilarProducts } from '@/components/product/similar-products'
 import { MobileStickyBar } from '@/components/product/mobile-sticky-bar'
 import { fetchProductById } from '@/lib/api'
-import { getSimilarProducts } from '@/lib/products'
+import { getSimilarProducts, products } from '@/lib/products'
+import { notFound } from 'next/navigation'
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -26,8 +27,31 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
   const { id } = await params
   const productId = Number(id)
   
-  // Fetch from API (will fallback to mock if backend offline)
-  const res = await fetchProductById(productId)
+  let res: any
+  try {
+    res = await fetchProductById(productId)
+  } catch (e) {
+    // Fallback to local mock product
+    const localProduct = products.find(p => p.id === productId)
+    if (!localProduct) {
+      notFound()
+    }
+    // Simulate backend response structure based on local mock
+    res = {
+      id: localProduct.id,
+      name: localProduct.name,
+      condition: localProduct.condition,
+      salePrice: localProduct.price,
+      basePrice: localProduct.price,
+      description: 'Ce produit est issu du catalogue de démonstration.',
+      images: [{ imageUrl: localProduct.image, isPrimary: true }],
+      specifications: [
+        { specKey: 'Processeur', specValue: localProduct.cpu },
+        { specKey: 'RAM', specValue: localProduct.ram },
+        { specKey: 'Stockage', specValue: localProduct.storage },
+      ]
+    }
+  }
   
   // Map backend response to local ProductDetail interface
   const product = {
@@ -47,14 +71,13 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
             s.specKey.toLowerCase().includes('stockage') ? 'ssd' : 'screen',
       label: s.specValue
     })) || [],
-    specs: res.specifications?.map((s: any) => [s.specKey, s.specValue]) || [],
-    conditionNote: res.description,
+    specs: res.specifications?.map((s: any) => [s.specKey, s.specValue] as [string, string]) || [],
+    conditionNote: res.description || 'Appareil testé et vérifié par nos experts.',
     ratings: [
       { label: 'Écran', score: 9 },
-      { label: 'Clavier', score: 8 },
       { label: 'Batterie', score: 8 },
-      { label: 'Châssis', score: 7 },
       { label: 'Performances', score: 9 },
+      { label: 'Esthétique', score: 7 },
     ],
   }
 

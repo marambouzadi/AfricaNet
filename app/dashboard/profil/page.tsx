@@ -1,6 +1,18 @@
-import { User, Mail, Phone, MapPin, Edit3 } from 'lucide-react'
+'use client'
+
+import { User, Mail, Phone, MapPin, Edit3, Loader2 } from 'lucide-react'
+import { useUser } from '@/lib/user-context'
 
 export default function ProfilPage() {
+  const { user, loading } = useUser()
+
+  if (loading || !user) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-[#1A3FA0]" />
+      </div>
+    )
+  }
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
@@ -27,7 +39,7 @@ export default function ProfilPage() {
               </div>
               <div>
                 <p className="text-sm text-[#6B7280]">Nom complet</p>
-                <p className="font-medium text-[#1A1A1A]">John Doe</p>
+                <p className="font-medium text-[#1A1A1A]">{user.firstName} {user.lastName}</p>
               </div>
             </div>
             
@@ -37,7 +49,7 @@ export default function ProfilPage() {
               </div>
               <div>
                 <p className="text-sm text-[#6B7280]">Adresse e-mail</p>
-                <p className="font-medium text-[#1A1A1A]">john.doe@example.com</p>
+                <p className="font-medium text-[#1A1A1A]">{user.email}</p>
               </div>
             </div>
             
@@ -70,7 +82,7 @@ export default function ProfilPage() {
                 <div>
                   <p className="font-bold text-[#1A1A1A]">Domicile</p>
                   <p className="text-sm text-[#6B7280] mt-1">
-                    John Doe<br/>
+                    {user.firstName} {user.lastName}<br/>
                     Avenue Habib Bourguiba<br/>
                     Résidence Les Jasmins, Appt 12<br/>
                     Tunis, 1001, Tunisie

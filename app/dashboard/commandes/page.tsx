@@ -1,24 +1,34 @@
-import { Package, Search, Filter, Eye, Download } from 'lucide-react'
+'use client'
+
+import { Package, Search, Filter, Eye, Download, Loader2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { getUserOrders } from '@/lib/api'
 
 export default function OrdersPage() {
-  const orders = [
-    {
-      id: 'AN-49201',
-      date: '14 Juillet 2026',
-      total: '1257 TND',
-      status: 'En cours de livraison',
-      statusColor: 'bg-yellow-100 text-yellow-800',
-      items: 'Dell XPS 13 (Reconditionné)'
-    },
-    {
-      id: 'AN-38192',
-      date: '02 Juin 2026',
-      total: '450 TND',
-      status: 'Livrée',
-      statusColor: 'bg-green-100 text-green-800',
-      items: 'Écran Samsung 27"'
+  const [orders, setOrders] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchOrders() {
+      try {
+        const data = await getUserOrders()
+        setOrders(data || [])
+      } catch (err) {
+        console.error('Erreur lors du chargement des commandes:', err)
+      } finally {
+        setLoading(false)
+      }
     }
-  ]
+    fetchOrders()
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-[#1A3FA0]" />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -57,14 +67,14 @@ export default function OrdersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#E2E2DF]">
-              {orders.map((order) => (
+              {orders.length > 0 ? orders.map((order) => (
                 <tr key={order.id} className="hover:bg-gray-50/50 transition-colors">
-                  <td className="px-6 py-4 font-bold text-[#1A1A1A]">{order.id}</td>
-                  <td className="px-6 py-4 text-sm text-[#6B7280]">{order.date}</td>
-                  <td className="px-6 py-4 text-sm text-[#1A1A1A] truncate max-w-[200px]">{order.items}</td>
-                  <td className="px-6 py-4 text-sm font-medium text-[#1A1A1A]">{order.total}</td>
+                  <td className="px-6 py-4 font-bold text-[#1A1A1A]">{order.orderNumber}</td>
+                  <td className="px-6 py-4 text-sm text-[#6B7280]">{new Date(order.createdAt).toLocaleDateString()}</td>
+                  <td className="px-6 py-4 text-sm text-[#1A1A1A] truncate max-w-[200px]">{order.items?.length || 0} article(s)</td>
+                  <td className="px-6 py-4 text-sm font-medium text-[#1A1A1A]">{order.totalAmount} TND</td>
                   <td className="px-6 py-4">
-                    <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${order.statusColor}`}>
+                    <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${order.status === 'DELIVERED' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
                       {order.status}
                     </span>
                   </td>
@@ -79,7 +89,13 @@ export default function OrdersPage() {
                     </div>
                   </td>
                 </tr>
-              ))}
+              )) : (
+                <tr>
+                  <td colSpan={6} className="px-6 py-8 text-center text-[#6B7280]">
+                    Vous n'avez pas encore passé de commande.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

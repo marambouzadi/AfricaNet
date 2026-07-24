@@ -9,6 +9,7 @@ import { Navbar } from '@/components/layout/navbar'
 import { Footer } from '@/components/layout/footer'
 import { useCart } from '@/lib/cart-context'
 import { formatPrice } from '@/lib/products'
+import { createOrder } from '@/lib/api'
 
 type CheckoutStep = 'shipping' | 'payment' | 'success'
 
@@ -42,16 +43,33 @@ export default function CheckoutPage() {
     setStep('payment')
   }
 
-  const handlePaymentSubmit = (e: React.FormEvent) => {
+  const handlePaymentSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsProcessing(true)
     
-    // Simulate API Call
-    setTimeout(() => {
+    try {
+      const orderData = {
+        items: items.map(i => ({ productId: i.id, quantity: i.quantity, price: i.price })),
+        shipping: shippingData,
+        paymentMethod: paymentMethod === 'card' ? 'FLOUCI' : 'CASH_ON_DELIVERY',
+        totalAmount: totalPrice + 7
+      }
+      
+      const response = await createOrder(orderData)
+      
+      if (paymentMethod === 'card' && response.paymentUrl) {
+        // Redirect to Flouci payment gateway
+        window.location.href = response.paymentUrl
+      } else {
+        setStep('success')
+        clearCart()
+      }
+    } catch (err) {
+      console.error('Failed to create order:', err)
+      alert('Une erreur est survenue lors de la création de la commande.')
+    } finally {
       setIsProcessing(false)
-      setStep('success')
-      clearCart()
-    }, 1500)
+    }
   }
 
   return (

@@ -1,11 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { Navbar } from '@/components/layout/navbar'
 import { Footer } from '@/components/layout/footer'
-import { LayoutDashboard, ShoppingBag, RefreshCw, User, Settings, LogOut, Menu, X } from 'lucide-react'
-import { useState } from 'react'
+import { LayoutDashboard, ShoppingBag, RefreshCw, User, Settings, LogOut, Menu, X, Loader2 } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { useUser, type User as UserType } from '@/lib/user-context'
 
 const navItems = [
   { href: '/dashboard', label: "Vue d'ensemble", icon: LayoutDashboard },
@@ -15,15 +16,17 @@ const navItems = [
   { href: '/dashboard/parametres', label: 'Paramètres', icon: Settings },
 ]
 
-function SidebarContent({ pathname, onClose }: { pathname: string, onClose?: () => void }) {
+function SidebarContent({ pathname, onClose, user, logout }: { pathname: string, onClose?: () => void, user: UserType, logout: () => void }) {
+  const initials = `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase()
+  
   return (
     <>
       <div className="bg-white rounded-xl shadow-sm border border-[#E2E2DF] p-6 text-center mb-4">
         <div className="w-20 h-20 bg-[#E8EDF8] text-[#1A3FA0] rounded-full mx-auto flex items-center justify-center text-2xl font-bold mb-4">
-          JD
+          {initials}
         </div>
-        <h2 className="font-bold text-[#1A1A1A] text-lg">John Doe</h2>
-        <p className="text-sm text-[#6B7280]">Membre depuis 2024</p>
+        <h2 className="font-bold text-[#1A1A1A] text-lg">{user.firstName} {user.lastName}</h2>
+        <p className="text-sm text-[#6B7280]">Membre depuis 2025</p>
       </div>
 
       <nav className="bg-white rounded-xl shadow-sm border border-[#E2E2DF] overflow-hidden mb-4">
@@ -48,7 +51,7 @@ function SidebarContent({ pathname, onClose }: { pathname: string, onClose?: () 
         })}
       </nav>
 
-      <button className="w-full flex items-center gap-3 px-6 py-4 text-[#EF4444] hover:bg-[#FEF2F2] rounded-xl border border-[#FCA5A5] transition-colors font-medium justify-center">
+      <button onClick={logout} className="w-full flex items-center gap-3 px-6 py-4 text-[#EF4444] hover:bg-[#FEF2F2] rounded-xl border border-[#FCA5A5] transition-colors font-medium justify-center">
         <LogOut className="h-5 w-5" />
         Se déconnecter
       </button>
@@ -58,7 +61,23 @@ function SidebarContent({ pathname, onClose }: { pathname: string, onClose?: () 
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const router = useRouter()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const { user, loading, logout } = useUser()
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/connexion')
+    }
+  }, [user, loading, router])
+
+  if (loading || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F5F5F3]">
+        <Loader2 className="h-8 w-8 animate-spin text-[#1A3FA0]" />
+      </div>
+    )
+  }
 
   // Get current page label for mobile header
   const currentPage = navItems.find(item =>
@@ -75,9 +94,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {/* Mobile top bar */}
           <div className="md:hidden flex items-center justify-between mb-6 bg-white rounded-xl p-4 shadow-sm border border-[#E2E2DF]">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-[#E8EDF8] text-[#1A3FA0] rounded-full flex items-center justify-center font-bold text-sm">JD</div>
+              <div className="w-10 h-10 bg-[#E8EDF8] text-[#1A3FA0] rounded-full flex items-center justify-center font-bold text-sm">
+                {user.firstName.charAt(0)}{user.lastName.charAt(0)}
+              </div>
               <div>
-                <p className="font-bold text-[#1A1A1A] text-sm">John Doe</p>
+                <p className="font-bold text-[#1A1A1A] text-sm">{user.firstName} {user.lastName}</p>
                 <p className="text-xs text-[#6B7280]">{currentPage?.label || 'Mon Espace'}</p>
               </div>
             </div>
@@ -109,7 +130,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <X className="h-5 w-5" />
                   </button>
                 </div>
-                <SidebarContent pathname={pathname} onClose={() => setMobileMenuOpen(false)} />
+                <SidebarContent pathname={pathname} onClose={() => setMobileMenuOpen(false)} user={user} logout={logout} />
               </div>
             </div>
           )}
@@ -118,7 +139,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-8">
             {/* Desktop Sidebar */}
             <aside className="hidden md:block space-y-4">
-              <SidebarContent pathname={pathname} />
+              <SidebarContent pathname={pathname} user={user} logout={logout} />
             </aside>
 
             {/* Main Content */}
