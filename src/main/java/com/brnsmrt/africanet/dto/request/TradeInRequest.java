@@ -14,10 +14,11 @@ public class TradeInRequest {
     private String deviceModel;
     private String brand;
     private Integer yearOfPurchase;
-    private Integer screenCondition;      // 1 (poor) to 5 (excellent)
-    private Integer batteryCondition;     // 1 (poor) to 5 (excellent)
-    private Integer bodyCondition;        // 1 (poor) to 5 (excellent)
-    private Integer functionalityCondition; // 1 (poor) to 5 (excellent)
-    private String notes;
+    private Integer screenScore;      // 1-10
+    private Integer keyboardScore;    // 1-10
+    private Integer batteryScore;     // 1-10
+    private Integer chassisScore;     // 1-10
+    private Integer performanceScore; // 1-10
+    private String notes;             // optional generic notes
     private Long userId;
 }

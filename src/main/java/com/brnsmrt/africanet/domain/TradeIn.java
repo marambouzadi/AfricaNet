@@ -1,17 +1,15 @@
 package com.brnsmrt.africanet.domain;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import com.brnsmrt.africanet.domain.enums.ConditionOverall;
+import com.brnsmrt.africanet.domain.enums.DeviceType;
+import com.brnsmrt.africanet.domain.enums.TradeInStatus;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "trade_in_requests")
@@ -24,39 +22,74 @@ public class TradeIn {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    private String model;
-    
-    private String brand;
-    
-    @Column(name = "year_of_purchase")
-    private Integer yearOfPurchase;
-    
-    @Column(name = "screen_condition")
-    private Integer screenCondition;
-    
-    @Column(name = "battery_condition")
-    private Integer batteryCondition;
-    
-    @Column(name = "body_condition")
-    private Integer bodyCondition;
-    
-    @Column(name = "functionality_condition")
-    private Integer functionalityCondition;
-    
-    private String notes;
-    
-    @Column(name = "condition_score")
-    private Double conditionScore;
-    
-    @Column(name = "estimated_value")
-    private Double estimatedValue;
-    
-    @Column(name = "condition_summary", length = 1024)
-    private String conditionSummary;
-    
-    @ManyToOne
-    @JoinColumn(name = "user_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
     
-    private String status;
+    @Column(name = "reference_number", nullable = false, unique = true, length = 30)
+    private String referenceNumber;
+    
+    @Enumerated(EnumType.STRING)
+    @Column(name = "device_type", nullable = false, length = 50)
+    private DeviceType deviceType;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "brand_id")
+    private Brand brand;
+    
+    @Column(nullable = false, length = 200)
+    private String model;
+    
+    @Column(name = "manufacture_year")
+    private Short manufactureYear;
+    
+    @Column(name = "serial_number", length = 100)
+    private String serialNumber;
+    
+    @Enumerated(EnumType.STRING)
+    @Column(name = "condition_overall", nullable = false, length = 20)
+    private ConditionOverall conditionOverall;
+    
+    @Column(name = "condition_details", nullable = false, columnDefinition = "jsonb")
+    private String conditionDetails;
+    
+    @Column(name = "estimated_value_ai", precision = 10, scale = 3)
+    private BigDecimal estimatedValueAi;
+    
+    @Column(name = "final_value", precision = 10, scale = 3)
+    private BigDecimal finalValue;
+    
+    @Column(name = "counter_offer", precision = 10, scale = 3)
+    private BigDecimal counterOffer;
+    
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private TradeInStatus status = TradeInStatus.SUBMITTED;
+    
+    @Column(name = "ai_evaluation", columnDefinition = "jsonb")
+    private String aiEvaluation;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reviewed_by")
+    private User reviewedBy;
+    
+    @Column(name = "review_notes", columnDefinition = "TEXT")
+    private String reviewNotes;
+    
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
+    
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+    
+    @PrePersist
+    protected void onCreate() {
+        if (createdAt == null) createdAt = LocalDateTime.now();
+        if (updatedAt == null) updatedAt = LocalDateTime.now();
+    }
+    
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }

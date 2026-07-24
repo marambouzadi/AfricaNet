@@ -1,5 +1,8 @@
 package com.brnsmrt.africanet.websocket;
 
+import com.brnsmrt.africanet.ai.Assistant;
+
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -7,26 +10,43 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 @Component
 class ChatWebSocketHandler extends TextWebSocketHandler {
 
 	private final Assistant assistant;
-	private final ConcurrentHashMap<String, UUID> sessionMemoryIds = new ConcurrentHashMap<>();
+	private final StringRedisTemplate redisTemplate;
+	private static final String REDIS_KEY_PREFIX = "chat:context:";
+	private static final long SESSION_TTL_MINUTES = 30;
 
-	ChatWebSocketHandler(Assistant assistant) {
+	ChatWebSocketHandler(Assistant assistant, StringRedisTemplate redisTemplate) {
 		this.assistant = assistant;
+		this.redisTemplate = redisTemplate;
 	}
 
 	@Override
 	public void afterConnectionEstablished(WebSocketSession session) {
-		sessionMemoryIds.put(session.getId(), UUID.randomUUID());
+		String redisKey = REDIS_KEY_PREFIX + session.getId();
+		UUID memoryId = UUID.randomUUID();
+		redisTemplate.opsForValue().set(redisKey, memoryId.toString(), SESSION_TTL_MINUTES, TimeUnit.MINUTES);
 	}
 
 	@Override
 	protected void handleTextMessage(WebSocketSession session, TextMessage message) {
-		UUID memoryId = sessionMemoryIds.get(session.getId());
+		String redisKey = REDIS_KEY_PREFIX + session.getId();
+		String memoryIdStr = redisTemplate.opsForValue().get(redisKey);
+		
+		if (memoryIdStr == null) {
+		    // Session expired or not found, recreate it
+		    memoryIdStr = UUID.randomUUID().toString();
+		    redisTemplate.opsForValue().set(redisKey, memoryIdStr, SESSION_TTL_MINUTES, TimeUnit.MINUTES);
+		} else {
+		    // Refresh TTL on activity
+		    redisTemplate.expire(redisKey, SESSION_TTL_MINUTES, TimeUnit.MINUTES);
+		}
+		
+		UUID memoryId = UUID.fromString(memoryIdStr);
 		String userMessage = message.getPayload();
 
 		assistant.chat(memoryId, userMessage).onPartialResponse(token -> sendToken(session, token))
@@ -45,7 +65,6 @@ class ChatWebSocketHandler extends TextWebSocketHandler {
 
 	@Override
 	public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
-		sessionMemoryIds.remove(session.getId());
+		// We let the TTL handle cleanup so the user can reconnect within 30 minutes without losing context
 	}
-
 }

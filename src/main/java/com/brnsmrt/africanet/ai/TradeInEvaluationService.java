@@ -3,25 +3,35 @@ package com.brnsmrt.africanet.ai;
 
 import com.brnsmrt.africanet.domain.DeviceBaseValue;
 import com.brnsmrt.africanet.domain.TradeIn;
+import com.brnsmrt.africanet.domain.Brand;
 import com.brnsmrt.africanet.repository.DeviceBaseValueRepository;
 import com.brnsmrt.africanet.repository.TradeInRepository;
+import com.brnsmrt.africanet.repository.BrandRepository;
 import com.brnsmrt.africanet.domain.User;
 import com.brnsmrt.africanet.repository.UserRepository;
 import com.brnsmrt.africanet.ai.dto.EvaluationResult;
-
+import com.brnsmrt.africanet.domain.enums.ConditionOverall;
+import com.brnsmrt.africanet.domain.enums.DeviceType;
+import com.brnsmrt.africanet.domain.enums.TradeInStatus;
 import com.brnsmrt.africanet.dto.request.TradeInRequest;
 
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Optional;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 @Service
 public class TradeInEvaluationService {
 
     private final UserRepository userRepository;
     private final TradeInRepository tradeInRepository;
+    private final BrandRepository brandRepository;
     private final DeviceBaseValueRepository deviceBaseValueRepository;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     // Scoring formula weights
     private static final double MARKET_PRICE_WEIGHT = 0.40;
@@ -37,9 +47,11 @@ public class TradeInEvaluationService {
 
     public TradeInEvaluationService(UserRepository userRepository,
                                     TradeInRepository tradeInRepository,
+                                    BrandRepository brandRepository,
                                     DeviceBaseValueRepository deviceBaseValueRepository) {
         this.userRepository = userRepository;
         this.tradeInRepository = tradeInRepository;
+        this.brandRepository = brandRepository;
         this.deviceBaseValueRepository = deviceBaseValueRepository;
     }
 
@@ -57,6 +69,8 @@ public class TradeInEvaluationService {
                 .orElseThrow(() -> new RuntimeException(
                         "Customer not found with ID: " + request.getUserId()));
 
+        Brand brand = brandRepository.findByNameIgnoreCase(request.getBrand());
+
         // 1. Base market price from DB
         double basePrice = computeBaseValue(request.getBrand(), request.getDeviceModel());
 
@@ -64,20 +78,22 @@ public class TradeInEvaluationService {
         int age = computeAge(request.getYearOfPurchase());
         double ageFactor = computeAgeFactor(age);
 
-        // 3. Overall condition score (weighted average of 4 ratings, normalized to 0-10)
+        // 3. Overall condition score (weighted average of 5 ratings, scale 1-10)
         double conditionOverallScore = computeOverallCondition(
-                request.getScreenCondition(),
-                request.getBatteryCondition(),
-                request.getBodyCondition(),
-                request.getFunctionalityCondition()
+                request.getScreenScore(),
+                request.getKeyboardScore(),
+                request.getBatteryScore(),
+                request.getChassisScore(),
+                request.getPerformanceScore()
         );
 
-        // 4. Average component score (simple average, normalized to 0-10)
+        // 4. Average component score (simple average, scale 1-10)
         double avgComponentScore = computeAvgComponentScore(
-                request.getScreenCondition(),
-                request.getBatteryCondition(),
-                request.getBodyCondition(),
-                request.getFunctionalityCondition()
+                request.getScreenScore(),
+                request.getKeyboardScore(),
+                request.getBatteryScore(),
+                request.getChassisScore(),
+                request.getPerformanceScore()
         );
 
         // Apply the scoring formula
@@ -89,30 +105,37 @@ public class TradeInEvaluationService {
 
         // Apply Africa Net profit margin (25%)
         double estimatedValue = Math.round(score * PROFIT_MARGIN_MULTIPLIER * 100.0) / 100.0;
+        BigDecimal finalEstimatedValue = BigDecimal.valueOf(estimatedValue);
 
         // Condition score as a 0-1 value for storage
         double conditionScore = conditionOverallScore / 10.0;
 
+        ConditionOverall overall = mapScoreToOverallCondition(conditionOverallScore);
+
+        String conditionDetailsJson = buildConditionDetailsJson(request);
+        
         // Human-readable summary
         String conditionSummary = buildConditionSummary(
                 request, basePrice, age, ageFactor, conditionOverallScore,
                 avgComponentScore, score, estimatedValue);
 
+        String aiEvaluationJson = buildAiEvaluationJson(conditionSummary, conditionScore);
+
+        String refNumber = "TRD-" + LocalDate.now().getYear() + "-" + System.currentTimeMillis();
+
         // Persist
         TradeIn tradeIn = new TradeIn();
+        tradeIn.setReferenceNumber(refNumber);
+        tradeIn.setDeviceType(DeviceType.LAPTOP); // Default to laptop for now
+        tradeIn.setBrand(brand);
         tradeIn.setModel(request.getDeviceModel());
-        tradeIn.setBrand(request.getBrand());
-        tradeIn.setYearOfPurchase(request.getYearOfPurchase());
-        tradeIn.setScreenCondition(request.getScreenCondition());
-        tradeIn.setBatteryCondition(request.getBatteryCondition());
-        tradeIn.setBodyCondition(request.getBodyCondition());
-        tradeIn.setFunctionalityCondition(request.getFunctionalityCondition());
-        tradeIn.setNotes(request.getNotes());
-        tradeIn.setConditionScore(conditionScore);
-        tradeIn.setEstimatedValue(estimatedValue);
-        tradeIn.setConditionSummary(conditionSummary);
+        tradeIn.setManufactureYear(request.getYearOfPurchase() != null ? request.getYearOfPurchase().shortValue() : null);
+        tradeIn.setConditionOverall(overall);
+        tradeIn.setConditionDetails(conditionDetailsJson);
+        tradeIn.setEstimatedValueAi(finalEstimatedValue);
+        tradeIn.setAiEvaluation(aiEvaluationJson);
         tradeIn.setUser(user);
-        tradeIn.setStatus("EVALUATED");
+        tradeIn.setStatus(TradeInStatus.EVALUATING);
 
         TradeIn saved = tradeInRepository.save(tradeIn);
 
@@ -124,26 +147,46 @@ public class TradeInEvaluationService {
                 .conditionScore(conditionScore)
                 .estimatedValue(estimatedValue)
                 .conditionSummary(conditionSummary)
-                .status("EVALUATED")
+                .status("EVALUATING")
                 .build();
     }
 
-    /**
-     * Compute the overall condition score as a weighted average of 4 ratings (1-5),
-     * scaled to 0-10.
-     */
-    public double computeOverallCondition(int screen, int battery, int body, int functionality) {
-        // Weighted average on 1-5 scale, then scale to 0-10
-        double weightedAvg = (screen * 0.30) + (battery * 0.25) + (body * 0.20) + (functionality * 0.25);
-        return weightedAvg * 2.0; // scale from 1-5 to 2-10
+    private ConditionOverall mapScoreToOverallCondition(double score) {
+        if (score >= 9.0) return ConditionOverall.EXCELLENT;
+        if (score >= 7.0) return ConditionOverall.GOOD;
+        if (score >= 5.0) return ConditionOverall.FAIR;
+        return ConditionOverall.POOR;
+    }
+
+    private String buildConditionDetailsJson(TradeInRequest request) {
+        ObjectNode root = objectMapper.createObjectNode();
+        root.set("screen", objectMapper.createObjectNode().put("score", request.getScreenScore()));
+        root.set("keyboard", objectMapper.createObjectNode().put("score", request.getKeyboardScore()));
+        root.set("battery", objectMapper.createObjectNode().put("score", request.getBatteryScore()));
+        root.set("chassis", objectMapper.createObjectNode().put("score", request.getChassisScore()));
+        root.set("performance", objectMapper.createObjectNode().put("score", request.getPerformanceScore()));
+        return root.toString();
+    }
+
+    private String buildAiEvaluationJson(String summary, double score) {
+        ObjectNode root = objectMapper.createObjectNode();
+        root.put("summary", summary);
+        root.put("score", score);
+        return root.toString();
     }
 
     /**
-     * Compute the simple average of all 4 component scores, scaled to 0-10.
+     * Compute the overall condition score as a weighted average of 5 ratings (1-10)
      */
-    public double computeAvgComponentScore(int screen, int battery, int body, int functionality) {
-        double avg = (screen + battery + body + functionality) / 4.0;
-        return avg * 2.0; // scale from 1-5 to 2-10
+    public double computeOverallCondition(int screen, int keyboard, int battery, int chassis, int performance) {
+        return (screen * 0.25) + (keyboard * 0.15) + (battery * 0.25) + (chassis * 0.15) + (performance * 0.20);
+    }
+
+    /**
+     * Compute the simple average of all 5 component scores (1-10)
+     */
+    public double computeAvgComponentScore(int screen, int keyboard, int battery, int chassis, int performance) {
+        return (screen + keyboard + battery + chassis + performance) / 5.0;
     }
 
     /**
@@ -213,9 +256,9 @@ public class TradeInEvaluationService {
             sb.append(String.format(" (%d year%s old)", age, age == 1 ? "" : "s"));
         }
         sb.append("\n");
-        sb.append(String.format("Screen: %d/5 | Battery: %d/5 | Body: %d/5 | Functionality: %d/5\n",
-                request.getScreenCondition(), request.getBatteryCondition(),
-                request.getBodyCondition(), request.getFunctionalityCondition()));
+        sb.append(String.format("Screen: %d/10 | Keyboard: %d/10 | Battery: %d/10 | Chassis: %d/10 | Performance: %d/10\n",
+                request.getScreenScore(), request.getKeyboardScore(), request.getBatteryScore(),
+                request.getChassisScore(), request.getPerformanceScore()));
         sb.append(String.format("Base Market Value: %.2f TND\n", basePrice));
         sb.append(String.format("Age Factor: %.1f (%d year%s)\n", ageFactor, age, age == 1 ? "" : "s"));
         sb.append(String.format("Overall Condition: %.1f/10\n", conditionOverallScore));

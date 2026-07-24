@@ -8,6 +8,7 @@ import com.brnsmrt.africanet.repository.ProductRepository;
 import com.brnsmrt.africanet.repository.CategoryRepository;
 import com.brnsmrt.africanet.repository.OrderRepository;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
@@ -69,22 +70,22 @@ public class AssistantTools {
 
     @Tool("""
           Evaluate a trade-in device and return an estimated value. \
-          Requires: deviceModel, brand, yearOfPurchase, screenCondition (1-5), \
-          batteryCondition (1-5), bodyCondition (1-5), functionalityCondition (1-5), \
-          optional notes, and the userId of the customer submitting the trade-in.""")
+          Requires: deviceModel, brand, yearOfPurchase, \
+          and conditionScores (1-10) for screen, keyboard, battery, chassis, performance. \
+          Also requires the userId of the customer submitting the trade-in.""")
     public String evaluateTradeIn(String deviceModel, String brand, Integer yearOfPurchase,
-                                   Integer screenCondition, Integer batteryCondition,
-                                   Integer bodyCondition, Integer functionalityCondition,
-                                   String notes, Long userId) {
+                                   Integer screenScore, Integer keyboardScore, 
+                                   Integer batteryScore, Integer chassisScore, 
+                                   Integer performanceScore, Long userId) {
         TradeInRequest request = TradeInRequest.builder()
                 .deviceModel(deviceModel)
                 .brand(brand)
                 .yearOfPurchase(yearOfPurchase)
-                .screenCondition(screenCondition)
-                .batteryCondition(batteryCondition)
-                .bodyCondition(bodyCondition)
-                .functionalityCondition(functionalityCondition)
-                .notes(notes)
+                .screenScore(screenScore)
+                .keyboardScore(keyboardScore)
+                .batteryScore(batteryScore)
+                .chassisScore(chassisScore)
+                .performanceScore(performanceScore)
                 .userId(userId)
                 .build();
 
@@ -116,8 +117,11 @@ public class AssistantTools {
           The profile must include a first name, last name, a valid email string, \
           and a contact phone number.""")
     public User registerNewCustomer(@jakarta.validation.Valid User newCustomer) {
-        newCustomer.setRole("CUSTOMER"); 
+        newCustomer.setRole(com.brnsmrt.africanet.domain.enums.UserRole.CUSTOMER); 
         newCustomer.setActive(true);
+        // Provide dummy password and empty required fields for chatbot creation
+        newCustomer.setPasswordHash("chatbot_created_no_password");
+        newCustomer.setEmailVerified(false);
         
         return userRepository.save(newCustomer);
     }
@@ -125,7 +129,7 @@ public class AssistantTools {
     @Tool("Search the Africa Net product catalog by keyword or max price filter. Returns a list of laptops with their price, SKU, and condition status.")
     public List<Product> searchCatalog(String keyword, Double maxPrice) {
         if (maxPrice != null) {
-            return productRepository.findByBasePriceLessThanEqual(maxPrice);
+            return productRepository.findByBasePriceLessThanEqual(BigDecimal.valueOf(maxPrice));
         }
         if (keyword == null || keyword.isBlank()) {
             return productRepository.findAll();
@@ -136,11 +140,11 @@ public class AssistantTools {
     @Tool("Get the current real-time shipping and payment status of a purchase using its unique order number (e.g., ORD-2025-00001)")
     public String trackOrderStatus(String orderNumber) {
         return orderRepository.findByOrderNumber(orderNumber)
-                .map(order -> String.format("Order %s status: %s. Payment status: %s. Total: %.3f TND.",
+                .map(order -> String.format("Order %s status: %s. Payment status: %s. Total: %s TND.",
                         order.getOrderNumber(), 
-                        order.getStatus(),        // e.g., PENDING, PROCESSING, SHIPPED
-                        order.getPaymentStatus(), // e.g., PAID, FAILED
-                        order.getTotalAmount()))
+                        order.getStatus(),        
+                        order.getPaymentStatus(), 
+                        order.getTotalAmount().toPlainString()))
                 .orElse("We couldn't find an order with that reference number. Please double-check it.");
     }
 }

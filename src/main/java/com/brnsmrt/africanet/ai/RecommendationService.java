@@ -2,7 +2,9 @@ package com.brnsmrt.africanet.ai;
 
 
 import com.brnsmrt.africanet.domain.Order;
+import com.brnsmrt.africanet.domain.OrderItem;
 import com.brnsmrt.africanet.repository.OrderRepository;
+import com.brnsmrt.africanet.repository.OrderItemRepository;
 import com.brnsmrt.africanet.domain.Product;
 import com.brnsmrt.africanet.repository.ProductRepository;
 import com.brnsmrt.africanet.repository.UserRepository;
@@ -26,6 +28,7 @@ public class RecommendationService {
 
     private final UserRepository userRepository;
     private final OrderRepository orderRepository;
+    private final OrderItemRepository orderItemRepository;
     private final ProductRepository productRepository;
     private final com.brnsmrt.africanet.repository.AiRecommendationRepository aiRecommendationRepository;
 
@@ -35,10 +38,12 @@ public class RecommendationService {
 
     public RecommendationService(UserRepository userRepository,
                                   OrderRepository orderRepository,
+                                  OrderItemRepository orderItemRepository,
                                   ProductRepository productRepository,
                                   com.brnsmrt.africanet.repository.AiRecommendationRepository aiRecommendationRepository) {
         this.userRepository = userRepository;
         this.orderRepository = orderRepository;
+        this.orderItemRepository = orderItemRepository;
         this.productRepository = productRepository;
         this.aiRecommendationRepository = aiRecommendationRepository;
     }
@@ -54,7 +59,7 @@ public class RecommendationService {
         userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Customer not found with ID: " + userId));
 
-        List<Order> userOrders = orderRepository.findByUserId(userId);
+        List<Order> userOrders = orderRepository.findByUser_Id(userId);
 
         if (userOrders.isEmpty()) {
             // No history — pure popularity fallback
@@ -65,10 +70,14 @@ public class RecommendationService {
         Map<Long, Double> contentScores = contentBasedScores(userOrders);
 
         // Get all purchased product IDs to exclude
-        Set<Long> purchasedProductIds = userOrders.stream()
-                .filter(o -> o.getProduct() != null)
-                .map(o -> o.getProduct().getId())
-                .collect(Collectors.toSet());
+        Set<Long> purchasedProductIds = new HashSet<>();
+        for (Order order : userOrders) {
+            for (OrderItem item : order.getOrderItems()) {
+                if (item.getProduct() != null) {
+                    purchasedProductIds.add(item.getProduct().getId());
+                }
+            }
+        }
 
         // Popularity scores for hybrid blending
         Map<Long, Double> popularityScores = popularityScores(purchasedProductIds);
@@ -102,11 +111,13 @@ public class RecommendationService {
         int totalPurchases = 0;
 
         for (Order order : userOrders) {
-            if (order.getProduct() != null && order.getProduct().getCategory() != null) {
-                Long categoryId = order.getProduct().getCategory().getId();
-                categoryPurchaseCounts.merge(categoryId, 1, Integer::sum);
-                purchasedProductIds.add(order.getProduct().getId());
-                totalPurchases++;
+            for (OrderItem item : order.getOrderItems()) {
+                if (item.getProduct() != null && item.getProduct().getCategory() != null) {
+                    Long categoryId = item.getProduct().getCategory().getId();
+                    categoryPurchaseCounts.merge(categoryId, 1, Integer::sum);
+                    purchasedProductIds.add(item.getProduct().getId());
+                    totalPurchases++;
+                }
             }
         }
 
@@ -135,7 +146,7 @@ public class RecommendationService {
      * Popularity-based scoring: products ordered most frequently across all users.
      */
     private Map<Long, Double> popularityScores(Set<Long> excludeProductIds) {
-        List<Object[]> productCounts = orderRepository.countOrdersByProduct();
+        List<Object[]> productCounts = orderItemRepository.countOrdersByProduct();
 
         if (productCounts.isEmpty()) {
             return Collections.emptyMap();
@@ -217,7 +228,7 @@ public class RecommendationService {
                     .userId(userId)
                     .productId(product.getId())
                     .productName(product.getName())
-                    .price(product.getBasePrice())
+                    .price(product.getBasePrice().doubleValue())
                     .score(finalScore)
                     .reason(reason)
                     .createdAt(timestamp)
