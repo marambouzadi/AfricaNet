@@ -5,11 +5,17 @@ import com.brnsmrt.africanet.domain.User;
 import com.brnsmrt.africanet.domain.enums.UserRole;
 import com.brnsmrt.africanet.dto.request.LoginRequest;
 import com.brnsmrt.africanet.dto.request.RegisterRequest;
+import com.brnsmrt.africanet.dto.request.UpdateProfileRequest;
 import com.brnsmrt.africanet.dto.response.AuthResponse;
 import com.brnsmrt.africanet.dto.response.UserResponse;
 import com.brnsmrt.africanet.repository.RefreshTokenRepository;
 import com.brnsmrt.africanet.repository.UserRepository;
 import com.brnsmrt.africanet.security.JwtTokenProvider;
+import com.brnsmrt.africanet.exception.AccountDisabledException;
+import com.brnsmrt.africanet.exception.DuplicateEmailException;
+import com.brnsmrt.africanet.exception.InvalidCredentialsException;
+import com.brnsmrt.africanet.exception.InvalidRefreshTokenException;
+import com.brnsmrt.africanet.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -40,7 +46,7 @@ public class AuthService {
 
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Un compte existe deja avec cet email");
+            throw new DuplicateEmailException(request.getEmail());
         }
 
         User user = User.builder()
@@ -65,14 +71,14 @@ public class AuthService {
 
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Email ou mot de passe incorrect"));
+                .orElseThrow(InvalidCredentialsException::new);
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Email ou mot de passe incorrect");
+            throw new InvalidCredentialsException();
         }
 
         if (!user.isEnabled()) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Ce compte est desactive");
+            throw new AccountDisabledException();
         }
 
         return buildAuthResponse(user);
@@ -98,6 +104,8 @@ public class AuthService {
                 .email(user.getEmail())
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
+                .phone(user.getPhone())
+                .avatarUrl(user.getAvatarUrl())
                 .role(user.getRole())
                 .build();
 
@@ -131,10 +139,10 @@ public class AuthService {
         String hashedToken = sha256Hash(rawRefreshToken);
 
         RefreshToken storedToken = refreshTokenRepository.findByTokenHash(hashedToken)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token invalide"));
+                .orElseThrow(InvalidRefreshTokenException::new);
 
         if (!storedToken.isValid()) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token expire ou revoque");
+            throw new InvalidRefreshTokenException("Refresh token expiré ou révoqué");
         }
 
         User user = storedToken.getUser();
@@ -150,14 +158,50 @@ public class AuthService {
 
     public UserResponse getCurrentUserProfile(String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Utilisateur introuvable"));
+                .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable"));
 
         return UserResponse.builder()
                 .id(user.getId())
                 .email(user.getEmail())
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
+                .phone(user.getPhone())
+                .avatarUrl(user.getAvatarUrl())
                 .role(user.getRole())
+                .build();
+    }
+
+    public UserResponse updateUserProfile(String currentEmail, UpdateProfileRequest request) {
+        User user = userRepository.findByEmail(currentEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable"));
+
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+        user.setPhone(request.getPhone());
+        user.setAvatarUrl(request.getAvatarUrl());
+
+        // Mise à jour de l'email si fourni et différent
+        if (request.getEmail() != null && !request.getEmail().isBlank()
+                && !request.getEmail().equalsIgnoreCase(currentEmail)) {
+            boolean emailTaken = userRepository.findByEmail(request.getEmail()).isPresent();
+            if (emailTaken) {
+                throw new DuplicateEmailException();
+            }
+            user.setEmail(request.getEmail());
+        }
+
+        user.setUpdatedAt(LocalDateTime.now());
+
+        User savedUser = userRepository.save(user);
+
+        return UserResponse.builder()
+                .id(savedUser.getId())
+                .email(savedUser.getEmail())
+                .firstName(savedUser.getFirstName())
+                .lastName(savedUser.getLastName())
+                .phone(savedUser.getPhone())
+                .avatarUrl(savedUser.getAvatarUrl())
+                .role(savedUser.getRole())
                 .build();
     }
 

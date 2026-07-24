@@ -107,15 +107,20 @@ public class OrderService {
         }
 
         // 4. Calcul des montants
-        order.setSubtotal(subtotal);
-        order.setTaxAmount(subtotal.multiply(TAX_RATE).setScale(3, java.math.RoundingMode.HALF_UP));
-        order.setShippingAmount(subtotal.compareTo(FREE_SHIPPING_THRESHOLD) >= 0
+        BigDecimal shippingAmount = subtotal.compareTo(FREE_SHIPPING_THRESHOLD) >= 0
                 ? BigDecimal.ZERO
-                : SHIPPING_FEE);
+                : SHIPPING_FEE;
+
+        // Les prix des produits sont TTC (TVA incluse)
+        BigDecimal subtotalHt = subtotal.divide(new BigDecimal("1.19"), 3, java.math.RoundingMode.HALF_UP);
+        BigDecimal taxAmount = subtotal.subtract(subtotalHt);
+
+        order.setSubtotal(subtotal);
+        order.setTaxAmount(taxAmount);
+        order.setShippingAmount(shippingAmount);
         order.setDiscountAmount(BigDecimal.ZERO); // TODO: gérer coupons
         order.setTotalAmount(
-                subtotal.add(order.getTaxAmount())
-                        .add(order.getShippingAmount())
+                subtotal.add(shippingAmount)
                         .subtract(order.getDiscountAmount())
         );
 
@@ -245,6 +250,58 @@ public class OrderService {
 
         log.info("Commande {} passée à {}", order.getOrderNumber(), request.getStatus());
         return orderMapper.toResponse(orderRepository.save(order));
+    }
+
+    /**
+     * Appelé quand un paiement est confirmé avec succès (par un gateway de paiement).
+     * Passe la commande de PENDING à CONFIRMED.
+     */
+    @Transactional
+    public void markPaymentSuccess(Long orderId) {
+        Order order = findOrderOrThrow(orderId);
+
+        order.setPaymentStatus(PaymentStatus.PAID);
+
+        if (order.getStatus() == OrderStatus.PENDING) {
+            order.setStatus(OrderStatus.CONFIRMED);
+            order.addStatusHistory(OrderStatusHistory.builder()
+                    .status(OrderStatus.CONFIRMED)
+                    .notes("Paiement confirmé")
+                    .changedBy(null)
+                    .build());
+        }
+
+        orderRepository.save(order);
+        log.info("Paiement confirmé pour la commande {}", order.getOrderNumber());
+    }
+
+    /**
+     * Appelé quand un paiement échoue. Annule la commande et libère le stock réservé.
+     */
+    @Transactional
+    public void markPaymentFailed(Long orderId, String reason) {
+        Order order = findOrderOrThrow(orderId);
+
+        order.setPaymentStatus(PaymentStatus.FAILED);
+
+        if (canBeCancelled(order.getStatus())) {
+            for (OrderItem item : order.getItems()) {
+                AdjustStockRequest releaseReq = new AdjustStockRequest();
+                releaseReq.setMovementType(MovementType.RELEASE);
+                releaseReq.setQuantity(item.getQuantity());
+                stockService.adjustStock(item.getProductId(), releaseReq, null);
+            }
+
+            order.setStatus(OrderStatus.CANCELLED);
+            order.addStatusHistory(OrderStatusHistory.builder()
+                    .status(OrderStatus.CANCELLED)
+                    .notes("Paiement échoué : " + (reason != null ? reason : "raison inconnue"))
+                    .changedBy(null)
+                    .build());
+        }
+
+        orderRepository.save(order);
+        log.info("Paiement échoué pour la commande {}", order.getOrderNumber());
     }
 
     // ================== HELPERS ==================

@@ -3,6 +3,7 @@ package com.brnsmrt.africanet.controller;
 import com.brnsmrt.africanet.dto.request.LoginRequest;
 import com.brnsmrt.africanet.dto.request.RefreshTokenRequest;
 import com.brnsmrt.africanet.dto.request.RegisterRequest;
+import com.brnsmrt.africanet.dto.request.UpdateProfileRequest;
 import com.brnsmrt.africanet.dto.response.AuthResponse;
 import com.brnsmrt.africanet.dto.response.UserResponse;
 import com.brnsmrt.africanet.service.AuthService;
@@ -13,9 +14,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.validation.annotation.Validated;
+
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@Validated
 public class AuthController {
 
     private final AuthService authService;
@@ -42,6 +46,15 @@ public class AuthController {
     public ResponseEntity<UserResponse> getCurrentUser(Authentication authentication) {
         String email = authentication.getName(); // récupéré depuis le JWT via le SecurityContext
         UserResponse response = authService.getCurrentUserProfile(email);
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/me")
+    public ResponseEntity<UserResponse> updateProfile(
+            @Valid @RequestBody UpdateProfileRequest request,
+            Authentication authentication) {
+        String email = authentication.getName();
+        UserResponse response = authService.updateUserProfile(email, request);
         return ResponseEntity.ok(response);
     }
 

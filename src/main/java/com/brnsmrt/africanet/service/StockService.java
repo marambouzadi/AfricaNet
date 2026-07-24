@@ -6,6 +6,7 @@ import com.brnsmrt.africanet.domain.Product;
 import com.brnsmrt.africanet.domain.User;
 import com.brnsmrt.africanet.domain.enums.MovementType;
 import com.brnsmrt.africanet.dto.request.AdjustStockRequest;
+import com.brnsmrt.africanet.dto.response.InventoryMovementResponse;
 import com.brnsmrt.africanet.dto.response.InventoryResponse;
 import com.brnsmrt.africanet.exception.InsufficientStockException;
 import com.brnsmrt.africanet.exception.ResourceNotFoundException;
@@ -31,6 +32,8 @@ public class StockService {
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
 
+    // ── CRUD Stock ────────────────────────────────────────────────────────────
+
     public Page<InventoryResponse> getAllStock(Pageable pageable) {
         return inventoryRepository.findAll(pageable).map(this::toResponse);
     }
@@ -41,9 +44,13 @@ public class StockService {
         return toResponse(inventory);
     }
 
+    // ── Alertes seuil ────────────────────────────────────────────────────────
+
     public Page<InventoryResponse> getLowStockAlerts(Pageable pageable) {
         return inventoryRepository.findLowStockAlerts(pageable).map(this::toResponse);
     }
+
+    // ── Ajustement stock ─────────────────────────────────────────────────────
 
     @Transactional
     public InventoryResponse adjustStock(Long productId, AdjustStockRequest req, Authentication authentication) {
@@ -93,17 +100,34 @@ public class StockService {
         return toResponse(inventory);
     }
 
+    // ── Historique mouvements ─────────────────────────────────────────────────
+
     /**
-     * Détermine le delta signé à appliquer sur "quantity" ou "reservedQuantity"
-     * selon le type de mouvement.
+     * Historique des mouvements pour un produit donné (paginé, tri par date desc).
      */
+    public Page<InventoryMovementResponse> getMovementHistory(Long productId, Pageable pageable) {
+        productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Produit introuvable: " + productId));
+        return movementRepository.findByProductIdOrderByCreatedAtDesc(productId, pageable)
+                .map(this::toMovementResponse);
+    }
+
+    /**
+     * Historique global de tous les mouvements de stock (admin).
+     */
+    public Page<InventoryMovementResponse> getAllMovements(Pageable pageable) {
+        return movementRepository.findAll(pageable).map(this::toMovementResponse);
+    }
+
+    // ── Helpers privés ────────────────────────────────────────────────────────
+
     private int computeDelta(MovementType type, int quantity) {
         return switch (type) {
-            case IN -> quantity;                 // entrée: +quantity
-            case OUT -> -quantity;                // sortie: -quantity
-            case ADJUSTMENT -> quantity;          // ajustement libre (peut être négatif dans le body si besoin)
-            case RESERVATION -> quantity;         // réserve du stock (touche reserved_quantity)
-            case RELEASE -> -quantity;            // libère une réservation
+            case IN         -> quantity;     // entrée: +quantity
+            case OUT        -> -quantity;    // sortie: -quantity
+            case ADJUSTMENT -> quantity;     // ajustement libre
+            case RESERVATION -> quantity;   // réserve du stock
+            case RELEASE    -> -quantity;   // libère une réservation
         };
     }
 
@@ -143,6 +167,22 @@ public class StockService {
         res.setWarehouseLocation(inv.getWarehouseLocation());
         res.setIsLowStock(inv.getQuantityAvailable() <= inv.getMinThreshold());
         res.setLastUpdated(inv.getLastUpdated());
+        return res;
+    }
+
+    private InventoryMovementResponse toMovementResponse(InventoryMovement m) {
+        InventoryMovementResponse res = new InventoryMovementResponse();
+        res.setId(m.getId());
+        res.setProductId(m.getProduct().getId());
+        res.setProductName(m.getProduct().getName());
+        res.setMovementType(m.getMovementType());
+        res.setQuantity(m.getQuantity());
+        res.setQuantityAfter(m.getQuantityAfter());
+        res.setReferenceType(m.getReferenceType());
+        res.setReferenceId(m.getReferenceId());
+        res.setNotes(m.getNotes());
+        res.setCreatedByEmail(m.getCreatedBy() != null ? m.getCreatedBy().getEmail() : null);
+        res.setCreatedAt(m.getCreatedAt());
         return res;
     }
 }

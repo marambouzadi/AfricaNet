@@ -13,3 +13,18 @@ databaseChangeLog:
 
   - include:
       file: db/changelog/changes/004-create-stock-tables.yaml
+
+  - include:
+      file: db/changelog/changes/005-create-orders.yaml
+
+  - include:
+      file: db/changelog/changes/006-create-tradein-tables.yaml
+
+  - include:
+      file: db/changelog/changes/007-create-user-adresses.yaml
+
+  - include:
+      file: db/changelog/changes/008-create-payments-table.yaml
+
+  - include:
+      file: db/changelog/changes/009-add-flouci-payment-id.yaml

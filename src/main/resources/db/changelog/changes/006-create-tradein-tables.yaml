@@ -1,0 +1,156 @@
+databaseChangeLog:
+  - changeSet:
+      id: 006-1-create-tradein-requests-table
+      author: maram
+      changes:
+        - createTable:
+            tableName: trade_in_requests
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_tradein_user
+                    references: users(id)
+              - column:
+                  name: reference_number
+                  type: VARCHAR(30)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: device_type
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: brand_id
+                  type: BIGINT
+                  constraints:
+                    foreignKeyName: fk_tradein_brand
+                    references: brands(id)
+              - column:
+                  name: model
+                  type: VARCHAR(200)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: manufacture_year
+                  type: SMALLINT
+              - column:
+                  name: serial_number
+                  type: VARCHAR(100)
+              - column:
+                  name: condition_overall
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: condition_details
+                  type: JSONB
+                  constraints:
+                    nullable: false
+              - column:
+                  name: estimated_value_ai
+                  type: DECIMAL(10,3)
+              - column:
+                  name: final_value
+                  type: DECIMAL(10,3)
+              - column:
+                  name: counter_offer
+                  type: DECIMAL(10,3)
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  defaultValue: SUBMITTED
+                  constraints:
+                    nullable: false
+              - column:
+                  name: ai_evaluation
+                  type: JSONB
+              - column:
+                  name: reviewed_by
+                  type: BIGINT
+                  constraints:
+                    foreignKeyName: fk_tradein_reviewer
+                    references: users(id)
+              - column:
+                  name: review_notes
+                  type: TEXT
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 006-2-create-tradein-images-table
+      author: maram
+      changes:
+        - createTable:
+            tableName: trade_in_images
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: trade_in_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_tradeinimage_tradein
+                    references: trade_in_requests(id)
+                    deleteCascade: true
+              - column:
+                  name: url
+                  type: VARCHAR(500)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: image_type
+                  type: VARCHAR(30)
+              - column:
+                  name: uploaded_at
+                  type: TIMESTAMP
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 006-3-create-tradein-indexes
+      author: maram
+      changes:
+        - createIndex:
+            indexName: idx_trade_in_user
+            tableName: trade_in_requests
+            columns:
+              - column:
+                  name: user_id
+              - column:
+                  name: created_at
+                  descending: true
+        - createIndex:
+            indexName: idx_trade_in_status
+            tableName: trade_in_requests
+            columns:
+              - column:
+                  name: status

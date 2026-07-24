@@ -1,0 +1,11 @@
+databaseChangeLog:
+  - changeSet:
+      id: 009-add-flouci-payment-id
+      author: maram
+      changes:
+        - addColumn:
+            tableName: payments
+            columns:
+              - column:
+                  name: flouci_payment_id
+                  type: VARCHAR(255)

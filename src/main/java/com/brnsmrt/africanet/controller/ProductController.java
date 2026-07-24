@@ -16,9 +16,12 @@ import org.springframework.web.bind.annotation.*;
 import org.springdoc.core.annotations.ParameterObject;
 import java.math.BigDecimal;
 
+import org.springframework.validation.annotation.Validated;
+
 @RestController
 @RequestMapping("/api/products")
 @RequiredArgsConstructor
+@Validated
 public class ProductController {
 
     private final ProductService productService;
