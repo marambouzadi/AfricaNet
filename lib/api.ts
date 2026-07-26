@@ -136,6 +136,26 @@ export async function getCurrentUser() {
   return data
 }
 
+export async function updateCurrentUser(profileData: any) {
+  const { data } = await api.patch('/auth/me', profileData)
+  return data
+}
+
+// --- Address API ---
+export async function getUserAddresses() {
+  const { data } = await api.get('/addresses')
+  return data
+}
+
+export async function createAddress(addressData: any) {
+  const { data } = await api.post('/addresses', addressData)
+  return data
+}
+
+export async function deleteAddress(id: number) {
+  await api.delete(`/addresses/${id}`)
+}
+
 // --- Order API ---
 export async function createOrder(orderData: any) {
   const { data } = await api.post('/orders', orderData)
@@ -147,6 +167,18 @@ export async function getUserOrders() {
   return data
 }
 
+export async function getOrderById(orderId: number) {
+  const { data } = await api.get(`/orders/${orderId}`)
+  return data
+}
+
+export async function downloadInvoice(orderId: number): Promise<Blob> {
+  const response = await api.get(`/orders/${orderId}/invoice`, {
+    responseType: 'blob',
+  })
+  return response.data
+}
+
 // --- TradeIn API ---
 export async function submitTradeIn(tradeInData: any) {
   const { data } = await api.post('/trade-in', tradeInData)
@@ -155,5 +187,11 @@ export async function submitTradeIn(tradeInData: any) {
 
 export async function getUserTradeIns() {
   const { data } = await api.get('/trade-in/me')
+  return data
+}
+
+// --- Payments API ---
+export async function initiateFlouciPayment(orderId: number) {
+  const { data } = await api.post(`/payments/flouci/initiate?orderId=${orderId}`)
   return data
 }

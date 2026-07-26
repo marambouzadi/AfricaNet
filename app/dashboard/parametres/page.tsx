@@ -86,12 +86,6 @@ export default function SettingsPage() {
 
         </div>
       </div>
-      
-      <div className="pt-4 flex justify-end">
-        <button className="text-[#EF4444] font-medium hover:underline text-sm">
-          Supprimer mon compte
-        </button>
-      </div>
     </div>
   )
 }

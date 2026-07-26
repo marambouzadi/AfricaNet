@@ -9,7 +9,7 @@ import { Navbar } from '@/components/layout/navbar'
 import { Footer } from '@/components/layout/footer'
 import { useCart } from '@/lib/cart-context'
 import { formatPrice } from '@/lib/products'
-import { createOrder } from '@/lib/api'
+import { createOrder, initiateFlouciPayment } from '@/lib/api'
 
 type CheckoutStep = 'shipping' | 'payment' | 'success'
 
@@ -29,6 +29,8 @@ export default function CheckoutPage() {
   })
   
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'delivery'>('card')
+  const shippingFee = totalPrice >= 200 ? 0 : 7
+  const finalTotal = totalPrice + shippingFee
 
   if (!isLoaded) return null
 
@@ -46,27 +48,46 @@ export default function CheckoutPage() {
   const handlePaymentSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsProcessing(true)
-    
+
     try {
-      const orderData = {
-        items: items.map(i => ({ productId: i.id, quantity: i.quantity, price: i.price })),
-        shipping: shippingData,
-        paymentMethod: paymentMethod === 'card' ? 'FLOUCI' : 'CASH_ON_DELIVERY',
-        totalAmount: totalPrice + 7
+      // 1. Créer la commande backend
+      const orderPayload = {
+        items: items.map(item => ({
+          productId: Number(item.id),
+          quantity: item.quantity
+        })),
+        shippingAddress: {
+          fullName: `${shippingData.firstName} ${shippingData.lastName}`,
+          street: shippingData.address,
+          city: shippingData.city,
+          state: shippingData.city,
+          postalCode: '1000',
+          country: 'Tunisie',
+          phone: shippingData.phone
+        },
+        paymentMethod: paymentMethod === 'card' ? 'CARD' : 'CASH_ON_DELIVERY',
+        customerNotes: ''
       }
-      
-      const response = await createOrder(orderData)
-      
-      if (paymentMethod === 'card' && response.paymentUrl) {
-        // Redirect to Flouci payment gateway
-        window.location.href = response.paymentUrl
-      } else {
-        setStep('success')
+
+      const orderData = await createOrder(orderPayload)
+
+      // 2. Si carte bancaire / Flouci -> Initier paiement Flouci
+      if (paymentMethod === 'card') {
+        const flouciData = await initiateFlouciPayment(orderData.id)
         clearCart()
+
+        // Redirection vers le portail de paiement Flouci
+        if (flouciData.paymentLink) {
+          window.location.href = flouciData.paymentLink
+          return
+        }
       }
+
+      // 3. Si paiement à la livraison
+      clearCart()
+      setStep('success')
     } catch (err) {
-      console.error('Failed to create order:', err)
-      alert('Une erreur est survenue lors de la création de la commande.')
+      alert(err instanceof Error ? err.message : 'Une erreur est survenue lors du paiement.')
     } finally {
       setIsProcessing(false)
     }
@@ -218,7 +239,7 @@ export default function CheckoutPage() {
                           Retour
                         </button>
                         <button type="submit" disabled={isProcessing} className="flex-1 bg-[#D1F232] text-[#1A1A1A] py-3 rounded-lg font-bold hover:bg-[#bce600] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center">
-                          {isProcessing ? 'Traitement en cours...' : `Payer ${formatPrice(totalPrice + 7)}`}
+                          {isProcessing ? 'Traitement en cours...' : `Payer ${formatPrice(finalTotal)}`}
                         </button>
                       </div>
                     </form>
@@ -227,7 +248,7 @@ export default function CheckoutPage() {
               </div>
 
               {/* Right Column: Order Summary */}
-              <div className="bg-white rounded-xl p-6 shadow-sm border border-[#E2E2DF] h-fit sticky top-24">
+              <div className="bg-[#FFFFFF] rounded-xl p-6 shadow-sm border border-[#E2E2DF] h-fit sticky top-24">
                 <h2 className="text-xl font-bold text-[#1A1A1A] mb-6">Résumé de la commande</h2>
                 
                 <div className="space-y-4 mb-6">
@@ -252,14 +273,16 @@ export default function CheckoutPage() {
                   </div>
                   <div className="flex justify-between text-[#6B7280]">
                     <span>Frais de livraison</span>
-                    <span>7 TND</span>
+                    <span className={shippingFee === 0 ? 'text-green-600 font-bold' : ''}>
+                      {shippingFee === 0 ? 'Gratuit' : '7 TND'}
+                    </span>
                   </div>
                 </div>
                 
                 <div className="border-t border-[#E2E2DF] pt-4">
                   <div className="flex justify-between items-center mb-2">
                     <span className="font-bold text-[#1A1A1A]">Total à payer</span>
-                    <span className="text-2xl font-bold text-[#1A3FA0]">{formatPrice(totalPrice + 7)}</span>
+                    <span className="text-2xl font-bold text-[#1A3FA0]">{formatPrice(finalTotal)}</span>
                   </div>
                 </div>
 

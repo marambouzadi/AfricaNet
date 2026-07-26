@@ -10,6 +10,8 @@ export interface User {
   lastName: string
   email: string
   role: string
+  phone?: string
+  avatarUrl?: string
   createdAt?: string
 }
 
