@@ -35,10 +35,10 @@ public class PaymentController {
 
         String fakeTransactionId = "SIM-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
 
-        String metadataJson = objectMapper.writeValueAsString(Map.of(
+        Map<String, Object> metadata = Map.of(
                 "simulator", true,
                 "createdVia", "test-flow"
-        ));
+        );
 
         Payment payment = Payment.builder()
                 .order(order)
@@ -48,7 +48,7 @@ public class PaymentController {
                 .provider("SIMULATED")
                 .providerTransactionId(fakeTransactionId)
                 .status(PaymentStatus.PENDING)
-                .metadata(metadataJson)
+                .metadata(metadata)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
