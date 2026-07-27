@@ -4,9 +4,10 @@ import { useState, useEffect, useRef } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Menu, Search, ShoppingCart, User, X } from 'lucide-react'
+import { Menu, Search, ShoppingCart, User, X, LogOut } from 'lucide-react'
 import { NAV_LINKS } from '@/lib/constants'
 import { useCart } from '@/lib/cart-context'
+import { useUser } from '@/lib/user-context'
 import { products } from '@/lib/products'
 
 function Logo() {
@@ -144,6 +145,7 @@ export function Navbar() {
   const [searchOpen, setSearchOpen] = useState(false)
   const pathname = usePathname()
   const { totalItems } = useCart()
+  const { user } = useUser()
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -215,16 +217,30 @@ export function Navbar() {
                 </span>
               )}
             </Link>
-            <Link
-              href="/connexion"
-              className="hidden items-center gap-1.5 text-sm font-medium text-[#1A1A1A] transition-colors duration-200 hover:text-[#1A3FA0] sm:flex"
-            >
-              <User className="h-5 w-5" />
-              Connexion
-            </Link>
-            <Link href="/connexion" className="text-[#1A1A1A] sm:hidden" aria-label="Connexion">
-              <User className="h-5 w-5" />
-            </Link>
+            {user ? (
+              <div className="flex items-center gap-4">
+                <Link
+                  href="/dashboard"
+                  className="flex items-center justify-center w-9 h-9 rounded-full bg-[#E8EDF8] text-[#1A3FA0] font-bold text-sm hover:ring-2 hover:ring-[#1A3FA0]/30 transition-all"
+                  title="Mon Profil"
+                >
+                  {user.firstName?.charAt(0)}{user.lastName?.charAt(0)}
+                </Link>
+              </div>
+            ) : (
+              <>
+                <Link
+                  href="/connexion"
+                  className="hidden items-center gap-1.5 text-sm font-medium text-[#1A1A1A] transition-colors duration-200 hover:text-[#1A3FA0] sm:flex"
+                >
+                  <User className="h-5 w-5" />
+                  Connexion
+                </Link>
+                <Link href="/connexion" className="text-[#1A1A1A] sm:hidden" aria-label="Connexion">
+                  <User className="h-5 w-5" />
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -275,14 +291,25 @@ export function Navbar() {
             </ul>
 
             <div className="mt-4 border-t border-[#E2E2DF] pt-4">
-              <Link
-                href="/connexion"
-                className="flex items-center gap-2 rounded-lg px-3 py-3 text-base font-medium text-[#1A1A1A] transition-colors hover:bg-[#F5F5F3]"
-                onClick={() => setMenuOpen(false)}
-              >
-                <User className="h-5 w-5" />
-                Connexion
-              </Link>
+              {user ? (
+                <Link
+                  href="/dashboard"
+                  className="flex items-center gap-2 rounded-lg px-3 py-3 text-base font-medium text-[#1A1A1A] transition-colors hover:bg-[#F5F5F3]"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  <User className="h-5 w-5" />
+                  Profil
+                </Link>
+              ) : (
+                <Link
+                  href="/connexion"
+                  className="flex items-center gap-2 rounded-lg px-3 py-3 text-base font-medium text-[#1A1A1A] transition-colors hover:bg-[#F5F5F3]"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  <User className="h-5 w-5" />
+                  Connexion
+                </Link>
+              )}
             </div>
           </nav>
         </div>

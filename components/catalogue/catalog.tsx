@@ -34,6 +34,58 @@ export function Catalog() {
   const [totalPages, setTotalPages] = useState(1)
   const [totalElements, setTotalElements] = useState(0)
 
+  // Filter counts state
+  const [brandCounts, setBrandCounts] = useState<{ brand: string; count: number }[]>([])
+  const [conditionCounts, setConditionCounts] = useState<{ condition: Condition; count: number }[]>([])
+
+  // Fetch filter counts on mount
+  useEffect(() => {
+    async function fetchCounts() {
+      try {
+        const { fetchProducts } = await import('@/lib/api')
+        const res = await fetchProducts({ size: 1000 })
+        const products = res.content
+        
+        const bCounts: Record<string, number> = {}
+        const cCounts: Record<string, number> = {}
+        
+        products.forEach((p: any) => {
+          const brand = p.brandName || 'Unknown'
+          bCounts[brand] = (bCounts[brand] || 0) + 1
+          
+          const condition = p.condition as Condition
+          if (condition) {
+            cCounts[condition] = (cCounts[condition] || 0) + 1
+          }
+        })
+        
+        setBrandCounts(Object.entries(bCounts).map(([brand, count]) => ({ brand, count })))
+        setConditionCounts(Object.entries(cCounts).map(([condition, count]) => ({
+          condition: condition as Condition,
+          count,
+        })))
+      } catch (e) {
+        console.warn('Failed to load counts from API, falling back to local data', e)
+        const bCounts: Record<string, number> = {}
+        const cCounts: Record<string, number> = {}
+        
+        products.forEach((p) => {
+          const brand = p.brand || 'Unknown'
+          bCounts[brand] = (bCounts[brand] || 0) + 1
+          const condition = p.condition as Condition
+          if (condition) cCounts[condition] = (cCounts[condition] || 0) + 1
+        })
+        
+        setBrandCounts(Object.entries(bCounts).map(([brand, count]) => ({ brand, count })))
+        setConditionCounts(Object.entries(cCounts).map(([condition, count]) => ({
+          condition: condition as Condition,
+          count,
+        })))
+      }
+    }
+    fetchCounts()
+  }, [])
+
   // Fetch products from API
   useEffect(() => {
     async function loadData() {
@@ -41,6 +93,11 @@ export function Catalog() {
       try {
         const { fetchProducts, searchProducts } = await import('@/lib/api')
         
+        let backendSort: string | undefined = undefined
+        if (sort === 'prix-asc') backendSort = 'basePrice,asc'
+        else if (sort === 'prix-desc') backendSort = 'basePrice,desc'
+        else if (sort === 'nouveautes') backendSort = 'createdAt,desc'
+
         let res
         if (searchQuery) {
           res = await searchProducts(searchQuery, page - 1, ITEMS_PER_PAGE)
@@ -56,6 +113,7 @@ export function Catalog() {
             minPrice,
             maxPrice,
             condition: filters.conditions.length === 1 ? filters.conditions[0] : undefined,
+            sort: backendSort
           })
         }
 
@@ -117,6 +175,12 @@ export function Catalog() {
         if (filters.screenSizes.length > 0) {
           mapped = mapped.filter((p) => filters.screenSizes.includes(p.screenSize) || filters.screenSizes.some(s => Math.abs(p.screenSize - s) < 0.5))
         }
+
+        // Apply sorting to local mock data
+        if (sort === 'prix-asc') mapped = mapped.sort((a, b) => a.price - b.price)
+        else if (sort === 'prix-desc') mapped = mapped.sort((a, b) => b.price - a.price)
+        else if (sort === 'nouveautes') mapped = mapped.sort((a, b) => b.id - a.id)
+
         
         setPaginatedProducts(mapped.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE))
         setTotalPages(Math.ceil(mapped.length / ITEMS_PER_PAGE))
@@ -128,26 +192,6 @@ export function Catalog() {
     
     loadData()
   }, [filters, sort, searchQuery, page])
-
-  // Compute counts for filters (from ALL products, not filtered)
-  const brandCounts = useMemo(() => {
-    const counts: Record<string, number> = {}
-    products.forEach((p) => {
-      counts[p.brand] = (counts[p.brand] || 0) + 1
-    })
-    return Object.entries(counts).map(([brand, count]) => ({ brand, count }))
-  }, [])
-
-  const conditionCounts = useMemo(() => {
-    const counts: Record<string, number> = {}
-    products.forEach((p) => {
-      counts[p.condition] = (counts[p.condition] || 0) + 1
-    })
-    return Object.entries(counts).map(([condition, count]) => ({
-      condition: condition as Condition,
-      count,
-    }))
-  }, [])
 
   // Active filter chips
   const activeChips = useMemo(() => {

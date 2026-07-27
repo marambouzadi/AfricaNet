@@ -96,18 +96,18 @@ export default function ContactPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-[#1A1A1A]" htmlFor="firstName">Prénom</label>
-                    <input id="firstName" required type="text" value={form.firstName} onChange={e => setForm({...form, firstName: e.target.value})} className="w-full border border-[#E2E2DF] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30" placeholder="John" />
+                    <input id="firstName" required type="text" value={form.firstName} onChange={e => setForm({...form, firstName: e.target.value})} className="w-full border border-[#E2E2DF] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30" placeholder="Prénom" />
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-[#1A1A1A]" htmlFor="lastName">Nom</label>
-                    <input id="lastName" required type="text" value={form.lastName} onChange={e => setForm({...form, lastName: e.target.value})} className="w-full border border-[#E2E2DF] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30" placeholder="Doe" />
+                    <input id="lastName" required type="text" value={form.lastName} onChange={e => setForm({...form, lastName: e.target.value})} className="w-full border border-[#E2E2DF] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30" placeholder="Nom" />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-[#1A1A1A]" htmlFor="email">Email</label>
-                    <input id="email" required type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} className="w-full border border-[#E2E2DF] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30" placeholder="john@example.com" />
+                    <input id="email" required type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} className="w-full border border-[#E2E2DF] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30" placeholder="votre@email.com" />
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-[#1A1A1A]" htmlFor="phone">Téléphone (Optionnel)</label>

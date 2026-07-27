@@ -125,7 +125,7 @@ export default function InscriptionPage() {
                       required
                       value={form.firstName}
                       onChange={e => setForm({ ...form, firstName: e.target.value })}
-                      placeholder="John"
+                      placeholder="Prénom"
                       className="w-full pl-10 pr-4 py-3 border border-[#E2E2DF] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30 focus:border-[#1A3FA0] transition-colors text-sm"
                     />
                   </div>
@@ -140,7 +140,7 @@ export default function InscriptionPage() {
                       required
                       value={form.lastName}
                       onChange={e => setForm({ ...form, lastName: e.target.value })}
-                      placeholder="Doe"
+                      placeholder="Nom"
                       className="w-full pl-10 pr-4 py-3 border border-[#E2E2DF] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30 focus:border-[#1A3FA0] transition-colors text-sm"
                     />
                   </div>
@@ -157,7 +157,7 @@ export default function InscriptionPage() {
                     required
                     value={form.email}
                     onChange={e => setForm({ ...form, email: e.target.value })}
-                    placeholder="john@example.com"
+                    placeholder="votre@email.com"
                     className="w-full pl-11 pr-4 py-3 border border-[#E2E2DF] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30 focus:border-[#1A3FA0] transition-colors"
                   />
                 </div>

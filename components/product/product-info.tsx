@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Cpu, MemoryStick, HardDrive, Monitor, Minus, Plus, ShieldCheck, Truck } from 'lucide-react'
+import { Cpu, MemoryStick, HardDrive, Monitor, Minus, Plus, ShieldCheck, Truck, Heart } from 'lucide-react'
 import { conditionStyles, type ProductDetail } from '@/lib/products'
 import { useCart } from '@/lib/cart-context'
 
@@ -14,6 +14,7 @@ const specIcons: Record<string, typeof Cpu> = {
 
 export function ProductInfo({ product }: { product: ProductDetail }) {
   const [qty, setQty] = useState(1)
+  const [isWishlisted, setIsWishlisted] = useState(false)
   const { addItem } = useCart()
 
   const handleAddToCart = () => {
@@ -96,13 +97,25 @@ export function ProductInfo({ product }: { product: ProductDetail }) {
         </div>
       </div>
 
-      <div className="mt-5 flex flex-col gap-3">
+      <div className="mt-5 flex items-center gap-3">
         <button
           type="button"
           onClick={handleAddToCart}
-          className="w-full rounded-lg bg-[#1A3FA0] py-3 font-medium text-white transition-colors duration-200 hover:bg-[#0D2660]"
+          className="flex-1 rounded-lg bg-[#1A3FA0] py-3 font-medium text-white transition-colors duration-200 hover:bg-[#0D2660]"
         >
           Ajouter au panier
+        </button>
+        <button
+          type="button"
+          onClick={() => setIsWishlisted(!isWishlisted)}
+          className={`flex h-[48px] w-[48px] items-center justify-center rounded-lg border transition-colors duration-200 ${
+            isWishlisted
+              ? 'border-[#EF4444] text-[#EF4444] bg-[#FEF2F2]'
+              : 'border-[#E2E2DF] text-[#6B7280] hover:border-[#EF4444] hover:text-[#EF4444]'
+          }`}
+          aria-label="Ajouter aux favoris"
+        >
+          <Heart className={`h-5 w-5 ${isWishlisted ? 'fill-current' : ''}`} />
         </button>
       </div>
 

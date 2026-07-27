@@ -4,10 +4,12 @@ import Link from 'next/link'
 import { conditionStyles, formatPrice, type Product } from '@/lib/products'
 import { LaptopSilhouette } from '@/components/shared/laptop-silhouette'
 import { useCart } from '@/lib/cart-context'
-import { ShoppingCart } from 'lucide-react'
+import { ShoppingCart, Heart } from 'lucide-react'
+import { useState } from 'react'
 
 export function CatalogProductCard({ product }: { product: Product }) {
   const { addItem } = useCart()
+  const [isWishlisted, setIsWishlisted] = useState(false)
 
   return (
     <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col group">
@@ -18,6 +20,19 @@ export function CatalogProductCard({ product }: { product: Product }) {
           >
             {product.condition}
           </span>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault()
+              setIsWishlisted(!isWishlisted)
+            }}
+            className={`absolute top-3 right-3 z-10 rounded-full p-2 bg-white/90 backdrop-blur-sm shadow-sm transition-colors hover:scale-105 ${
+              isWishlisted ? 'text-[#EF4444]' : 'text-[#6B7280] hover:text-[#EF4444]'
+            }`}
+            aria-label="Ajouter aux favoris"
+          >
+            <Heart className={`h-4 w-4 ${isWishlisted ? 'fill-current' : ''}`} />
+          </button>
           <div className="flex h-full w-full items-center justify-center p-6">
             <LaptopSilhouette className="h-20 w-auto text-[#1A3FA0]/25 transition-transform duration-200 group-hover:scale-105" />
           </div>

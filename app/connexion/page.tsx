@@ -83,7 +83,7 @@ export default function ConnexionPage() {
                     autoComplete="email"
                     value={form.email}
                     onChange={e => setForm({ ...form, email: e.target.value })}
-                    placeholder="john@example.com"
+                    placeholder="votre@email.com"
                     className="w-full pl-11 pr-4 py-3 border border-[#E2E2DF] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30 focus:border-[#1A3FA0] transition-colors"
                   />
                 </div>

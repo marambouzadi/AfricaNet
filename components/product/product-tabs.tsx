@@ -1,9 +1,10 @@
 'use client'
 
 import { useState } from 'react'
+import { Star, User } from 'lucide-react'
 import type { ProductDetail } from '@/lib/products'
 
-const tabs = ['Spécifications', 'État & Notes', 'Avis clients (0)']
+const tabs = ['Spécifications', 'État & Notes', 'Avis clients (2)']
 
 function DotMeter({ score }: { score: number }) {
   return (
@@ -77,10 +78,77 @@ export function ProductTabs({ product }: { product: ProductDetail }) {
         )}
 
         {active === 2 && (
-          <div className="rounded-xl bg-white p-10 text-center shadow-sm">
-            <p className="text-sm text-[#6B7280]">
-              Aucun avis pour le moment. Soyez le premier à évaluer ce produit.
-            </p>
+          <div className="rounded-xl bg-white p-6 shadow-sm flex flex-col gap-8">
+            <div className="flex flex-col gap-6">
+              <h3 className="font-bold text-[#1A1A1A] text-lg">Avis Récents</h3>
+              
+              <div className="flex gap-4 border-b border-[#E2E2DF] pb-6">
+                <div className="shrink-0 size-10 rounded-full bg-[#E8EDF8] text-[#1A3FA0] flex items-center justify-center font-bold">
+                  JS
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-semibold text-[#1A1A1A]">Jean S.</span>
+                    <span className="text-xs text-[#1A8A4A] bg-[#1A8A4A]/10 px-2 py-0.5 rounded-full flex items-center gap-1">Achat vérifié</span>
+                  </div>
+                  <div className="flex text-[#F59E0B] mb-2">
+                    <Star className="size-4 fill-current" />
+                    <Star className="size-4 fill-current" />
+                    <Star className="size-4 fill-current" />
+                    <Star className="size-4 fill-current" />
+                    <Star className="size-4 fill-current" />
+                  </div>
+                  <p className="text-sm text-[#6B7280]">Produit conforme à la description, arrivé en parfait état et très bien emballé. Je recommande vivement AfricaNet !</p>
+                </div>
+              </div>
+
+              <div className="flex gap-4 border-b border-[#E2E2DF] pb-6">
+                <div className="shrink-0 size-10 rounded-full bg-[#E8EDF8] text-[#1A3FA0] flex items-center justify-center font-bold">
+                  MA
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-semibold text-[#1A1A1A]">Marie A.</span>
+                    <span className="text-xs text-[#1A8A4A] bg-[#1A8A4A]/10 px-2 py-0.5 rounded-full flex items-center gap-1">Achat vérifié</span>
+                  </div>
+                  <div className="flex text-[#F59E0B] mb-2">
+                    <Star className="size-4 fill-current" />
+                    <Star className="size-4 fill-current" />
+                    <Star className="size-4 fill-current" />
+                    <Star className="size-4 fill-current" />
+                    <Star className="size-4 text-[#E2E2DF] fill-current" />
+                  </div>
+                  <p className="text-sm text-[#6B7280]">Très bon PC, la batterie tient environ 4 heures ce qui est correct pour de l'occasion. Le service client est très réactif.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-[#F5F5F3] p-6 rounded-xl border border-[#E2E2DF]">
+              <h3 className="font-bold text-[#1A1A1A] mb-4">Laissez votre avis</h3>
+              <form className="flex flex-col gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-[#1A1A1A] mb-1">Votre note</label>
+                  <div className="flex gap-1 text-[#E2E2DF] hover:text-[#F59E0B] transition-colors cursor-pointer">
+                    <Star className="size-6 fill-current hover:text-[#F59E0B]" />
+                    <Star className="size-6 fill-current hover:text-[#F59E0B]" />
+                    <Star className="size-6 fill-current hover:text-[#F59E0B]" />
+                    <Star className="size-6 fill-current hover:text-[#F59E0B]" />
+                    <Star className="size-6 fill-current hover:text-[#F59E0B]" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#1A1A1A] mb-1">Votre commentaire</label>
+                  <textarea 
+                    rows={4} 
+                    className="w-full bg-white border border-[#E2E2DF] rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30 focus:border-[#1A3FA0] transition-colors"
+                    placeholder="Qu'avez-vous pensé de ce produit ?"
+                  ></textarea>
+                </div>
+                <button type="button" className="self-start bg-[#1A3FA0] text-white px-6 py-2 rounded-lg font-medium hover:bg-[#0D2660] transition-colors">
+                  Soumettre l'avis
+                </button>
+              </form>
+            </div>
           </div>
         )}
       </div>

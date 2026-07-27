@@ -278,8 +278,16 @@ export default function CheckoutPage() {
                     </span>
                   </div>
                 </div>
+
+                <div className="mb-6 pt-4 border-t border-[#E2E2DF]">
+                  <label className="block text-sm font-medium text-[#1A1A1A] mb-2">Code promo</label>
+                  <div className="flex gap-2">
+                    <input type="text" placeholder="Entrez votre code" className="flex-1 bg-[#F5F5F3] border border-[#E2E2DF] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30 focus:border-[#1A3FA0]" />
+                    <button type="button" className="bg-[#1A1A1A] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-black transition-colors">Appliquer</button>
+                  </div>
+                </div>
                 
-                <div className="border-t border-[#E2E2DF] pt-4">
+                <div className="border-t border-[#E2E2DF] pt-4 mb-8">
                   <div className="flex justify-between items-center mb-2">
                     <span className="font-bold text-[#1A1A1A]">Total à payer</span>
                     <span className="text-2xl font-bold text-[#1A3FA0]">{formatPrice(finalTotal)}</span>

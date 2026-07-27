@@ -24,6 +24,8 @@ export function Chatbot() {
   const [isTyping, setIsTyping] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const wsRef = useRef<WebSocket | null>(null)
+  const sessionIdRef = useRef<string>(`session-${Date.now()}`)
+  const streamingMsgRef = useRef<string>('')
 
   // Initialize WebSocket connection only when chat is opened
   useEffect(() => {
@@ -39,14 +41,39 @@ export function Chatbot() {
     }
     
     ws.onmessage = (event) => {
-      setIsTyping(false)
-      const aiMsg: Message = {
-        id: Date.now().toString(),
-        role: 'assistant',
-        content: event.data,
-        timestamp: new Date()
+      try {
+        const data = JSON.parse(event.data)
+        const { token, done } = data
+        
+        // Accumulate streaming tokens
+        streamingMsgRef.current += token
+        
+        if (done) {
+          // Finalize the message
+          const fullContent = streamingMsgRef.current.trim()
+          streamingMsgRef.current = ''
+          setIsTyping(false)
+          if (fullContent) {
+            const aiMsg: Message = {
+              id: Date.now().toString(),
+              role: 'assistant',
+              content: fullContent,
+              timestamp: new Date()
+            }
+            setMessages(prev => [...prev, aiMsg])
+          }
+        }
+      } catch {
+        // Fallback for plain text responses
+        setIsTyping(false)
+        const aiMsg: Message = {
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: event.data,
+          timestamp: new Date()
+        }
+        setMessages(prev => [...prev, aiMsg])
       }
-      setMessages(prev => [...prev, aiMsg])
     }
     
     ws.onerror = () => {
@@ -81,9 +108,12 @@ export function Chatbot() {
     setInput('')
     setIsTyping(true)
 
-    // Send to WebSocket
+    // Send to WebSocket as JSON
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(userMsg.content)
+      wsRef.current.send(JSON.stringify({
+        message: userMsg.content,
+        sessionId: sessionIdRef.current
+      }))
     } else {
       setIsTyping(false)
       const errorMsg: Message = {

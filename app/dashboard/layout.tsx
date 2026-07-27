@@ -5,12 +5,13 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useUser } from '@/lib/user-context'
 import { Navbar } from '@/components/layout/navbar'
 import { Footer } from '@/components/layout/footer'
-import { LayoutDashboard, ShoppingBag, RefreshCw, User, Settings, LogOut, Menu, X } from 'lucide-react'
+import { LayoutDashboard, ShoppingBag, RefreshCw, User, Settings, LogOut, Menu, X, Heart } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 const navItems = [
     { href: '/dashboard', label: "Vue d'ensemble", icon: LayoutDashboard },
     { href: '/dashboard/commandes', label: 'Mes Commandes', icon: ShoppingBag },
+    { href: '/dashboard/favoris', label: 'Mes Favoris', icon: Heart },
     { href: '/dashboard/reprises', label: 'Mes Reprises', icon: RefreshCw },
     { href: '/dashboard/profil', label: 'Mon Profil', icon: User },
     { href: '/dashboard/parametres', label: 'Paramètres', icon: Settings },
@@ -61,9 +62,9 @@ function SidebarContent({ pathname, onClose, user, logout }: { pathname: string,
 
             <button
                 onClick={logout}
-                className="w-full flex items-center gap-3 px-6 py-4 text-[#EF4444] hover:bg-[#FEF2F2] rounded-xl border border-[#FCA5A5] transition-colors font-medium justify-center"
+                className="w-full flex items-center gap-3 px-6 py-4 text-[#EF4444] hover:bg-[#EF4444] hover:text-white hover:border-[#EF4444] rounded-xl border border-[#FCA5A5] transition-colors font-medium justify-center group"
             >
-                <LogOut className="h-5 w-5" />
+                <LogOut className="h-5 w-5 transition-colors group-hover:text-white" />
                 Se déconnecter
             </button>
         </>
@@ -75,6 +76,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const router = useRouter()
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
     const { user, loading, logout } = useUser()
+
+    const handleLogout = () => {
+        logout()
+        router.push('/')
+    }
 
     useEffect(() => {
         if (!loading && !user) {
@@ -144,20 +150,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                         <X className="h-5 w-5" />
                                     </button>
                                 </div>
-                                <SidebarContent pathname={pathname} onClose={() => setMobileMenuOpen(false)} user={user} logout={logout} />
+                                <SidebarContent pathname={pathname} onClose={() => setMobileMenuOpen(false)} user={user} logout={handleLogout} />
                             </div>
                         </div>
                     )}
 
                     {/* Desktop layout */}
-                    <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-6">
                         {/* Desktop Sidebar */}
-                        <aside className="hidden md:block space-y-4">
-                            <SidebarContent pathname={pathname} user={user} logout={logout} />
-                        </aside>
+                        <aside className="hidden md:block flex-shrink-0 sticky top-24 self-start">
+                        <SidebarContent pathname={pathname} user={user} logout={handleLogout} />
+                    </aside>
 
                         {/* Main Content */}
-                        <div className="min-w-0">
+                        <div className="min-w-0 overflow-hidden">
                             {children}
                         </div>
                     </div>

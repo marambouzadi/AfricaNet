@@ -337,7 +337,7 @@ export default function ProfilPage() {
                     <input
                       type="text"
                       required
-                      placeholder="John Doe"
+                      placeholder="Prénom Nom"
                       value={addressForm.fullname}
                       onChange={(e) => setAddressForm(a => ({ ...a, fullname: e.target.value }))}
                       className="w-full px-3 py-2 border border-[#E2E2DF] rounded-lg text-sm focus:ring-2 focus:ring-[#1A3FA0]/30 outline-none"

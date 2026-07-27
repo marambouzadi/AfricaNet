@@ -23,6 +23,7 @@ export function MultiStepForm() {
     const [step, setStep] = useState<Step>(1)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [error, setError] = useState('')
+    const [evaluationResult, setEvaluationResult] = useState<any>(null)
     const [formData, setFormData] = useState({
         deviceType: '',
         brand: '',
@@ -52,7 +53,7 @@ export function MultiStepForm() {
         const conditionInfo = CONDITION_MAP[formData.condition] || { code: 'FAIR', score: 5 }
 
         try {
-            const res = await fetch('http://localhost:8090/api/trade-in', {
+            const res = await fetch('http://localhost:8090/api/trade-in/evaluate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -62,13 +63,7 @@ export function MultiStepForm() {
                     deviceType: DEVICE_TYPE_MAP[formData.deviceType] || 'LAPTOP',
                     model: `${formData.brand} ${formData.model}`.trim(),
                     conditionOverall: conditionInfo.code,
-                    conditionDetails: {
-                        general: {
-                            score: conditionInfo.score,
-                            notes: formData.hasCharger ? 'Chargeur original fourni' : 'Sans chargeur original'
-                        }
-                    },
-                    images: []
+                    manufactureYear: 2022 // default fallback for now
                 })
             })
 
@@ -76,7 +71,9 @@ export function MultiStepForm() {
                 const errorData = await res.json().catch(() => ({}))
                 throw new Error(errorData.message || 'Erreur lors de la soumission de votre demande')
             }
-
+            
+            const data = await res.json()
+            setEvaluationResult(data)
             setStep(4)
         } catch (err) {
             const message = err instanceof Error ? err.message : 'Une erreur est survenue'
@@ -210,21 +207,37 @@ export function MultiStepForm() {
                     </div>
                 )}
 
-                {/* Step 4: Success */}
+                {/* Step 4: Success / Evaluation Result */}
                 {step === 4 && (
                     <div className="text-center py-8 animate-in zoom-in-95 duration-500">
                         <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
                             <CheckCircle2 className="h-12 w-12 text-green-600" />
                         </div>
-                        <h2 className="text-3xl font-serif font-bold text-[#1A1A1A] mb-4">Demande envoyée !</h2>
-                        <p className="text-[#6B7280] mb-8 text-lg max-w-md mx-auto">
-                            Merci {formData.firstName}. Notre intelligence artificielle et nos experts analysent votre {formData.brand} {formData.model}.
-                            <br/><br/>
-                            Vous recevrez une estimation par email d'ici 24 heures.
-                        </p>
+                        <h2 className="text-3xl font-serif font-bold text-[#1A1A1A] mb-4">Évaluation terminée !</h2>
+                        
+                        {evaluationResult ? (
+                            <div className="bg-[#F5F5F3] p-6 rounded-xl border border-[#E2E2DF] mb-8 text-left max-w-xl mx-auto">
+                                <h3 className="font-bold text-xl mb-4 text-[#1A1A1A]">Résultat pour votre {evaluationResult.deviceModel}</h3>
+                                <div className="space-y-3">
+                                    <div className="flex justify-between items-center pb-3 border-b border-[#E2E2DF]">
+                                        <span className="text-[#6B7280]">Valeur estimée</span>
+                                        <span className="text-2xl font-bold text-[#1A3FA0]">{evaluationResult.estimatedValue?.toFixed(2)} TND</span>
+                                    </div>
+                                    <div className="pt-2">
+                                        <span className="text-[#6B7280] block mb-2">Analyse de l'IA :</span>
+                                        <p className="text-[#1A1A1A] font-medium leading-relaxed">{evaluationResult.conditionSummary}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <p className="text-[#6B7280] mb-8 text-lg max-w-md mx-auto">
+                                Merci {formData.firstName}. Notre intelligence artificielle et nos experts analysent votre appareil.
+                            </p>
+                        )}
+
                         <div className="flex justify-center gap-4">
-                            <Link href="/dashboard/reprises" className="bg-[#1A3FA0] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#0D2660] transition-colors">
-                                Suivre ma demande
+                            <Link href="/" className="bg-[#1A3FA0] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#0D2660] transition-colors">
+                                Accepter l'offre (bientôt)
                             </Link>
                             <Link href="/" className="bg-[#F5F5F3] text-[#1A1A1A] px-6 py-3 rounded-lg font-medium hover:bg-[#E2E2DF] transition-colors">
                                 Retour à l'accueil
