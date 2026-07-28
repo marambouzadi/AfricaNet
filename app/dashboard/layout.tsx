@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useUser } from '@/lib/user-context'
 import { Navbar } from '@/components/layout/navbar'
 import { Footer } from '@/components/layout/footer'
-import { LayoutDashboard, ShoppingBag, RefreshCw, User, Settings, LogOut, Menu, X, Heart } from 'lucide-react'
+import { LayoutDashboard, ShoppingBag, RefreshCw, User, Settings, LogOut, Menu, X, Heart, ShieldCheck } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 const navItems = [
@@ -59,6 +59,15 @@ function SidebarContent({ pathname, onClose, user, logout }: { pathname: string,
                     )
                 })}
             </nav>
+
+            <Link
+                href="/admin/dashboard"
+                onClick={onClose}
+                className="w-full flex items-center gap-3 px-6 py-4 mb-4 text-[#1A3FA0] bg-[#E8EDF8] hover:bg-[#1A3FA0] hover:text-white rounded-xl transition-colors font-medium justify-center group"
+            >
+                <ShieldCheck className="h-5 w-5" />
+                Espace Admin
+            </Link>
 
             <button
                 onClick={logout}
