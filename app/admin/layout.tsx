@@ -2,21 +2,20 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { 
-  LayoutDashboard, 
-  Package, 
-  ShoppingCart, 
-  RefreshCw, 
-  LogOut, 
-  Menu, 
+import { useUser } from '@/lib/user-context'
+import {
+  LayoutDashboard,
+  Package,
+  ShoppingCart,
+  RefreshCw,
+  LogOut,
+  Menu,
   X,
   Users,
-  Settings,
   ShieldCheck,
-  TrendingUp,
   Box
 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 const adminNavItems = [
     { href: '/admin/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
@@ -31,13 +30,35 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const pathname = usePathname()
     const router = useRouter()
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+    const { user, loading, logout } = useUser()
 
-    // Check admin role here (Mocked for now)
-    // useEffect(() => { ... }, [])
+    // Redirect non-admins away from the admin area
+    useEffect(() => {
+        if (!loading) {
+            if (!user) {
+                router.push('/connexion')
+            } else if (user.role !== 'ADMIN') {
+                router.push('/dashboard')
+            }
+        }
+    }, [user, loading, router])
 
     const handleLogout = () => {
-        router.push('/')
+        logout()
     }
+
+    if (loading || !user || user.role !== 'ADMIN') {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-[#F5F5F3]">
+                <div className="flex flex-col items-center gap-4">
+                    <ShieldCheck className="h-12 w-12 text-[#1A3FA0] animate-pulse" />
+                    <p className="text-[#6B7280] font-medium">Vérification des autorisations...</p>
+                </div>
+            </div>
+        )
+    }
+
+    const initials = `${user.firstName?.charAt(0) ?? ''}${user.lastName?.charAt(0) ?? ''}`.toUpperCase()
 
     return (
         <div className="min-h-screen bg-[#F5F5F3] flex flex-col md:flex-row font-sans">
@@ -71,7 +92,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </div>
 
                 <div className="p-4 flex-1 overflow-y-auto">
-                    <div className="space-y-1 mb-8">
+                    <div className="space-y-1">
                         {adminNavItems.map((item) => {
                             const isActive = pathname.startsWith(item.href)
                             return (
@@ -80,8 +101,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                     href={item.href}
                                     onClick={() => setIsMobileMenuOpen(false)}
                                     className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                                        isActive 
-                                            ? 'bg-[#1A3FA0] text-white shadow-sm' 
+                                        isActive
+                                            ? 'bg-[#1A3FA0] text-white shadow-sm'
                                             : 'text-[#6B7280] hover:bg-[#F5F5F3] hover:text-[#1A1A1A]'
                                     }`}
                                 >
@@ -95,14 +116,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
                 <div className="p-4 border-t border-[#E2E2DF]">
                     <div className="flex items-center gap-3 px-4 py-3 mb-2">
-                        <div className="w-10 h-10 rounded-full bg-[#E8EDF8] text-[#1A3FA0] flex items-center justify-center font-bold">
-                            AD
+                        <div className="w-10 h-10 rounded-full bg-[#1A3FA0] text-white flex items-center justify-center font-bold text-sm">
+                            {initials || 'AD'}
                         </div>
-                        <div>
-                            <p className="text-sm font-bold text-[#1A1A1A]">Admin System</p>
-                            <p className="text-xs text-[#6B7280]">admin@africanet.tn</p>
+                        <div className="min-w-0">
+                            <p className="text-sm font-bold text-[#1A1A1A] truncate">{user.firstName} {user.lastName}</p>
+                            <p className="text-xs text-[#6B7280] truncate">{user.email}</p>
                         </div>
                     </div>
+                    <Link
+                        href="/dashboard"
+                        className="w-full flex items-center gap-3 px-4 py-2 text-[#6B7280] hover:bg-[#F5F5F3] rounded-lg transition-colors text-sm font-medium mb-1"
+                    >
+                        Espace Client
+                    </Link>
                     <button
                         onClick={handleLogout}
                         className="w-full flex items-center gap-3 px-4 py-3 text-[#EF4444] hover:bg-[#FEF2F2] rounded-lg transition-colors text-sm font-medium"
@@ -115,14 +142,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
             {/* Overlay for mobile */}
             {isMobileMenuOpen && (
-                <div 
+                <div
                     className="fixed inset-0 bg-black/20 z-30 md:hidden"
                     onClick={() => setIsMobileMenuOpen(false)}
                 />
             )}
 
             {/* Main Content Area */}
-            <main className="flex-1 p-4 md:p-8 w-full max-w-7xl mx-auto">
+            <main className="flex-1 p-4 md:p-8 overflow-auto">
                 {children}
             </main>
         </div>

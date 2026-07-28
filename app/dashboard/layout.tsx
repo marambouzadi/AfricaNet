@@ -60,15 +60,6 @@ function SidebarContent({ pathname, onClose, user, logout }: { pathname: string,
                 })}
             </nav>
 
-            <Link
-                href="/admin/dashboard"
-                onClick={onClose}
-                className="w-full flex items-center gap-3 px-6 py-4 mb-4 text-[#1A3FA0] bg-[#E8EDF8] hover:bg-[#1A3FA0] hover:text-white rounded-xl transition-colors font-medium justify-center group"
-            >
-                <ShieldCheck className="h-5 w-5" />
-                Espace Admin
-            </Link>
-
             <button
                 onClick={logout}
                 className="w-full flex items-center gap-3 px-6 py-4 text-[#EF4444] hover:bg-[#EF4444] hover:text-white hover:border-[#EF4444] rounded-xl border border-[#FCA5A5] transition-colors font-medium justify-center group"

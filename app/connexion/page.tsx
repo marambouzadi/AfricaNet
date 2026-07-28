@@ -29,7 +29,12 @@ export default function ConnexionPage() {
       
       if (response.accessToken) {
         loginUser(response.accessToken, response.user)
-        router.push('/dashboard')
+        // Redirect admins to the back-office, regular users to their dashboard
+        if (response.user?.role === 'ADMIN') {
+          router.push('/admin/dashboard')
+        } else {
+          router.push('/dashboard')
+        }
       } else {
         throw new Error('No access token received')
       }
