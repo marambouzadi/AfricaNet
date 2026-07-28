@@ -14,7 +14,9 @@ public class ProductResponse {
     private String slug;
     private String description;
     private String shortDesc;
+    private Long brandId;
     private String brandName;
+    private Long categoryId;
     private String categoryName;
     private ProductCondition condition;
     private BigDecimal basePrice;

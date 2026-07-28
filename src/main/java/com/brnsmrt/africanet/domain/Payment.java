@@ -49,8 +49,8 @@ public class Payment {
     private String failureReason;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(columnDefinition = "jsonb")
-    private Map<String, Object> metadata;
+    @Column(columnDefinition = "TEXT")
+    private String metadata;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

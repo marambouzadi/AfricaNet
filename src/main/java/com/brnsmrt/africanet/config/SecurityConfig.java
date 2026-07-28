@@ -65,16 +65,17 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
 
                 // ── Routes publiques ──────────────────────────────────────
-                .requestMatchers(
-                        "/api/auth/register",
-                        "/api/auth/login",
-                        "/api/auth/refresh",
-                        "/swagger-ui/**",
-                        "/swagger-ui.html",
-                        "/api-docs/**",
-                        "/v3/api-docs/**",
-                        "/error"
-                ).permitAll()
+                    .requestMatchers(
+                            "/api/auth/register",
+                            "/api/auth/login",
+                            "/api/auth/refresh",
+                            "/swagger-ui/**",
+                            "/swagger-ui.html",
+                            "/api-docs/**",
+                            "/v3/api-docs/**",
+                            "/error",
+                            "/mock-flouci/**"
+                    ).permitAll()
 
                 // Catalogue public (lecture seule)
                 .requestMatchers(HttpMethod.GET,

@@ -42,6 +42,9 @@ public class JwtTokenProvider {
      */
     public String generateAccessToken(UserDetails userDetails) {
         Map<String, Object> extraClaims = new HashMap<>();
+        if (userDetails instanceof com.brnsmrt.africanet.domain.User user) {
+            extraClaims.put("role", user.getRole().name());
+        }
         return buildToken(extraClaims, userDetails, accessTokenExpiration);
     }
 
@@ -53,6 +56,9 @@ public class JwtTokenProvider {
      * @return le JWT signé
      */
     public String generateAccessToken(Map<String, Object> extraClaims, UserDetails userDetails) {
+        if (userDetails instanceof com.brnsmrt.africanet.domain.User user && !extraClaims.containsKey("role")) {
+            extraClaims.put("role", user.getRole().name());
+        }
         return buildToken(extraClaims, userDetails, accessTokenExpiration);
     }
 

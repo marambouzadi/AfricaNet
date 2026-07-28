@@ -16,11 +16,13 @@ import java.util.stream.Collectors;
 @Mapper(componentModel = "spring")
 public interface ProductMapper {
 
-    @Mapping(target = "brandName", expression = "java(product.getBrand() != null ? product.getBrand().getName() : null)")
-    @Mapping(target = "categoryName", expression = "java(product.getCategory().getName())")
-    @Mapping(target = "images", expression = "java(mapImages(product))")
+    @Mapping(target = "brandId",   expression = "java(product.getBrand()    != null ? product.getBrand().getId()    : null)")
+    @Mapping(target = "brandName", expression = "java(product.getBrand()    != null ? product.getBrand().getName()  : null)")
+    @Mapping(target = "categoryId",   expression = "java(product.getCategory() != null ? product.getCategory().getId()   : null)")
+    @Mapping(target = "categoryName", expression = "java(product.getCategory() != null ? product.getCategory().getName() : null)")
+    @Mapping(target = "images",        expression = "java(mapImages(product))")
     @Mapping(target = "specifications", expression = "java(mapSpecs(product))")
-    @Mapping(target = "tags", expression = "java(mapTags(product))")
+    @Mapping(target = "tags",          expression = "java(mapTags(product))")
     ProductResponse toResponse(Product product);
 
     default List<ProductImageResponse> mapImages(Product product) {
