@@ -1,25 +1,22 @@
 package com.brnsmrt.africanet.ai;
 
-import com.brnsmrt.africanet.domain.Product;
+import com.brnsmrt.africanet.ai.dto.EvaluationResult;
 import com.brnsmrt.africanet.domain.Order;
-import com.brnsmrt.africanet.repository.UserRepository;
-import com.brnsmrt.africanet.repository.ProductRepository;
+import com.brnsmrt.africanet.domain.Product;
+import com.brnsmrt.africanet.domain.enums.OrderStatus;
+import com.brnsmrt.africanet.domain.enums.PaymentStatus;
+import com.brnsmrt.africanet.dto.response.RecommendationResponse;
 import com.brnsmrt.africanet.repository.CategoryRepository;
 import com.brnsmrt.africanet.repository.OrderRepository;
-
-import com.brnsmrt.africanet.dto.response.RecommendationResponse;
-import com.brnsmrt.africanet.ai.dto.EvaluationResult;
-import com.brnsmrt.africanet.ai.RecommendationService;
-import com.brnsmrt.africanet.ai.TradeInEvaluationService;
+import com.brnsmrt.africanet.repository.ProductRepository;
+import com.brnsmrt.africanet.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 
+import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -74,7 +71,7 @@ public class AssistantToolsTest {
         when(tradeInEvaluationService.evaluate(any())).thenReturn(mockResponse);
 
         String result = tools.evaluateTradeIn("MacBook Pro", "Apple", 2024,
-                5, 4, 4, 5, "Minor scratch", 1L);
+                8, 8, 8, 8, 8, 1L);
 
         assertNotNull(result);
         assertTrue(result.contains("2200.00 TND"));
@@ -132,22 +129,22 @@ public class AssistantToolsTest {
     void testSearchCatalog_byMaxPrice() {
         Product product = new Product();
         product.setId(1L);
-        product.setBasePrice(1000.0);
-        when(productRepository.findByBasePriceLessThanEqual(1500.0)).thenReturn(List.of(product));
+        product.setBasePrice(BigDecimal.valueOf(1000.0));
+        when(productRepository.findByBasePriceLessThanEqual(BigDecimal.valueOf(1500.0))).thenReturn(List.of(product));
 
         List<Product> results = tools.searchCatalog(null, 1500.0);
 
         assertEquals(1, results.size());
-        verify(productRepository).findByBasePriceLessThanEqual(1500.0);
+        verify(productRepository).findByBasePriceLessThanEqual(BigDecimal.valueOf(1500.0));
     }
 
     @Test
     void testTrackOrderStatus_found() {
         Order order = new Order();
         order.setOrderNumber("ORD-2025-00001");
-        order.setStatus("SHIPPED");
-        order.setPaymentStatus("PAID");
-        order.setTotalAmount(2500.0);
+        order.setStatus(OrderStatus.SHIPPED);
+        order.setPaymentStatus(PaymentStatus.PAID);
+        order.setTotalAmount(BigDecimal.valueOf(2500.0));
         when(orderRepository.findByOrderNumber("ORD-2025-00001")).thenReturn(Optional.of(order));
 
         String result = tools.trackOrderStatus("ORD-2025-00001");

@@ -31,6 +31,7 @@ public class RecommendationService {
     private final OrderItemRepository orderItemRepository;
     private final ProductRepository productRepository;
     private final com.brnsmrt.africanet.repository.AiRecommendationRepository aiRecommendationRepository;
+    private final com.brnsmrt.africanet.repository.ProductViewRepository productViewRepository;
 
     // Blending weights for hybrid scoring
     private static final double CONTENT_WEIGHT = 0.70;
@@ -40,17 +41,19 @@ public class RecommendationService {
                                   OrderRepository orderRepository,
                                   OrderItemRepository orderItemRepository,
                                   ProductRepository productRepository,
-                                  com.brnsmrt.africanet.repository.AiRecommendationRepository aiRecommendationRepository) {
+                                  com.brnsmrt.africanet.repository.AiRecommendationRepository aiRecommendationRepository,
+                                  com.brnsmrt.africanet.repository.ProductViewRepository productViewRepository) {
         this.userRepository = userRepository;
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.productRepository = productRepository;
         this.aiRecommendationRepository = aiRecommendationRepository;
+        this.productViewRepository = productViewRepository;
     }
 
     /**
      * Recommend products for a user.
-     * Uses content-based scoring from purchase history when available,
+     * Uses content-based scoring from purchase/view history when available,
      * falls back to popularity-based scoring otherwise.
      * Blends both signals with configurable weights for hybrid results.
      */
@@ -61,22 +64,27 @@ public class RecommendationService {
 
         List<Order> userOrders = orderRepository.findByUser_Id(userId);
 
-        if (userOrders.isEmpty()) {
-            // No history — pure popularity fallback
-            return popularityBasedRecommendations(userId, Collections.emptySet(), maxResults);
-        }
-
-        // Content-based scoring
-        Map<Long, Double> contentScores = contentBasedScores(userOrders);
-
-        // Get all purchased product IDs to exclude
+        Map<Long, Double> contentScores;
         Set<Long> purchasedProductIds = new HashSet<>();
-        for (Order order : userOrders) {
-            for (OrderItem item : order.getOrderItems()) {
-                if (item.getProduct() != null) {
-                    purchasedProductIds.add(item.getProduct().getId());
+
+        if (userOrders.isEmpty()) {
+            // Check product views if user has no order history
+            contentScores = viewBasedScores(userId);
+        } else {
+            // Content-based scoring from orders
+            contentScores = contentBasedScores(userOrders);
+            for (Order order : userOrders) {
+                for (OrderItem item : order.getOrderItems()) {
+                    if (item.getProduct() != null) {
+                        purchasedProductIds.add(item.getProduct().getId());
+                    }
                 }
             }
+        }
+
+        if (contentScores.isEmpty()) {
+            // Pure popularity fallback
+            return popularityBasedRecommendations(userId, purchasedProductIds, maxResults);
         }
 
         // Popularity scores for hybrid blending
@@ -98,6 +106,41 @@ public class RecommendationService {
         scored.sort((a, b) -> Double.compare(b.score, a.score));
 
         return buildResponses(userId, scored, maxResults);
+    }
+
+    /**
+     * Content-based scoring from user's product view history.
+     */
+    private Map<Long, Double> viewBasedScores(Long userId) {
+        List<Object[]> categoryViews = productViewRepository.countViewsPerCategoryByUser(userId);
+        if (categoryViews.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        Map<Long, Integer> categoryViewCounts = new HashMap<>();
+        int totalViews = 0;
+        for (Object[] row : categoryViews) {
+            Long categoryId = (Long) row[0];
+            Long count = (Long) row[1];
+            categoryViewCounts.put(categoryId, count.intValue());
+            totalViews += count.intValue();
+        }
+
+        if (totalViews == 0) {
+            return Collections.emptyMap();
+        }
+
+        List<Long> categoryIds = new ArrayList<>(categoryViewCounts.keySet());
+        List<Product> candidates = productRepository.findByCategoryIdIn(categoryIds);
+
+        Map<Long, Double> scores = new HashMap<>();
+        for (Product candidate : candidates) {
+            Long catId = candidate.getCategory().getId();
+            double affinity = (double) categoryViewCounts.getOrDefault(catId, 0) / totalViews;
+            scores.put(candidate.getId(), affinity);
+        }
+
+        return scores;
     }
 
     /**
@@ -208,7 +251,7 @@ public class RecommendationService {
             if (product == null) continue;
 
             String reason = sp.source.equals("content")
-                    ? String.format("Based on your purchase history in %s category",
+                    ? String.format("Based on your purchase/view history in %s category",
                     product.getCategory() != null ? product.getCategory().getName() : "related")
                     : "Popular among other AfricaNet customers";
 
@@ -221,6 +264,7 @@ public class RecommendationService {
                     .score(java.math.BigDecimal.valueOf(finalScore))
                     .reason(reason)
                     .createdAt(LocalDateTime.now())
+                    .shownAt(LocalDateTime.now())
                     .build();
             aiRecommendationRepository.save(aiRecommendation);
 
@@ -236,6 +280,28 @@ public class RecommendationService {
         }
 
         return results;
+    }
+
+    /**
+     * Mark a recommendation as clicked by the user for analytics.
+     */
+    public boolean markClicked(Long recommendationId) {
+        return aiRecommendationRepository.findById(recommendationId).map(rec -> {
+            rec.setClickedAt(LocalDateTime.now());
+            aiRecommendationRepository.save(rec);
+            return true;
+        }).orElse(false);
+    }
+
+    /**
+     * Mark a recommendation as purchased by the user for conversion tracking.
+     */
+    public boolean markPurchased(Long recommendationId) {
+        return aiRecommendationRepository.findById(recommendationId).map(rec -> {
+            rec.setPurchasedAt(LocalDateTime.now());
+            aiRecommendationRepository.save(rec);
+            return true;
+        }).orElse(false);
     }
 
     /**

@@ -7,4 +7,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface TradeInRepository extends JpaRepository<TradeIn, Long> {
+    java.util.List<TradeIn> findByUser_Id(Long userId);
 }

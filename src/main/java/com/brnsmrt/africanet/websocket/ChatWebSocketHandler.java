@@ -13,7 +13,6 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-@Component
 class ChatWebSocketHandler extends TextWebSocketHandler {
 
 	private final ResilientAiWrapper resilientAiWrapper;
