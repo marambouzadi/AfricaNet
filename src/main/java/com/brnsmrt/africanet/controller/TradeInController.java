@@ -1,46 +1,45 @@
 package com.brnsmrt.africanet.controller;
 
-import com.brnsmrt.africanet.dto.request.TradeInSubmitRequest;
-import com.brnsmrt.africanet.dto.response.TradeInResponse;
-import com.brnsmrt.africanet.service.TradeInService;
+import com.brnsmrt.africanet.ai.TradeInEvaluationService;
+import com.brnsmrt.africanet.ai.dto.EvaluationResult;
+import com.brnsmrt.africanet.domain.TradeIn;
+import com.brnsmrt.africanet.dto.request.TradeInRequest;
+import com.brnsmrt.africanet.repository.TradeInRepository;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import org.springdoc.core.annotations.ParameterObject;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import org.springframework.validation.annotation.Validated;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/trade-in")
-@RequiredArgsConstructor
-@Validated
 public class TradeInController {
 
-    private final TradeInService tradeInService;
+    private final TradeInEvaluationService tradeInEvaluationService;
+    private final TradeInRepository tradeInRepository;
 
-    @PostMapping
-    public ResponseEntity<TradeInResponse> submit(
-            @Valid @RequestBody TradeInSubmitRequest req,
-            Authentication authentication) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(tradeInService.submit(req, authentication));
+    public TradeInController(TradeInEvaluationService tradeInEvaluationService,
+                              TradeInRepository tradeInRepository) {
+        this.tradeInEvaluationService = tradeInEvaluationService;
+        this.tradeInRepository = tradeInRepository;
     }
 
-    @GetMapping("/me")
-    public ResponseEntity<Page<TradeInResponse>> getMyTradeIns(
-            @ParameterObject @PageableDefault(size = 20) Pageable pageable,
-            Authentication authentication) {
-        return ResponseEntity.ok(tradeInService.getMyTradeIns(authentication, pageable));
+    /**
+     * Submit a trade-in evaluation request.
+     * Evaluates device condition and returns estimated trade-in value (TND).
+     */
+    @PostMapping("/evaluate")
+    public ResponseEntity<EvaluationResult> evaluateTradeIn(@Valid @RequestBody TradeInRequest request) {
+        EvaluationResult result = tradeInEvaluationService.evaluate(request);
+        return ResponseEntity.ok(result);
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<TradeInResponse> getMyTradeInById(
-            @PathVariable Long id, Authentication authentication) {
-        return ResponseEntity.ok(tradeInService.getMyTradeInById(id, authentication));
+    /**
+     * Get trade-in requests submitted by a specific user.
+     */
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<TradeIn>> getUserTradeIns(@PathVariable Long userId) {
+        List<TradeIn> tradeIns = tradeInRepository.findByUser_Id(userId);
+        return ResponseEntity.ok(tradeIns);
     }
 }

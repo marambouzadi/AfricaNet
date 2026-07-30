@@ -31,3 +31,7 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Project-specific exclusions ###
+*.md
+all_my_code.txt
