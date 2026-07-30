@@ -1,6 +1,7 @@
 package com.brnsmrt.africanet.websocket;
 
 import com.brnsmrt.africanet.ai.Assistant;
+import com.brnsmrt.africanet.ai.ResilientAiWrapper;
 
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
@@ -15,13 +16,13 @@ import java.util.concurrent.TimeUnit;
 @Component
 class ChatWebSocketHandler extends TextWebSocketHandler {
 
-	private final Assistant assistant;
+	private final ResilientAiWrapper resilientAiWrapper;
 	private final StringRedisTemplate redisTemplate;
 	private static final String REDIS_KEY_PREFIX = "chat:context:";
 	private static final long SESSION_TTL_MINUTES = 30;
 
-	ChatWebSocketHandler(Assistant assistant, StringRedisTemplate redisTemplate) {
-		this.assistant = assistant;
+	ChatWebSocketHandler(ResilientAiWrapper resilientAiWrapper, StringRedisTemplate redisTemplate) {
+		this.resilientAiWrapper = resilientAiWrapper;
 		this.redisTemplate = redisTemplate;
 	}
 
@@ -49,10 +50,7 @@ class ChatWebSocketHandler extends TextWebSocketHandler {
 		UUID memoryId = UUID.fromString(memoryIdStr);
 		String userMessage = message.getPayload();
 
-		assistant.chat(memoryId, userMessage).onPartialResponse(token -> sendToken(session, token))
-				.onCompleteResponse(response -> {})
-				.onError(error -> sendToken(session, "Error: " + error.getMessage()))
-				.start();
+		resilientAiWrapper.processChat(memoryId, userMessage, token -> sendToken(session, token));
 	}
 
 	private void sendToken(WebSocketSession session, String token) {
