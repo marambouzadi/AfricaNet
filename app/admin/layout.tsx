@@ -13,7 +13,9 @@ import {
   X,
   Users,
   ShieldCheck,
-  Box
+  Box,
+  Store,
+  ChevronRight
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
@@ -126,9 +128,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     </div>
                     <Link
                         href="/dashboard"
-                        className="w-full flex items-center gap-3 px-4 py-2 text-[#6B7280] hover:bg-[#F5F5F3] rounded-lg transition-colors text-sm font-medium mb-1"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 bg-[#EFF6FF] text-[#1A3FA0] hover:bg-[#DBEAFE] rounded-lg transition-colors text-sm font-semibold mb-2 border border-[#BFDBFE]"
                     >
-                        Espace Client
+                        <Store className="h-4 w-4" />
+                        <span className="flex-1">Espace Client</span>
+                        <ChevronRight className="h-3 w-3 opacity-60" />
                     </Link>
                     <button
                         onClick={handleLogout}

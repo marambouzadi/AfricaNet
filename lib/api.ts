@@ -180,13 +180,23 @@ export async function downloadInvoice(orderId: number): Promise<Blob> {
 }
 
 // --- TradeIn API ---
+export async function evaluateTradeIn(tradeInData: any) {
+  const { data } = await api.post('/trade-in/evaluate', tradeInData)
+  return data
+}
+
 export async function submitTradeIn(tradeInData: any) {
   const { data } = await api.post('/trade-in', tradeInData)
   return data
 }
 
 export async function getUserTradeIns() {
-  const { data } = await api.get('/trade-in/me')
+  const { data } = await api.get('/trade-in/user/me') // Or however it's mapped for 'me', actually the backend uses /trade-in/user/{userId}. Wait, Maram has /api/trade-in/user/{userId}. I'll use the current user from context. Let's export a flexible one:
+  return data
+}
+
+export async function getTradeInsByUserId(userId: number) {
+  const { data } = await api.get(`/trade-in/user/${userId}`)
   return data
 }
 
@@ -194,4 +204,19 @@ export async function getUserTradeIns() {
 export async function initiateFlouciPayment(orderId: number) {
   const { data } = await api.post(`/payments/flouci/initiate?orderId=${orderId}`)
   return data
+}
+
+export async function verifyFlouciPayment(tx: string) {
+  const { data } = await api.get(`/payments/flouci/verify?tx=${tx}`)
+  return data
+}
+
+// --- AI Recommendations API ---
+export async function getRecommendations(userId: number, limit: number = 5) {
+  const { data } = await api.get(`/recommendations/user/${userId}`, { params: { limit } })
+  return data
+}
+
+export async function trackRecommendationClick(id: number) {
+  await api.put(`/recommendations/${id}/click`)
 }

@@ -41,39 +41,31 @@ export function Chatbot() {
     }
     
     ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data)
-        const { token, done } = data
+      // The backend now streams raw text tokens directly due to Circuit Breaker changes
+      const token = event.data
+
+      setMessages(prev => {
+        const newMessages = [...prev]
+        const lastMsg = newMessages[newMessages.length - 1]
         
-        // Accumulate streaming tokens
-        streamingMsgRef.current += token
-        
-        if (done) {
-          // Finalize the message
-          const fullContent = streamingMsgRef.current.trim()
-          streamingMsgRef.current = ''
-          setIsTyping(false)
-          if (fullContent) {
-            const aiMsg: Message = {
-              id: Date.now().toString(),
-              role: 'assistant',
-              content: fullContent,
-              timestamp: new Date()
-            }
-            setMessages(prev => [...prev, aiMsg])
-          }
+        if (lastMsg && lastMsg.role === 'assistant' && lastMsg.id === streamingMsgRef.current) {
+          // Append to existing streaming message
+          lastMsg.content += token
+        } else {
+          // Start a new streaming message
+          const newId = Date.now().toString()
+          streamingMsgRef.current = newId
+          newMessages.push({
+            id: newId,
+            role: 'assistant',
+            content: token,
+            timestamp: new Date()
+          })
         }
-      } catch {
-        // Fallback for plain text responses
-        setIsTyping(false)
-        const aiMsg: Message = {
-          id: Date.now().toString(),
-          role: 'assistant',
-          content: event.data,
-          timestamp: new Date()
-        }
-        setMessages(prev => [...prev, aiMsg])
-      }
+        return newMessages
+      })
+      
+      setIsTyping(false)
     }
     
     ws.onerror = () => {
@@ -107,13 +99,11 @@ export function Chatbot() {
     setMessages(prev => [...prev, userMsg])
     setInput('')
     setIsTyping(true)
+    streamingMsgRef.current = '' // Reset streaming id
 
-    // Send to WebSocket as JSON
+    // Send to WebSocket as raw text (backend expects just the payload now)
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({
-        message: userMsg.content,
-        sessionId: sessionIdRef.current
-      }))
+      wsRef.current.send(userMsg.content)
     } else {
       setIsTyping(false)
       const errorMsg: Message = {

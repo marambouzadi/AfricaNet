@@ -1,248 +1,262 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { Search, Filter, CheckCircle2, XCircle, Eye, Cpu, RefreshCw, X, Sparkles } from 'lucide-react'
-import { formatPrice } from '@/lib/products'
+import { useState, useEffect } from 'react';
+import AdminHeader from '@/components/admin/AdminHeader';
+import {
+  Search, ChevronDown, Eye, CheckCircle, XCircle,
+  Loader2, Download, RefreshCw, Clock, Star, AlertCircle
+} from 'lucide-react';
+import { exportToCSV } from '@/lib/export';
 
-interface TradeInItem {
-  id: string
-  referenceNumber: string
-  clientName: string
-  clientEmail: string
-  deviceType: string
-  brand: string
-  model: string
-  aiEstimate: number
-  finalOffer?: number
-  status: 'SUBMITTED' | 'EVALUATING' | 'APPROVED' | 'REJECTED' | 'COMPLETED'
-  date: string
-  scores: { screen: number; battery: number; keyboard: number; chassis: number }
+const API_BASE = 'http://localhost:8090/api';
+
+function getToken() {
+  return typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
 }
 
-const initialTradeIns: TradeInItem[] = [
-  {
-    id: '1',
-    referenceNumber: 'TRD-2026-0081',
-    clientName: 'Karim Ben Ammar',
-    clientEmail: 'karim.ba@gmail.com',
-    deviceType: 'PC Portable',
-    brand: 'Dell',
-    model: 'Latitude 5410 Core i5 10th Gen',
-    aiEstimate: 850,
-    finalOffer: 850,
-    status: 'SUBMITTED',
-    date: '28 Juil 2026, 11:20',
-    scores: { screen: 8, battery: 7, keyboard: 9, chassis: 8 }
-  },
-  {
-    id: '2',
-    referenceNumber: 'TRD-2026-0080',
-    clientName: 'Sonia Chebbi',
-    clientEmail: 'sonia.chebbi@yahoo.fr',
-    deviceType: 'PC Portable',
-    brand: 'HP',
-    model: 'EliteBook 840 G6',
-    aiEstimate: 1100,
-    finalOffer: 1050,
-    status: 'EVALUATING',
-    date: '27 Juil 2026, 16:40',
-    scores: { screen: 9, battery: 8, keyboard: 8, chassis: 7 }
-  },
-  {
-    id: '3',
-    referenceNumber: 'TRD-2026-0079',
-    clientName: 'Mehdi Said',
-    clientEmail: 'msaid@hotmail.com',
-    deviceType: 'PC Portable',
-    brand: 'Apple',
-    model: 'MacBook Air M1 2020',
-    aiEstimate: 1850,
-    finalOffer: 1900,
-    status: 'APPROVED',
-    date: '25 Juil 2026, 14:10',
-    scores: { screen: 10, battery: 9, keyboard: 10, chassis: 9 }
-  }
-]
+const STATUS_CONFIG: Record<string, { label: string; bg: string; color: string }> = {
+  SUBMITTED:  { label: 'Soumise',     bg: '#EFF6FF', color: '#1A3FA0' },
+  EVALUATING: { label: 'En évaluation',bg: '#FFFBEB', color: '#D97706' },
+  APPROVED:   { label: 'Approuvée',   bg: '#F0FDF4', color: '#16A34A' },
+  REJECTED:   { label: 'Refusée',     bg: '#FEF2F2', color: '#DC2626' },
+  COMPLETED:  { label: 'Complétée',   bg: '#F3F4F6', color: '#6B7280' },
+};
 
-const statusStyles: Record<string, { label: string; style: string }> = {
-  SUBMITTED: { label: 'En attente', style: 'bg-yellow-100 text-yellow-800' },
-  EVALUATING: { label: 'Analyse IA', style: 'bg-blue-100 text-blue-800' },
-  APPROVED: { label: 'Approuvée', style: 'bg-green-100 text-green-800' },
-  REJECTED: { label: 'Refusée', style: 'bg-red-100 text-red-800' },
-  COMPLETED: { label: 'Complétée', style: 'bg-purple-100 text-purple-800' },
-}
+const DEVICE_LABELS: Record<string, string> = {
+  LAPTOP:  '💻 PC Portable',
+  DESKTOP: '🖥️ Ordinateur Bureau',
+  PHONE:   '📱 Téléphone',
+  TABLET:  '📲 Tablette',
+};
 
-export default function AdminTradeInsPage() {
-  const [tradeInsList, setTradeInsList] = useState<TradeInItem[]>(initialTradeIns)
-  const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('Tous')
-  const [selectedTradeIn, setSelectedTradeIn] = useState<TradeInItem | null>(null)
-  const [customPrice, setCustomPrice] = useState<string>('')
+export default function AdminEchangesPage() {
+  const [tradeIns, setTradeIns] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('Tous statuts');
+  const [viewItem, setViewItem] = useState<any>(null);
+  const [updatingId, setUpdatingId] = useState<number | null>(null);
 
-  const filteredTradeIns = tradeInsList.filter(t => {
-    const matchesSearch = t.referenceNumber.toLowerCase().includes(search.toLowerCase()) ||
-                          t.clientName.toLowerCase().includes(search.toLowerCase()) ||
-                          t.model.toLowerCase().includes(search.toLowerCase())
-    const matchesStatus = statusFilter === 'Tous' || t.status === statusFilter
-    return matchesSearch && matchesStatus
-  })
+  const load = async () => {
+    setLoading(true);
+    try {
+      const token = getToken();
+      const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
+      const res = await fetch(`${API_BASE}/admin/trade-in?size=50`, { headers, cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        setTradeIns(data.content || []);
+      }
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
+  };
 
-  const handleApprove = (id: string) => {
-    const offer = customPrice ? parseFloat(customPrice) : selectedTradeIn?.aiEstimate
-    setTradeInsList(prev => prev.map(t => t.id === id ? { ...t, status: 'APPROVED', finalOffer: offer } : t))
-    setSelectedTradeIn(null)
-  }
+  useEffect(() => { load(); }, []);
 
-  const handleReject = (id: string) => {
-    setTradeInsList(prev => prev.map(t => t.id === id ? { ...t, status: 'REJECTED' } : t))
-    setSelectedTradeIn(null)
-  }
+  const updateStatus = async (id: number, newStatus: string, finalValue?: number, notes?: string) => {
+    setUpdatingId(id);
+    try {
+      const token = getToken();
+      const res = await fetch(`${API_BASE}/admin/trade-in/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ status: newStatus, finalValue, reviewNotes: notes }),
+      });
+      if (res.ok) { await load(); }
+    } catch (e) { console.error(e); }
+    finally { setUpdatingId(null); }
+  };
+
+  const filtered = tradeIns.filter(t => {
+    const matchSearch = (t.referenceNumber || '').toLowerCase().includes(search.toLowerCase())
+      || (t.model || '').toLowerCase().includes(search.toLowerCase());
+    const matchStatus = statusFilter === 'Tous statuts' || t.status === statusFilter;
+    return matchSearch && matchStatus;
+  });
+
+  const handleExport = () => {
+    const headers = ['Référence', 'Appareil', 'Modèle', 'Valeur estimée (TND)', 'Statut', 'Date'];
+    const rows = filtered.map(t => [
+      t.referenceNumber || `TRD-${t.id}`,
+      DEVICE_LABELS[t.deviceType] || t.deviceType,
+      t.model || '',
+      t.estimatedValueAi || '',
+      STATUS_CONFIG[t.status]?.label || t.status,
+      t.createdAt ? new Date(t.createdAt).toLocaleDateString('fr-FR') : 'N/A',
+    ]);
+    exportToCSV('export_echanges_trade_in', headers, rows);
+  };
+
+  const kpis = [
+    { label: 'Total demandes',    value: tradeIns.length,                                                icon: RefreshCw,    color: '#1A3FA0', bg: '#EFF6FF' },
+    { label: 'En attente',        value: tradeIns.filter(t => t.status === 'SUBMITTED').length,          icon: Clock,        color: '#D97706', bg: '#FFFBEB' },
+    { label: 'Approuvées',        value: tradeIns.filter(t => t.status === 'APPROVED').length,           icon: CheckCircle,  color: '#16A34A', bg: '#F0FDF4' },
+    { label: 'Refusées',          value: tradeIns.filter(t => t.status === 'REJECTED').length,           icon: XCircle,      color: '#DC2626', bg: '#FEF2F2' },
+  ];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-serif font-bold text-[#1A1A1A]">Validation des Reprises (Trade-In)</h1>
-        <p className="text-[#6B7280]">Évaluez les demandes d'échange de matériel occasion et validez les offres finales.</p>
-      </div>
+    <div className="admin-page">
+      <AdminHeader title="Gestion des Échanges (Trade-In)" breadcrumb="Gestion · Échanges" />
+      <div className="admin-content">
 
-      {/* Filters & Search Bar */}
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-[#E2E2DF] flex flex-col sm:flex-row gap-4 justify-between">
-        <div className="relative flex-1">
-          <Search className="absolute left-3.5 top-3 h-4 w-4 text-[#6B7280]" />
-          <input
-            type="text"
-            placeholder="Rechercher par N° référence, client ou modèle..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-full bg-[#F5F5F3] border border-[#E2E2DF] rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30"
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-[#6B7280]" />
-          <select
-            value={statusFilter}
-            onChange={e => setStatusFilter(e.target.value)}
-            className="bg-[#F5F5F3] border border-[#E2E2DF] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30"
-          >
-            <option value="Tous">Tous les statuts</option>
-            <option value="SUBMITTED">En attente</option>
-            <option value="EVALUATING">Analyse IA</option>
-            <option value="APPROVED">Approuvée</option>
-            <option value="REJECTED">Refusée</option>
-            <option value="COMPLETED">Complétée</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-[#E2E2DF] overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-[#6B7280]">
-            <thead className="bg-[#F5F5F3] text-[#1A1A1A] uppercase text-xs font-semibold border-b border-[#E2E2DF]">
-              <tr>
-                <th className="px-6 py-4">Référence</th>
-                <th className="px-6 py-4">Client</th>
-                <th className="px-6 py-4">Appareil</th>
-                <th className="px-6 py-4">Est. IA</th>
-                <th className="px-6 py-4">Offre Finale</th>
-                <th className="px-6 py-4">Statut</th>
-                <th className="px-6 py-4 text-right">Évaluation</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#E2E2DF]">
-              {filteredTradeIns.map(t => (
-                <tr key={t.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 font-bold text-[#1A1A1A]">{t.referenceNumber}</td>
-                  <td className="px-6 py-4">
-                    <span className="font-semibold text-[#1A1A1A] block">{t.clientName}</span>
-                    <span className="text-xs text-[#6B7280]">{t.clientEmail}</span>
-                  </td>
-                  <td className="px-6 py-4 font-medium text-[#1A1A1A]">{t.brand} {t.model}</td>
-                  <td className="px-6 py-4 font-semibold text-purple-700">{formatPrice(t.aiEstimate)}</td>
-                  <td className="px-6 py-4 font-bold text-[#1A3FA0]">
-                    {t.finalOffer ? formatPrice(t.finalOffer) : '—'}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusStyles[t.status]?.style}`}>
-                      {statusStyles[t.status]?.label}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <button
-                      onClick={() => { setSelectedTradeIn(t); setCustomPrice(t.finalOffer?.toString() || t.aiEstimate.toString()); }}
-                      className="px-3 py-1.5 bg-[#E8EDF8] text-[#1A3FA0] hover:bg-[#1A3FA0] hover:text-white text-xs font-semibold rounded-lg transition-colors inline-flex items-center gap-1"
-                    >
-                      <Eye className="h-3.5 w-3.5" />
-                      Examiner
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Review Modal */}
-      {selectedTradeIn && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 animate-in fade-in duration-200">
-            <div className="flex justify-between items-center border-b border-[#E2E2DF] pb-3">
-              <div>
-                <h3 className="font-bold text-lg text-[#1A1A1A]">Examen Reprise {selectedTradeIn.referenceNumber}</h3>
-                <p className="text-xs text-[#6B7280]">{selectedTradeIn.brand} {selectedTradeIn.model}</p>
-              </div>
-              <button onClick={() => setSelectedTradeIn(null)} className="text-[#6B7280] hover:text-[#1A1A1A]"><X className="h-5 w-5" /></button>
-            </div>
-
-            <div className="space-y-3 text-sm">
-              <div className="bg-[#F5F5F3] p-3 rounded-lg flex justify-between items-center">
-                <span className="flex items-center gap-1.5 text-xs font-bold text-purple-700">
-                  <Sparkles className="h-4 w-4" /> Estimation IA Automatique
-                </span>
-                <span className="text-base font-bold text-purple-900">{formatPrice(selectedTradeIn.aiEstimate)}</span>
-              </div>
-
-              <div className="border border-[#E2E2DF] rounded-lg p-3 space-y-2">
-                <p className="font-bold text-xs uppercase text-[#6B7280]">Notes d'état (sur 10)</p>
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div className="flex justify-between bg-[#F5F5F3] p-2 rounded"><span>Écran:</span> <strong>{selectedTradeIn.scores.screen}/10</strong></div>
-                  <div className="flex justify-between bg-[#F5F5F3] p-2 rounded"><span>Batterie:</span> <strong>{selectedTradeIn.scores.battery}/10</strong></div>
-                  <div className="flex justify-between bg-[#F5F5F3] p-2 rounded"><span>Clavier:</span> <strong>{selectedTradeIn.scores.keyboard}/10</strong></div>
-                  <div className="flex justify-between bg-[#F5F5F3] p-2 rounded"><span>Châssis:</span> <strong>{selectedTradeIn.scores.chassis}/10</strong></div>
+        {/* KPIs */}
+        <div className="admin-kpi-grid">
+          {kpis.map(kpi => {
+            const Icon = kpi.icon;
+            return (
+              <div key={kpi.label} className="admin-kpi-card">
+                <div className="admin-kpi-top">
+                  <div className="admin-kpi-icon" style={{ background: kpi.bg, color: kpi.color }}><Icon size={20} /></div>
                 </div>
+                <div className="admin-kpi-value">{kpi.value}</div>
+                <div className="admin-kpi-label">{kpi.label}</div>
               </div>
+            );
+          })}
+        </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-[#1A1A1A] mb-1">Offre Financière Validée (TND)</label>
-                <input
-                  type="number"
-                  value={customPrice}
-                  onChange={e => setCustomPrice(e.target.value)}
-                  className="w-full border border-[#E2E2DF] rounded-lg px-3 py-2 text-sm font-bold text-[#1A3FA0]"
-                />
-              </div>
+        <div className="admin-card">
+          <div className="admin-filters-bar">
+            <div className="admin-search-field">
+              <Search size={16} className="admin-search-icon-sm" />
+              <input type="text" placeholder="Rechercher une demande..." value={search}
+                onChange={e => setSearch(e.target.value)} className="admin-input" />
             </div>
-
-            <div className="flex gap-2 justify-end pt-3 border-t border-[#E2E2DF]">
-              <button
-                onClick={() => handleReject(selectedTradeIn.id)}
-                className="px-4 py-2 bg-red-100 text-red-700 hover:bg-red-200 text-xs font-bold rounded-lg transition-colors flex items-center gap-1"
-              >
-                <XCircle className="h-4 w-4" />
-                Refuser
-              </button>
-              <button
-                onClick={() => handleApprove(selectedTradeIn.id)}
-                className="px-5 py-2 bg-[#1A3FA0] text-white hover:bg-[#0D2660] text-xs font-bold rounded-lg transition-colors flex items-center gap-1"
-              >
-                <CheckCircle2 className="h-4 w-4" />
-                Approuver & Proposer
-              </button>
+            <div className="admin-filters-right">
+              <div className="admin-select-wrapper">
+                <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="admin-select">
+                  <option>Tous statuts</option>
+                  {Object.entries(STATUS_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+                </select>
+                <ChevronDown size={14} className="admin-select-icon" />
+              </div>
+              <button className="admin-btn-outline" onClick={handleExport}><Download size={16} /> Exporter</button>
             </div>
           </div>
+
+          {loading ? (
+            <div className="admin-empty-state"><Loader2 size={24} className="spin" style={{ color: '#1A3FA0' }} /></div>
+          ) : (
+            <table className="admin-table admin-table-full">
+              <thead>
+                <tr>
+                  <th>RÉFÉRENCE</th>
+                  <th>APPAREIL</th>
+                  <th>MODÈLE</th>
+                  <th>VALEUR ESTIMÉE</th>
+                  <th>STATUT</th>
+                  <th>DATE</th>
+                  <th>ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(item => {
+                  const cfg = STATUS_CONFIG[item.status] || { label: item.status, bg: '#F3F4F6', color: '#374151' };
+                  return (
+                    <tr key={item.id}>
+                      <td className="admin-product-ref">{item.referenceNumber || `TRD-${item.id}`}</td>
+                      <td style={{ fontSize: 13 }}>{DEVICE_LABELS[item.deviceType] || item.deviceType}</td>
+                      <td style={{ fontSize: 13 }}>{item.model || '—'}</td>
+                      <td style={{ fontWeight: 600, color: '#1A3FA0' }}>
+                        {item.finalValue
+                          ? `${Number(item.finalValue).toLocaleString('fr-FR')} TND`
+                          : item.estimatedValueAi
+                            ? `~${Number(item.estimatedValueAi).toLocaleString('fr-FR')} TND`
+                            : '—'}
+                      </td>
+                      <td>
+                        <span className="admin-status-badge" style={{ background: cfg.bg, color: cfg.color }}>{cfg.label}</span>
+                      </td>
+                      <td className="admin-table-date">
+                        {item.createdAt ? new Date(item.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
+                      </td>
+                      <td>
+                        <div className="admin-actions" style={{ gap: 6 }}>
+                          <button className="admin-action-btn" onClick={() => setViewItem(item)} title="Voir détails"><Eye size={15} /></button>
+                          {item.status === 'SUBMITTED' && (
+                            <>
+                              <button
+                                className="admin-btn-outline"
+                                style={{ fontSize: 11, padding: '3px 8px', color: '#16A34A', borderColor: '#16A34A' }}
+                                disabled={updatingId === item.id}
+                                onClick={() => updateStatus(item.id, 'APPROVED', item.estimatedValueAi, 'Demande approuvée')}
+                              >
+                                {updatingId === item.id ? <Loader2 size={12} className="spin" /> : '✓ Approuver'}
+                              </button>
+                              <button
+                                className="admin-btn-outline"
+                                style={{ fontSize: 11, padding: '3px 8px', color: '#DC2626', borderColor: '#DC2626' }}
+                                disabled={updatingId === item.id}
+                                onClick={() => updateStatus(item.id, 'REJECTED', undefined, 'Ne répond pas aux critères')}
+                              >
+                                ✗ Refuser
+                              </button>
+                            </>
+                          )}
+                          {item.status === 'EVALUATING' && (
+                            <button
+                              className="admin-btn-outline"
+                              style={{ fontSize: 11, padding: '3px 8px', color: '#16A34A', borderColor: '#16A34A' }}
+                              disabled={updatingId === item.id}
+                              onClick={() => updateStatus(item.id, 'APPROVED', item.estimatedValueAi)}
+                            >
+                              ✓ Valider
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+
+          {!loading && filtered.length === 0 && (
+            <div className="admin-empty-state" style={{ padding: '60px 20px', flexDirection: 'column', display: 'flex', alignItems: 'center' }}>
+              <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12, fontSize: 24 }}>♻️</div>
+              <h4 style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 700 }}>Aucune demande de reprise</h4>
+              <p style={{ margin: 0, fontSize: 13, color: '#64748B' }}>Aucune demande de Trade-In ne correspond à vos filtres.</p>
+            </div>
+          )}
         </div>
-      )}
+
+        {/* Modal détail demande */}
+        {viewItem && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+            onClick={() => setViewItem(null)}>
+            <div style={{ background: '#fff', borderRadius: 16, padding: 28, maxWidth: 500, width: '100%', maxHeight: '80vh', overflowY: 'auto' }}
+              onClick={e => e.stopPropagation()}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>Demande {viewItem.referenceNumber}</h3>
+                <button onClick={() => setViewItem(null)} style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: 20 }}>×</button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 14 }}>
+                <div><strong>Statut :</strong> <span style={{ color: STATUS_CONFIG[viewItem.status]?.color }}>{STATUS_CONFIG[viewItem.status]?.label}</span></div>
+                <div><strong>Appareil :</strong> {DEVICE_LABELS[viewItem.deviceType] || viewItem.deviceType}</div>
+                <div><strong>Modèle :</strong> {viewItem.model || '—'}</div>
+                <div><strong>Marque :</strong> {viewItem.brand?.name || '—'}</div>
+                <div><strong>Année de fabrication :</strong> {viewItem.manufactureYear || '—'}</div>
+                <div><strong>État général :</strong> {viewItem.conditionOverall || '—'}</div>
+                <div><strong>Valeur estimée :</strong> {viewItem.estimatedValueAi ? `${Number(viewItem.estimatedValueAi).toLocaleString('fr-FR')} TND` : '—'}</div>
+                <div><strong>Valeur finale :</strong> {viewItem.finalValue ? `${Number(viewItem.finalValue).toLocaleString('fr-FR')} TND` : '—'}</div>
+                {viewItem.reviewNotes && <div><strong>Notes :</strong> {viewItem.reviewNotes}</div>}
+                <div><strong>Date soumission :</strong> {viewItem.createdAt ? new Date(viewItem.createdAt).toLocaleString('fr-FR') : 'N/A'}</div>
+                {viewItem.images?.length > 0 && (
+                  <div>
+                    <strong>Photos :</strong>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+                      {viewItem.images.map((img: any, i: number) => (
+                        <img key={i} src={img.imageUrl || img.url} alt="" style={{ width: 80, height: 60, objectFit: 'cover', borderRadius: 8, border: '1px solid #E2E8F0' }} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
-  )
+  );
 }

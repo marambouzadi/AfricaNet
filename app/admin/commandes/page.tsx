@@ -1,239 +1,249 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { Search, Filter, Eye, Truck, CheckCircle2, Clock, XCircle, ShoppingBag, X } from 'lucide-react'
-import { formatPrice } from '@/lib/products'
+import { useState, useEffect } from 'react';
+import AdminHeader from '@/components/admin/AdminHeader';
+import {
+  Search, ChevronDown, Eye, CheckCircle, XCircle,
+  Loader2, Download, Package, Clock, Truck, RefreshCw
+} from 'lucide-react';
+import { exportToCSV } from '@/lib/export';
 
-interface OrderItem {
-  id: string
-  orderNumber: string
-  clientName: string
-  clientEmail: string
-  clientPhone: string
-  date: string
-  total: number
-  paymentMethod: 'Flouci / Carte' | 'Paiement à la livraison'
-  status: 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED'
-  items: { name: string; qty: number; price: number }[]
+const API_BASE = 'http://localhost:8090/api';
+
+function getToken() {
+  return typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
 }
 
-const initialOrders: OrderItem[] = [
-  {
-    id: '1',
-    orderNumber: 'AN-492019',
-    clientName: 'Sami Trabelsi',
-    clientEmail: 'sami.trabelsi@gmail.com',
-    clientPhone: '+216 98 123 456',
-    date: '28 Juil 2026, 10:45',
-    total: 2450,
-    paymentMethod: 'Flouci / Carte',
-    status: 'PENDING',
-    items: [{ name: 'Dell XPS 13 9310', qty: 1, price: 2450 }]
-  },
-  {
-    id: '2',
-    orderNumber: 'AN-492018',
-    clientName: 'Amira Ben Ali',
-    clientEmail: 'amira.ba@yahoo.fr',
-    clientPhone: '+216 55 987 654',
-    date: '27 Juil 2026, 15:30',
-    total: 1200,
-    paymentMethod: 'Paiement à la livraison',
-    status: 'CONFIRMED',
-    items: [{ name: 'Lenovo ThinkPad T14', qty: 1, price: 1200 }]
-  },
-  {
-    id: '3',
-    orderNumber: 'AN-492017',
-    clientName: 'Youssef Mansour',
-    clientEmail: 'ymansour@outlook.com',
-    clientPhone: '+216 22 333 444',
-    date: '25 Juil 2026, 09:12',
-    total: 3100,
-    paymentMethod: 'Flouci / Carte',
-    status: 'SHIPPED',
-    items: [{ name: 'MacBook Pro 14 M1', qty: 1, price: 3100 }]
-  },
-  {
-    id: '4',
-    orderNumber: 'AN-492016',
-    clientName: 'Nadia Gharbi',
-    clientEmail: 'nadia.g@gmail.com',
-    clientPhone: '+216 99 888 777',
-    date: '24 Juil 2026, 18:20',
-    total: 3490,
-    paymentMethod: 'Paiement à la livraison',
-    status: 'DELIVERED',
-    items: [{ name: 'HP Spectre x360', qty: 1, price: 3490 }]
-  }
-]
+const STATUS_CONFIG: Record<string, { label: string; bg: string; color: string }> = {
+  PENDING:    { label: 'En attente',   bg: '#FFF7ED', color: '#EA580C' },
+  CONFIRMED:  { label: 'Confirmée',    bg: '#EFF6FF', color: '#1A3FA0' },
+  PROCESSING: { label: 'En cours',     bg: '#FAF5FF', color: '#9333EA' },
+  SHIPPED:    { label: 'Expédiée',     bg: '#F0FDF4', color: '#16A34A' },
+  DELIVERED:  { label: 'Livrée',       bg: '#F0FDF4', color: '#15803D' },
+  CANCELLED:  { label: 'Annulée',      bg: '#FEF2F2', color: '#DC2626' },
+  REFUNDED:   { label: 'Remboursée',   bg: '#F3F4F6', color: '#6B7280' },
+};
 
-const statusBadges: Record<string, { label: string; style: string }> = {
-  PENDING: { label: 'En attente', style: 'bg-yellow-100 text-yellow-800' },
-  CONFIRMED: { label: 'Confirmée', style: 'bg-blue-100 text-blue-800' },
-  PROCESSING: { label: 'En préparation', style: 'bg-indigo-100 text-indigo-800' },
-  SHIPPED: { label: 'Expédiée', style: 'bg-purple-100 text-purple-800' },
-  DELIVERED: { label: 'Livrée', style: 'bg-green-100 text-green-800' },
-  CANCELLED: { label: 'Annulée', style: 'bg-red-100 text-red-800' },
-}
+const STATUS_TRANSITIONS: Record<string, string[]> = {
+  PENDING:    ['CONFIRMED', 'CANCELLED'],
+  CONFIRMED:  ['PROCESSING', 'CANCELLED'],
+  PROCESSING: ['SHIPPED'],
+  SHIPPED:    ['DELIVERED'],
+  DELIVERED:  [],
+  CANCELLED:  [],
+  REFUNDED:   [],
+};
 
 export default function AdminCommandesPage() {
-  const [ordersList, setOrdersList] = useState<OrderItem[]>(initialOrders)
-  const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('Tous')
-  const [selectedOrder, setSelectedOrder] = useState<OrderItem | null>(null)
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('Tous statuts');
+  const [viewOrder, setViewOrder] = useState<any>(null);
+  const [updatingId, setUpdatingId] = useState<number | null>(null);
 
-  const filteredOrders = ordersList.filter(o => {
-    const matchesSearch = o.orderNumber.toLowerCase().includes(search.toLowerCase()) ||
-                          o.clientName.toLowerCase().includes(search.toLowerCase()) ||
-                          o.clientEmail.toLowerCase().includes(search.toLowerCase())
-    const matchesStatus = statusFilter === 'Tous' || o.status === statusFilter
-    return matchesSearch && matchesStatus
-  })
+  const loadOrders = async () => {
+    setLoading(true);
+    try {
+      const token = getToken();
+      const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
+      const res = await fetch(`${API_BASE}/admin/orders?size=50`, { headers, cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        setOrders(data.content || []);
+      }
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
+  };
 
-  const updateOrderStatus = (id: string, newStatus: any) => {
-    setOrdersList(prev => prev.map(o => o.id === id ? { ...o, status: newStatus } : o))
-    if (selectedOrder && selectedOrder.id === id) {
-      setSelectedOrder(prev => prev ? { ...prev, status: newStatus } : null)
-    }
-  }
+  useEffect(() => { loadOrders(); }, []);
+
+  const updateStatus = async (orderId: number, newStatus: string) => {
+    setUpdatingId(orderId);
+    try {
+      const token = getToken();
+      const res = await fetch(`${API_BASE}/admin/orders/${orderId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (res.ok) { await loadOrders(); }
+    } catch (e) { console.error(e); }
+    finally { setUpdatingId(null); }
+  };
+
+  const filteredOrders = orders.filter(o => {
+    const matchSearch = (o.orderNumber || '').toLowerCase().includes(search.toLowerCase())
+      || (o.shippingAddress?.fullName || '').toLowerCase().includes(search.toLowerCase());
+    const matchStatus = statusFilter === 'Tous statuts' || o.status === statusFilter;
+    return matchSearch && matchStatus;
+  });
+
+  const handleExport = () => {
+    const headers = ['N° Commande', 'Client', 'Montant (TND)', 'Statut', 'Date'];
+    const rows = filteredOrders.map(o => [
+      o.orderNumber || `CMD-${o.id}`,
+      o.shippingAddress?.fullName || `Client #${o.userId}`,
+      o.totalAmount || 0,
+      STATUS_CONFIG[o.status]?.label || o.status,
+      o.createdAt ? new Date(o.createdAt).toLocaleDateString('fr-FR') : 'N/A',
+    ]);
+    exportToCSV('export_commandes', headers, rows);
+  };
+
+  const totalRevenue = orders.filter(o => !['CANCELLED', 'REFUNDED'].includes(o.status))
+    .reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+
+  const kpis = [
+    { label: 'Total commandes',  value: orders.length,                                              icon: Package,  color: '#1A3FA0', bg: '#EFF6FF' },
+    { label: 'En attente',       value: orders.filter(o => o.status === 'PENDING').length,          icon: Clock,    color: '#EA580C', bg: '#FFF7ED' },
+    { label: 'Expédiées',        value: orders.filter(o => o.status === 'SHIPPED').length,          icon: Truck,    color: '#16A34A', bg: '#F0FDF4' },
+    { label: 'Revenu total',     value: `${totalRevenue.toLocaleString('fr-FR')} TND`,              icon: RefreshCw,color: '#9333EA', bg: '#FAF5FF' },
+  ];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-serif font-bold text-[#1A1A1A]">Gestion des Commandes</h1>
-        <p className="text-[#6B7280]">Suivez les commandes clients et mettez à jour leur statut d'expédition.</p>
-      </div>
+    <div className="admin-page">
+      <AdminHeader title="Gestion des Commandes" breadcrumb="Gestion · Commandes" />
+      <div className="admin-content">
 
-      {/* Filters & Search Bar */}
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-[#E2E2DF] flex flex-col sm:flex-row gap-4 justify-between">
-        <div className="relative flex-1">
-          <Search className="absolute left-3.5 top-3 h-4 w-4 text-[#6B7280]" />
-          <input
-            type="text"
-            placeholder="Rechercher par N° commande, client ou email..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-full bg-[#F5F5F3] border border-[#E2E2DF] rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30"
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-[#6B7280]" />
-          <select
-            value={statusFilter}
-            onChange={e => setStatusFilter(e.target.value)}
-            className="bg-[#F5F5F3] border border-[#E2E2DF] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30"
-          >
-            <option value="Tous">Tous les statuts</option>
-            <option value="PENDING">En attente</option>
-            <option value="CONFIRMED">Confirmée</option>
-            <option value="PROCESSING">En préparation</option>
-            <option value="SHIPPED">Expédiée</option>
-            <option value="DELIVERED">Livrée</option>
-            <option value="CANCELLED">Annulée</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Orders Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-[#E2E2DF] overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-[#6B7280]">
-            <thead className="bg-[#F5F5F3] text-[#1A1A1A] uppercase text-xs font-semibold border-b border-[#E2E2DF]">
-              <tr>
-                <th className="px-6 py-4">Commande</th>
-                <th className="px-6 py-4">Client</th>
-                <th className="px-6 py-4">Date</th>
-                <th className="px-6 py-4">Paiement</th>
-                <th className="px-6 py-4">Total</th>
-                <th className="px-6 py-4">Statut</th>
-                <th className="px-6 py-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#E2E2DF]">
-              {filteredOrders.map(o => (
-                <tr key={o.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 font-bold text-[#1A1A1A]">{o.orderNumber}</td>
-                  <td className="px-6 py-4">
-                    <span className="font-semibold text-[#1A1A1A] block">{o.clientName}</span>
-                    <span className="text-xs text-[#6B7280]">{o.clientEmail}</span>
-                  </td>
-                  <td className="px-6 py-4">{o.date}</td>
-                  <td className="px-6 py-4 text-xs font-medium text-[#1A1A1A]">{o.paymentMethod}</td>
-                  <td className="px-6 py-4 font-bold text-[#1A3FA0]">{formatPrice(o.total)}</td>
-                  <td className="px-6 py-4">
-                    <select
-                      value={o.status}
-                      onChange={e => updateOrderStatus(o.id, e.target.value)}
-                      className={`px-3 py-1 rounded-full text-xs font-semibold border-0 cursor-pointer ${statusBadges[o.status]?.style}`}
-                    >
-                      <option value="PENDING">En attente</option>
-                      <option value="CONFIRMED">Confirmée</option>
-                      <option value="PROCESSING">En préparation</option>
-                      <option value="SHIPPED">Expédiée</option>
-                      <option value="DELIVERED">Livrée</option>
-                      <option value="CANCELLED">Annulée</option>
-                    </select>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <button
-                      onClick={() => setSelectedOrder(o)}
-                      className="p-1.5 text-[#1A3FA0] hover:bg-[#E8EDF8] rounded-lg transition-colors"
-                      title="Détails"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Details Modal */}
-      {selectedOrder && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 animate-in fade-in duration-200">
-            <div className="flex justify-between items-center border-b border-[#E2E2DF] pb-3">
-              <div>
-                <h3 className="font-bold text-lg text-[#1A1A1A]">Détails Commande {selectedOrder.orderNumber}</h3>
-                <p className="text-xs text-[#6B7280]">{selectedOrder.date}</p>
+        {/* KPI Cards */}
+        <div className="admin-kpi-grid">
+          {kpis.map(kpi => {
+            const Icon = kpi.icon;
+            return (
+              <div key={kpi.label} className="admin-kpi-card">
+                <div className="admin-kpi-top">
+                  <div className="admin-kpi-icon" style={{ background: kpi.bg, color: kpi.color }}><Icon size={20} /></div>
+                </div>
+                <div className="admin-kpi-value">{kpi.value}</div>
+                <div className="admin-kpi-label">{kpi.label}</div>
               </div>
-              <button onClick={() => setSelectedOrder(null)} className="text-[#6B7280] hover:text-[#1A1A1A]"><X className="h-5 w-5" /></button>
+            );
+          })}
+        </div>
+
+        <div className="admin-card">
+          {/* Filters */}
+          <div className="admin-filters-bar">
+            <div className="admin-search-field">
+              <Search size={16} className="admin-search-icon-sm" />
+              <input type="text" placeholder="Rechercher une commande..." value={search}
+                onChange={e => setSearch(e.target.value)} className="admin-input" />
             </div>
-
-            <div className="space-y-3 text-sm">
-              <div className="bg-[#F5F5F3] p-3 rounded-lg border border-[#E2E2DF]">
-                <p className="font-bold text-[#1A1A1A]">Informations Client</p>
-                <p className="text-xs text-[#6B7280]">{selectedOrder.clientName} · {selectedOrder.clientPhone}</p>
-                <p className="text-xs text-[#6B7280]">{selectedOrder.clientEmail}</p>
+            <div className="admin-filters-right">
+              <div className="admin-select-wrapper">
+                <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="admin-select">
+                  <option>Tous statuts</option>
+                  {Object.keys(STATUS_CONFIG).map(s => (
+                    <option key={s} value={s}>{STATUS_CONFIG[s].label}</option>
+                  ))}
+                </select>
+                <ChevronDown size={14} className="admin-select-icon" />
               </div>
-
-              <div className="border border-[#E2E2DF] rounded-lg p-3 space-y-2">
-                <p className="font-bold text-xs uppercase text-[#6B7280]">Articles commandés</p>
-                {selectedOrder.items.map((item, idx) => (
-                  <div key={idx} className="flex justify-between text-xs font-medium">
-                    <span>{item.qty}x {item.name}</span>
-                    <span className="font-bold text-[#1A1A1A]">{formatPrice(item.price * item.qty)}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex justify-between items-center pt-2 font-bold text-base border-t border-[#E2E2DF]">
-                <span>Total de la commande</span>
-                <span className="text-[#1A3FA0]">{formatPrice(selectedOrder.total)}</span>
-              </div>
-            </div>
-
-            <div className="flex justify-end pt-3">
-              <button onClick={() => setSelectedOrder(null)} className="px-5 py-2 bg-[#1A1A1A] text-white text-xs font-bold rounded-lg hover:bg-black">
-                Fermer
-              </button>
+              <button className="admin-btn-outline" onClick={handleExport}><Download size={16} /> Exporter</button>
             </div>
           </div>
+
+          {/* Table */}
+          {loading ? (
+            <div className="admin-empty-state"><Loader2 size={24} className="spin" style={{ color: '#1A3FA0' }} /></div>
+          ) : (
+            <table className="admin-table admin-table-full">
+              <thead>
+                <tr>
+                  <th>N° COMMANDE</th>
+                  <th>CLIENT</th>
+                  <th>MONTANT</th>
+                  <th>STATUT</th>
+                  <th>DATE</th>
+                  <th>ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredOrders.map(order => {
+                  const cfg = STATUS_CONFIG[order.status] || { label: order.status, bg: '#F3F4F6', color: '#374151' };
+                  const transitions = STATUS_TRANSITIONS[order.status] || [];
+                  return (
+                    <tr key={order.id}>
+                      <td className="admin-product-ref">{order.orderNumber || `CMD-${order.id}`}</td>
+                      <td>{order.shippingAddress?.fullName || `Client #${order.userId}`}</td>
+                      <td className="admin-table-price">{(order.totalAmount || 0).toLocaleString('fr-FR')} TND</td>
+                      <td>
+                        <span className="admin-status-badge" style={{ background: cfg.bg, color: cfg.color }}>
+                          {cfg.label}
+                        </span>
+                      </td>
+                      <td className="admin-table-date">
+                        {order.createdAt ? new Date(order.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
+                      </td>
+                      <td>
+                        <div className="admin-actions" style={{ gap: 6 }}>
+                          <button className="admin-action-btn" title="Voir détails" onClick={() => setViewOrder(order)}>
+                            <Eye size={15} />
+                          </button>
+                          {transitions.map(next => (
+                            <button
+                              key={next}
+                              disabled={updatingId === order.id}
+                              onClick={() => updateStatus(order.id, next)}
+                              className="admin-btn-outline"
+                              style={{ fontSize: 11, padding: '3px 8px' }}
+                            >
+                              {updatingId === order.id ? <Loader2 size={12} className="spin" /> : STATUS_CONFIG[next]?.label || next}
+                            </button>
+                          ))}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+
+          {!loading && filteredOrders.length === 0 && (
+            <div className="admin-empty-state" style={{ padding: '60px 20px', flexDirection: 'column', display: 'flex', alignItems: 'center' }}>
+              <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12, color: '#64748B', fontSize: 24 }}>📦</div>
+              <h4 style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 700 }}>Aucune commande</h4>
+              <p style={{ margin: 0, fontSize: 13, color: '#64748B' }}>Aucune commande ne correspond à vos filtres.</p>
+            </div>
+          )}
         </div>
-      )}
+
+        {/* Modal Détail Commande */}
+        {viewOrder && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+            onClick={() => setViewOrder(null)}>
+            <div style={{ background: '#fff', borderRadius: 16, padding: 28, maxWidth: 520, width: '100%', maxHeight: '80vh', overflowY: 'auto' }}
+              onClick={e => e.stopPropagation()}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>Commande {viewOrder.orderNumber}</h3>
+                <button onClick={() => setViewOrder(null)} style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: 20 }}>×</button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 14 }}>
+                <div><strong>Statut :</strong> <span style={{ color: STATUS_CONFIG[viewOrder.status]?.color }}>{STATUS_CONFIG[viewOrder.status]?.label}</span></div>
+                <div><strong>Client :</strong> {viewOrder.shippingAddress?.fullName || `Client #${viewOrder.userId}`}</div>
+                <div><strong>Adresse :</strong> {viewOrder.shippingAddress?.city}, {viewOrder.shippingAddress?.country}</div>
+                <div><strong>Montant total :</strong> {(viewOrder.totalAmount || 0).toLocaleString('fr-FR')} TND</div>
+                <div><strong>Date :</strong> {viewOrder.createdAt ? new Date(viewOrder.createdAt).toLocaleString('fr-FR') : 'N/A'}</div>
+                {viewOrder.orderItems?.length > 0 && (
+                  <div>
+                    <strong>Produits :</strong>
+                    <ul style={{ marginTop: 8, paddingLeft: 16 }}>
+                      {viewOrder.orderItems.map((item: any, idx: number) => (
+                        <li key={idx}>{item.productName || `Produit #${item.productId}`} × {item.quantity} — {(item.unitPrice || 0).toLocaleString('fr-FR')} TND</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
-  )
+  );
 }
