@@ -32,7 +32,7 @@ public class AdminSeeder implements CommandLineRunner {
             // Force the correct password hash
             admin.setPasswordHash(passwordEncoder.encode("Admin@AfricaNet2026"));
             admin.setRole(UserRole.ADMIN);
-            admin.setActive(true);
+            admin.setIsActive(true);
             userRepository.save(admin);
             log.info("Admin account password has been reset to the correct hash.");
         } else {
