@@ -9,14 +9,30 @@ import { MobileStickyBar } from '@/components/product/mobile-sticky-bar'
 import { fetchProductById } from '@/lib/api'
 import { getSimilarProducts, products } from '@/lib/products'
 import { notFound } from 'next/navigation'
+import { ProductJsonLd, BreadcrumbJsonLd } from '@/components/seo/json-ld'
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   try {
     const product = await fetchProductById(id)
+    const title = `${product.name} — AfricaNet`
+    const description = `${product.name} ${product.condition} — ${product.salePrice || product.basePrice} TND. Garantie 3 mois AfricaNet.`
+    
     return {
-      title: `${product.name} — AfricaNet`,
-      description: `${product.name} ${product.condition} — ${product.salePrice || product.basePrice} TND. Garantie 3 mois AfricaNet.`,
+      title,
+      description,
+      openGraph: {
+        title,
+        description,
+        type: 'website',
+        url: `https://africanet.tn/produit/${id}`,
+        images: product.images?.length > 0 ? [product.images[0].imageUrl] : ['/africanet-logo.jpg'],
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title,
+        description,
+      }
     }
   } catch (e) {
     return { title: 'Produit — AfricaNet' }
@@ -85,6 +101,21 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
 
   return (
     <div className="min-h-screen bg-[#F5F5F3]">
+      <ProductJsonLd 
+        name={product.name}
+        description={product.conditionNote}
+        image={product.thumbnails[0]}
+        price={product.priceNum}
+        condition={product.condition}
+        url={`https://africanet.tn/produit/${productId}`}
+      />
+      <BreadcrumbJsonLd 
+        items={[
+          { name: 'Accueil', url: 'https://africanet.tn/' },
+          { name: 'Catalogue', url: 'https://africanet.tn/catalogue' },
+          { name: product.name, url: `https://africanet.tn/produit/${productId}` },
+        ]}
+      />
       <Navbar />
       <ProductBreadcrumb productName={product.name} />
 

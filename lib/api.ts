@@ -29,7 +29,16 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // We can handle 401 Unauthorized globally here
+    if (error.response && error.response.status === 401) {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('accessToken')
+        localStorage.removeItem('refreshToken')
+        // Only redirect if not already on login or register
+        if (!window.location.pathname.includes('/connexion') && !window.location.pathname.includes('/inscription')) {
+          window.location.href = '/connexion?session_expired=true'
+        }
+      }
+    }
     return Promise.reject(error)
   }
 )
@@ -191,7 +200,7 @@ export async function submitTradeIn(tradeInData: any) {
 }
 
 export async function getUserTradeIns() {
-  const { data } = await api.get('/trade-in/user/me') // Or however it's mapped for 'me', actually the backend uses /trade-in/user/{userId}. Wait, Maram has /api/trade-in/user/{userId}. I'll use the current user from context. Let's export a flexible one:
+  const { data } = await api.get('/trade-in/me')
   return data
 }
 

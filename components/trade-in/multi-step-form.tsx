@@ -60,10 +60,14 @@ export function MultiStepForm() {
                     'Authorization': `Bearer ${token}`,
                 },
                 body: JSON.stringify({
-                    deviceType: DEVICE_TYPE_MAP[formData.deviceType] || 'LAPTOP',
-                    model: `${formData.brand} ${formData.model}`.trim(),
-                    conditionOverall: conditionInfo.code,
-                    manufactureYear: 2022 // default fallback for now
+                    brand: formData.brand,
+                    deviceModel: formData.model,
+                    yearOfPurchase: 2022,
+                    screenScore: conditionInfo.score,
+                    keyboardScore: conditionInfo.score,
+                    batteryScore: conditionInfo.score,
+                    chassisScore: conditionInfo.score,
+                    performanceScore: conditionInfo.score
                 })
             })
 

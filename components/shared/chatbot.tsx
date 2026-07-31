@@ -41,16 +41,25 @@ export function Chatbot() {
     }
     
     ws.onmessage = (event) => {
-      // The backend now streams raw text tokens directly due to Circuit Breaker changes
-      const token = event.data
+      // Backend sends JSON {sessionId, response} tokens
+      let token = event.data
+      try {
+        const parsed = JSON.parse(event.data)
+        if (parsed.response !== undefined) token = parsed.response
+      } catch {
+        // raw text fallback
+      }
 
       setMessages(prev => {
         const newMessages = [...prev]
         const lastMsg = newMessages[newMessages.length - 1]
         
         if (lastMsg && lastMsg.role === 'assistant' && lastMsg.id === streamingMsgRef.current) {
-          // Append to existing streaming message
-          lastMsg.content += token
+          // Replace the last message object immutably
+          newMessages[newMessages.length - 1] = {
+            ...lastMsg,
+            content: lastMsg.content + token
+          }
         } else {
           // Start a new streaming message
           const newId = Date.now().toString()
@@ -101,9 +110,12 @@ export function Chatbot() {
     setIsTyping(true)
     streamingMsgRef.current = '' // Reset streaming id
 
-    // Send to WebSocket as raw text (backend expects just the payload now)
+    // Send to WebSocket as JSON {sessionId, message} (as ChatMessage DTO expects)
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(userMsg.content)
+      wsRef.current.send(JSON.stringify({
+        sessionId: sessionIdRef.current,
+        message: userMsg.content
+      }))
     } else {
       setIsTyping(false)
       const errorMsg: Message = {

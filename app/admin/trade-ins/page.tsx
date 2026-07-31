@@ -53,14 +53,19 @@ export default function AdminEchangesPage() {
 
   useEffect(() => { load(); }, []);
 
-  const updateStatus = async (id: number, newStatus: string, finalValue?: number, notes?: string) => {
+  const updateStatus = async (id: number, newStatus: string, finalValue?: number | string | null, notes?: string) => {
     setUpdatingId(id);
     try {
       const token = getToken();
+      const parsedFinalValue = finalValue != null ? Number(finalValue) : undefined;
       const res = await fetch(`${API_BASE}/admin/trade-in/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ status: newStatus, finalValue, reviewNotes: notes }),
+        body: JSON.stringify({ 
+          status: newStatus, 
+          finalValue: parsedFinalValue && !isNaN(parsedFinalValue) ? parsedFinalValue : undefined, 
+          reviewNotes: notes 
+        }),
       });
       if (res.ok) { await load(); }
     } catch (e) { console.error(e); }

@@ -4,6 +4,7 @@ import { Hero } from '@/components/home/hero'
 import { ValueProps } from '@/components/home/value-props'
 import { ProductSection } from '@/components/home/product-section'
 import { WhyChoose } from '@/components/home/why-choose'
+import { OrganizationJsonLd } from '@/components/seo/json-ld'
 import type { SimpleProduct } from '@/components/home/product-section'
 
 const FEATURED: SimpleProduct[] = [
@@ -25,6 +26,7 @@ export default function HomePage() {
     <div className="min-h-screen bg-[#F5F5F3]">
       <Navbar />
       <main>
+        <OrganizationJsonLd />
         <Hero />
         <ValueProps />
         <ProductSection
