@@ -90,7 +90,7 @@ class TradeInEvaluationServiceTest {
         baseValue.setBaseValue(3000.0);
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(brandRepository.findByNameIgnoreCase("Apple")).thenReturn(brand);
+        when(brandRepository.findByNameIgnoreCase("Apple")).thenReturn(Optional.of(brand));
         when(deviceBaseValueRepository.findByBrandAndModel("Apple", "MacBook Pro")).thenReturn(Optional.of(baseValue));
         when(tradeInRepository.save(any())).thenAnswer(invocation -> {
             TradeIn t = invocation.getArgument(0);

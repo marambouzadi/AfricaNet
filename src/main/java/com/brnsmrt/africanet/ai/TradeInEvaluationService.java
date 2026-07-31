@@ -19,6 +19,8 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -69,7 +71,7 @@ public class TradeInEvaluationService {
                 .orElseThrow(() -> new RuntimeException(
                         "Customer not found with ID: " + request.getUserId()));
 
-        Brand brand = brandRepository.findByNameIgnoreCase(request.getBrand());
+        Brand brand = brandRepository.findByNameIgnoreCase(request.getBrand()).orElse(null);
 
         // 1. Base market price from DB
         double basePrice = computeBaseValue(request.getBrand(), request.getDeviceModel());
@@ -112,14 +114,14 @@ public class TradeInEvaluationService {
 
         ConditionOverall overall = mapScoreToOverallCondition(conditionOverallScore);
 
-        String conditionDetailsJson = buildConditionDetailsJson(request);
+        Map<String, Object> conditionDetailsJson = buildConditionDetailsJson(request);
         
         // Human-readable summary
         String conditionSummary = buildConditionSummary(
                 request, basePrice, age, ageFactor, conditionOverallScore,
                 avgComponentScore, score, estimatedValue);
 
-        String aiEvaluationJson = buildAiEvaluationJson(conditionSummary, conditionScore);
+        Map<String, Object> aiEvaluationJson = buildAiEvaluationJson(conditionSummary, conditionScore);
 
         String refNumber = "TRD-" + LocalDate.now().getYear() + "-" + System.currentTimeMillis();
 
@@ -158,21 +160,18 @@ public class TradeInEvaluationService {
         return ConditionOverall.POOR;
     }
 
-    private String buildConditionDetailsJson(TradeInRequest request) {
-        ObjectNode root = objectMapper.createObjectNode();
-        root.set("screen", objectMapper.createObjectNode().put("score", request.getScreenScore()));
-        root.set("keyboard", objectMapper.createObjectNode().put("score", request.getKeyboardScore()));
-        root.set("battery", objectMapper.createObjectNode().put("score", request.getBatteryScore()));
-        root.set("chassis", objectMapper.createObjectNode().put("score", request.getChassisScore()));
-        root.set("performance", objectMapper.createObjectNode().put("score", request.getPerformanceScore()));
-        return root.toString();
+    private Map<String, Object> buildConditionDetailsJson(TradeInRequest request) {
+        Map<String, Object> root = new java.util.HashMap<>();
+        root.put("screen", java.util.Map.of("score", request.getScreenScore()));
+        root.put("keyboard", java.util.Map.of("score", request.getKeyboardScore()));
+        root.put("battery", java.util.Map.of("score", request.getBatteryScore()));
+        root.put("chassis", java.util.Map.of("score", request.getChassisScore()));
+        root.put("performance", java.util.Map.of("score", request.getPerformanceScore()));
+        return root;
     }
 
-    private String buildAiEvaluationJson(String summary, double score) {
-        ObjectNode root = objectMapper.createObjectNode();
-        root.put("summary", summary);
-        root.put("score", score);
-        return root.toString();
+    private Map<String, Object> buildAiEvaluationJson(String summary, double score) {
+        return java.util.Map.of("summary", summary, "score", score);
     }
 
     /**

@@ -8,8 +8,8 @@ import java.util.List;
 
 @Repository
 public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
-    List<OrderItem> findByOrder_User_Id(Long userId);
+    List<OrderItem> findByOrder_UserId(Long userId);
 
-    @Query("SELECT oi.product.id, COUNT(oi) FROM OrderItem oi WHERE oi.product IS NOT NULL GROUP BY oi.product.id")
+    @Query("SELECT oi.productId, COUNT(oi) FROM OrderItem oi WHERE oi.productId IS NOT NULL GROUP BY oi.productId")
     List<Object[]> countOrdersByProduct();
 }

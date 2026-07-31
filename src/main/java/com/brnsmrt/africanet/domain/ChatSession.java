@@ -7,6 +7,10 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
+import java.util.Map;
+
+import org.hibernate.annotations.Type;
+import io.hypersistence.utils.hibernate.type.json.JsonType;
 
 @Entity
 @Table(name = "chat_sessions")
@@ -37,9 +41,9 @@ public class ChatSession {
     @Builder.Default
     private Integer messageCount = 0;
 
+    @Type(JsonType.class)
     @Column(columnDefinition = "jsonb")
-    private String context;
-    
+    private Map<String, Object> context;
     @PrePersist
     protected void onCreate() {
         if (startedAt == null) startedAt = LocalDateTime.now();

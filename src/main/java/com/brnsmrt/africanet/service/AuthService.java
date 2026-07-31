@@ -107,6 +107,8 @@ public class AuthService {
                 .phone(user.getPhone())
                 .avatarUrl(user.getAvatarUrl())
                 .role(user.getRole())
+                .isActive(user.getIsActive())
+                .createdAt(user.getCreatedAt())
                 .build();
 
         return AuthResponse.builder()
@@ -168,6 +170,8 @@ public class AuthService {
                 .phone(user.getPhone())
                 .avatarUrl(user.getAvatarUrl())
                 .role(user.getRole())
+                .isActive(user.getIsActive())
+                .createdAt(user.getCreatedAt())
                 .build();
     }
 
@@ -202,6 +206,8 @@ public class AuthService {
                 .phone(savedUser.getPhone())
                 .avatarUrl(savedUser.getAvatarUrl())
                 .role(savedUser.getRole())
+                .isActive(savedUser.getIsActive())
+                .createdAt(savedUser.getCreatedAt())
                 .build();
     }
 

@@ -118,7 +118,7 @@ public class AssistantTools {
           and a contact phone number.""")
     public User registerNewCustomer(@jakarta.validation.Valid User newCustomer) {
         newCustomer.setRole(com.brnsmrt.africanet.domain.enums.UserRole.CUSTOMER); 
-        newCustomer.setActive(true);
+        newCustomer.setIsActive(true);
         // Provide dummy password and empty required fields for chatbot creation
         newCustomer.setPasswordHash("chatbot_created_no_password");
         newCustomer.setEmailVerified(false);

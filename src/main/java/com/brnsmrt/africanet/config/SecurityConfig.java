@@ -74,7 +74,8 @@ public class SecurityConfig {
                             "/api-docs/**",
                             "/v3/api-docs/**",
                             "/error",
-                            "/mock-flouci/**"
+                            "/mock-flouci/**",
+                            "/ws/**"
                     ).permitAll()
 
                 // Catalogue public (lecture seule)

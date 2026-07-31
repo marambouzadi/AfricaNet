@@ -62,7 +62,7 @@ public class RecommendationService {
         userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Customer not found with ID: " + userId));
 
-        List<Order> userOrders = orderRepository.findByUser_Id(userId);
+        List<Order> userOrders = orderRepository.findByUserId(userId);
 
         Map<Long, Double> contentScores;
         Set<Long> purchasedProductIds = new HashSet<>();
@@ -74,9 +74,9 @@ public class RecommendationService {
             // Content-based scoring from orders
             contentScores = contentBasedScores(userOrders);
             for (Order order : userOrders) {
-                for (OrderItem item : order.getOrderItems()) {
-                    if (item.getProduct() != null) {
-                        purchasedProductIds.add(item.getProduct().getId());
+                for (OrderItem item : order.getItems()) {
+                    if (item.getProductId() != null) {
+                        purchasedProductIds.add(item.getProductId());
                     }
                 }
             }
@@ -154,12 +154,15 @@ public class RecommendationService {
         int totalPurchases = 0;
 
         for (Order order : userOrders) {
-            for (OrderItem item : order.getOrderItems()) {
-                if (item.getProduct() != null && item.getProduct().getCategory() != null) {
-                    Long categoryId = item.getProduct().getCategory().getId();
-                    categoryPurchaseCounts.merge(categoryId, 1, Integer::sum);
-                    purchasedProductIds.add(item.getProduct().getId());
-                    totalPurchases++;
+            for (OrderItem item : order.getItems()) {
+                if (item.getProductId() != null) {
+                    Product product = productRepository.findById(item.getProductId()).orElse(null);
+                    if (product != null && product.getCategory() != null) {
+                        Long categoryId = product.getCategory().getId();
+                        categoryPurchaseCounts.merge(categoryId, 1, Integer::sum);
+                        purchasedProductIds.add(product.getId());
+                        totalPurchases++;
+                    }
                 }
             }
         }

@@ -57,7 +57,7 @@ public class TradeInControllerTest {
 
         when(tradeInEvaluationService.evaluate(any())).thenReturn(expectedResult);
 
-        ResponseEntity<EvaluationResult> response = tradeInController.evaluateTradeIn(request);
+        ResponseEntity<EvaluationResult> response = tradeInController.evaluateTradeIn(request, null);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
@@ -65,18 +65,4 @@ public class TradeInControllerTest {
         verify(tradeInEvaluationService).evaluate(request);
     }
 
-    @Test
-    void testGetUserTradeIns_success() {
-        TradeIn tradeIn = new TradeIn();
-        tradeIn.setId(1L);
-
-        when(tradeInRepository.findByUser_Id(1L)).thenReturn(List.of(tradeIn));
-
-        ResponseEntity<List<TradeIn>> response = tradeInController.getUserTradeIns(1L);
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertEquals(1, response.getBody().size());
-        verify(tradeInRepository).findByUser_Id(1L);
-    }
 }

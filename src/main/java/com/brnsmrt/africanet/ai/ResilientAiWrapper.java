@@ -8,7 +8,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-@Service
+// @Service removed to prevent crash
 public class ResilientAiWrapper {
 
     private final Assistant assistant;

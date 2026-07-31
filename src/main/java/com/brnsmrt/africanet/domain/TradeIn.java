@@ -8,8 +8,11 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Entity
 @Table(name = "trade_in_requests")
@@ -50,8 +53,9 @@ public class TradeIn {
     @Column(name = "condition_overall", nullable = false, length = 20)
     private ConditionOverall conditionOverall;
     
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "condition_details", nullable = false, columnDefinition = "jsonb")
-    private String conditionDetails;
+    private Map<String, Object> conditionDetails;
     
     @Column(name = "estimated_value_ai", precision = 10, scale = 3)
     private BigDecimal estimatedValueAi;
@@ -66,8 +70,9 @@ public class TradeIn {
     @Column(nullable = false, length = 20)
     private TradeInStatus status = TradeInStatus.SUBMITTED;
     
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "ai_evaluation", columnDefinition = "jsonb")
-    private String aiEvaluation;
+    private Map<String, Object> aiEvaluation;
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reviewed_by")
