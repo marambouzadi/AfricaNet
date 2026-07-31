@@ -1,4 +1,4 @@
-# 🌍 AfricaNet — Rapport d'Architecture & Document des Exigences (RAD)
+﻿# 🌍 AfricaNet — Rapport d'Architecture & Document des Exigences (RAD)
 
 > **Plateforme E-Commerce de Matériel Informatique Reconditionné & Système Intelligent de Reprise (Trade-In)**
 
@@ -30,32 +30,28 @@
 ## 2. 🛠️ Architecture Système & Stack Technique
 
 Le projet repose sur une architecture découplée **Client-Serveur (REST API + SPA)** garantissant une haute scalabilité, une maintenance aisée et une séparation nette des responsabilités.
-
-```
-                  ┌────────────────────────────────────────┐
-                  │       Client Web (Browser)             │
-                  └──────────────────┬─────────────────────┘
-                                     │ HTTP / HTTPS (JSON)
-                                     ▼
-                  ┌────────────────────────────────────────┐
-                  │       Frontend Next.js 16 (React 19)   │
-                  │   App Router · SSR / Static / Dynamic  │
-                  └──────────────────┬─────────────────────┘
-                                     │ REST API / JWT
-                                     ▼
-                  ┌────────────────────────────────────────┐
-                  │     Backend Spring Boot 3.4 (Java 17)  │
-                  │   Spring Security 6 · JPA / Hibernate  │
-                  └──────────────────┬─────────────────────┘
-                                     │
-                        ┌────────────┴────────────┐
-                        ▼                         ▼
-            ┌───────────────────────┐ ┌──────────────────────┐
-            │ Base PostgreSQL 15    │ │ Stockage Local       │
-            │ Schema Liquibase DB   │ │ public/images/       │
-            └───────────────────────┘ └──────────────────────┘
-```
-
+┌────────────────────────────────────────┐
+              │       Client Web (Browser)             │
+              └──────────────────┬─────────────────────┘
+                                 │ HTTP / HTTPS (JSON)
+                                 ▼
+              ┌────────────────────────────────────────┐
+              │       Frontend Next.js 16 (React 19)   │
+              │   App Router · SSR / Static / Dynamic  │
+              └──────────────────┬─────────────────────┘
+                                 │ REST API / JWT
+                                 ▼
+              ┌────────────────────────────────────────┐
+              │     Backend Spring Boot 3.4 (Java 17)  │
+              │   Spring Security 6 · JPA / Hibernate  │
+              └──────────────────┬─────────────────────┘
+                                 │
+                    ┌────────────┴────────────┐
+                    ▼                         ▼
+        ┌───────────────────────┐ ┌──────────────────────┐
+        │ Base PostgreSQL 15    │ │ Stockage Local       │
+        │ Schema Liquibase DB   │ │ public/images/       │
+        └───────────────────────┘ └──────────────────────┘
 ### 🧰 Stack Technique Backend :
 - **Langage & Framework** : Java 17, Spring Boot 3.4.x
 - **Sécurité & Authentification** : Spring Security 6, JWT (HMAC-SHA256), hachage BCrypt (Strength 12), Architecture Stateless
