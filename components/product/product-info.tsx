@@ -15,13 +15,14 @@ const specIcons: Record<string, typeof Cpu> = {
 export function ProductInfo({ product }: { product: ProductDetail }) {
   const [qty, setQty] = useState(1)
   const [isWishlisted, setIsWishlisted] = useState(false)
-  const { addItem } = useCart()
+  const { addItem, openCart } = useCart()
 
   const handleAddToCart = () => {
     addItem(
-      { id: product.id, name: product.name, price: product.priceNum },
+      { id: product.id, name: product.name, price: product.priceNum, image: product.thumbnails?.[0] },
       qty
     )
+    openCart()
     setQty(1)
   }
 

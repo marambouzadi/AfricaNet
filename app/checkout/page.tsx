@@ -9,12 +9,14 @@ import { Navbar } from '@/components/layout/navbar'
 import { Footer } from '@/components/layout/footer'
 import { useCart } from '@/lib/cart-context'
 import { formatPrice } from '@/lib/products'
+import { useUser } from '@/lib/user-context'
 
 type CheckoutStep = 'shipping' | 'payment' | 'success'
 
 export default function CheckoutPage() {
   const router = useRouter()
   const { items, totalPrice, clearCart, isLoaded } = useCart()
+  const { user, isLoading: isUserLoading } = useUser()
   const [step, setStep] = useState<CheckoutStep>('shipping')
   const [isProcessing, setIsProcessing] = useState(false)
 
@@ -36,6 +38,15 @@ export default function CheckoutPage() {
   // If cart is empty and not on success page, redirect to cart
   if (items.length === 0 && step !== 'success') {
     router.push('/panier')
+    return null
+  }
+
+  if (isUserLoading) return <div className="min-h-screen flex items-center justify-center">Chargement...</div>
+
+  if (!user) {
+    if (typeof window !== 'undefined') {
+      router.push('/connexion?redirect=/checkout')
+    }
     return null
   }
 

@@ -23,14 +23,22 @@ export default function ContactPage() {
   const [sent, setSent] = useState(false)
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', subject: 'Question sur un produit', message: '' })
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSending(true)
-    setTimeout(() => {
-      setSending(false)
+    try {
+      await fetch('http://localhost:8090/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form)
+      })
       setSent(true)
       setForm({ firstName: '', lastName: '', email: '', phone: '', subject: 'Question sur un produit', message: '' })
-    }, 1500)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setSending(false)
+    }
   }
 
   return (
@@ -80,12 +88,6 @@ export default function ContactPage() {
                     </div>
                   </div>
                 </div>
-              </div>
-
-              <div className="bg-white p-8 rounded-2xl shadow-sm border border-[#E2E2DF]">
-                <h3 className="font-bold text-[#1A1A1A] mb-2">Vous cherchez une réponse rapide ?</h3>
-                <p className="text-sm text-[#6B7280] mb-4">Consultez notre Centre d'Aide pour les livraisons, retours et garanties.</p>
-                <a href="#" className="text-[#1A3FA0] font-medium hover:underline">Visiter le Centre d'Aide →</a>
               </div>
             </div>
 

@@ -196,19 +196,20 @@ export function Navbar() {
             })}
           </nav>
 
-          <div className="flex items-center gap-5">
+          <div className="flex items-center gap-1 md:gap-3">
             <button
               type="button"
-              aria-label="Rechercher"
+              className="relative rounded-full p-2 text-[#1A1A1A] transition-colors hover:bg-[#F5F5F3]"
               onClick={() => setSearchOpen(true)}
-              className="text-[#1A1A1A] transition-colors duration-200 hover:text-[#1A3FA0]"
+              aria-label="Rechercher"
             >
               <Search className="h-5 w-5" />
             </button>
+
             <Link
               href="/panier"
               aria-label={`Panier (${totalItems} articles)`}
-              className="relative text-[#1A1A1A] transition-colors duration-200 hover:text-[#1A3FA0]"
+              className="relative p-2 text-[#1A1A1A] transition-colors duration-200 hover:text-[#1A3FA0]"
             >
               <ShoppingCart className="h-5 w-5" />
               {totalItems > 0 && (

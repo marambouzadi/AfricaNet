@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react'
+import { CartSidebar } from '@/components/cart/cart-sidebar'
 
 export type CartItem = {
   id: number
@@ -22,6 +23,9 @@ type CartContextType = {
   notification: string | null
   clearNotification: () => void
   isLoaded: boolean
+  isCartOpen: boolean
+  openCart: () => void
+  closeCart: () => void
 }
 
 const CartContext = createContext<CartContextType | null>(null)
@@ -30,6 +34,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([])
   const [notification, setNotification] = useState<string | null>(null)
   const [isLoaded, setIsLoaded] = useState(false)
+  const [isCartOpen, setIsCartOpen] = useState(false)
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -52,6 +57,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [items, isLoaded])
 
   const clearNotification = useCallback(() => setNotification(null), [])
+  const openCart = useCallback(() => setIsCartOpen(true), [])
+  const closeCart = useCallback(() => setIsCartOpen(false), [])
 
   const addItem = useCallback((item: Omit<CartItem, 'quantity'>, quantity = 1) => {
     setItems((prev) => {
@@ -99,8 +106,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
         notification,
         clearNotification,
         isLoaded,
+        isCartOpen,
+        openCart,
+        closeCart,
       }}
     >
+      <CartSidebar />
       {children}
     </CartContext.Provider>
   )

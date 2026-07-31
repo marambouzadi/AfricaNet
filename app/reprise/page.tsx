@@ -1,14 +1,27 @@
+'use client'
+
 import { Navbar } from '@/components/layout/navbar'
 import { Footer } from '@/components/layout/footer'
 import { MultiStepForm } from '@/components/trade-in/multi-step-form'
+import { useRouter } from 'next/navigation'
+import { useUser } from '@/lib/user-context'
 import { CheckCircle, Zap, Shield, Leaf } from 'lucide-react'
 
-export const metadata = {
-  title: 'Estimez et Revendez votre ancien PC — AfricaNet',
-  description: 'Vendez votre ancien matériel informatique en 3 minutes. Estimation par Intelligence Artificielle et paiement rapide.',
-}
+
 
 export default function ReprisePage() {
+  const router = useRouter()
+  const { user, isLoading } = useUser()
+
+  if (isLoading) return <div className="min-h-screen flex items-center justify-center">Chargement...</div>
+
+  if (!user) {
+    if (typeof window !== 'undefined') {
+      router.push('/connexion?redirect=/reprise')
+    }
+    return null
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-[#F5F5F3]">
       <Navbar />
