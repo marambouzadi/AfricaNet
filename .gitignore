@@ -39,6 +39,7 @@ all_my_code.txt
 ### Frontend (Next.js) ###
 # dependencies
 /node_modules
+**/node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -52,6 +53,7 @@ all_my_code.txt
 
 # next.js
 /.next/
+**/.next/
 /out/
 
 # production

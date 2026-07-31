@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { UploadCloud, CheckCircle2, Laptop, HardDrive, Smartphone, ChevronRight, ChevronLeft, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
+import { evaluateTradeIn } from '@/lib/api'
 
 type Step = 1 | 2 | 3 | 4
 
@@ -48,31 +49,33 @@ export function MultiStepForm() {
             return
         }
 
+        // Récupérer l'userId depuis le localStorage (stocké lors du login)
+        const userStr = localStorage.getItem('user')
+        const userId = userStr ? JSON.parse(userStr)?.id : null
+        if (!userId) {
+            setError('Session invalide. Veuillez vous reconnecter.')
+            return
+        }
+
         setIsSubmitting(true)
 
         const conditionInfo = CONDITION_MAP[formData.condition] || { code: 'FAIR', score: 5 }
+        const score = conditionInfo.score
 
         try {
-            const res = await fetch('http://localhost:8090/api/trade-in/evaluate', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                    deviceType: DEVICE_TYPE_MAP[formData.deviceType] || 'LAPTOP',
-                    model: `${formData.brand} ${formData.model}`.trim(),
-                    conditionOverall: conditionInfo.code,
-                    manufactureYear: 2022 // default fallback for now
-                })
+            const data = await evaluateTradeIn({
+                brand: formData.brand,
+                deviceModel: `${formData.brand} ${formData.model}`.trim(),
+                yearOfPurchase: 2022, // fallback — le formulaire détaillé /reprise/submit permettra de le préciser
+                screenScore: score,
+                keyboardScore: score,
+                batteryScore: score,
+                chassisScore: score,
+                performanceScore: score,
+                notes: `Type: ${formData.deviceType}, Chargeur: ${formData.hasCharger ? 'Oui' : 'Non'}`,
+                userId,
             })
 
-            if (!res.ok) {
-                const errorData = await res.json().catch(() => ({}))
-                throw new Error(errorData.message || 'Erreur lors de la soumission de votre demande')
-            }
-            
-            const data = await res.json()
             setEvaluationResult(data)
             setStep(4)
         } catch (err) {

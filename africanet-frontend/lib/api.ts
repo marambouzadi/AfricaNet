@@ -1,7 +1,7 @@
 import axios from 'axios'
 import type { Condition } from './products'
 
-const API_BASE_URL = 'http://localhost:8090/api'
+const API_BASE_URL = 'http://localhost:8081/api'
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -190,8 +190,8 @@ export async function submitTradeIn(tradeInData: any) {
   return data
 }
 
-export async function getUserTradeIns() {
-  const { data } = await api.get('/trade-in/user/me') // Or however it's mapped for 'me', actually the backend uses /trade-in/user/{userId}. Wait, Maram has /api/trade-in/user/{userId}. I'll use the current user from context. Let's export a flexible one:
+export async function getUserTradeIns(): Promise<any> {
+  const { data } = await api.get('/trade-in/my')
   return data
 }
 

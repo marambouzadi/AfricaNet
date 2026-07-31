@@ -5,6 +5,7 @@ import com.brnsmrt.africanet.dto.response.ChatResponse;
 import com.brnsmrt.africanet.service.ChatHistoryService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -13,6 +14,7 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 @Slf4j
 @Component
+@Profile("ai")
 public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     private final ChatbotService chatbotService;
@@ -36,7 +38,6 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         String userMessage = chatMessage.getMessage();
         String clientSessionId = chatMessage.getSessionId();
 
-        // Log user message to DB
         chatHistoryService.logMessage(clientSessionId, "USER", userMessage);
 
         StringBuilder aiResponseBuilder = new StringBuilder();
@@ -47,7 +48,6 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                     sendResponse(session, clientSessionId, token);
                 })
                 .onCompleteResponse(response -> {
-                    // Log complete AI response to DB
                     chatHistoryService.logMessage(clientSessionId, "ASSISTANT", aiResponseBuilder.toString());
                 })
                 .onError(error -> sendResponse(session, clientSessionId, "Error: " + error.getMessage()))
@@ -60,7 +60,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                     .sessionId(clientSessionId)
                     .response(token)
                     .build();
-            
+
             String jsonPayload = objectMapper.writeValueAsString(chatResponse);
             session.sendMessage(new TextMessage(jsonPayload));
         } catch (Exception e) {

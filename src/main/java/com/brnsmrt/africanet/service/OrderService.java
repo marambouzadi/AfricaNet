@@ -61,16 +61,16 @@ public class OrderService {
         // 2. Créer la commande
         Order order = Order.builder()
                 .orderNumber(orderNumberGenerator.generate())
-                .userId(userId)
+                .user(User.builder().id(userId).build())
                 .status(OrderStatus.PENDING)
                 .paymentStatus(PaymentStatus.PENDING)
                 .paymentMethod(request.getPaymentMethod())
                 .couponCode(request.getCouponCode())
                 .customerNotes(request.getCustomerNotes())
-                .shippingAddress(addressToMap(request.getShippingAddress()))
+                .shippingAddress(toJson(addressToMap(request.getShippingAddress())))
                 .billingAddress(request.getBillingAddress() != null
-                        ? addressToMap(request.getBillingAddress())
-                        : addressToMap(request.getShippingAddress()))
+                        ? toJson(addressToMap(request.getBillingAddress()))
+                        : toJson(addressToMap(request.getShippingAddress())))
                 .build();
 
         BigDecimal subtotal = BigDecimal.ZERO;
@@ -79,7 +79,7 @@ public class OrderService {
         for (OrderItemRequest itemReq : request.getItems()) {
             Product product = productMap.get(itemReq.getProductId());
 
-            if (!product.getIsActive()) {
+            if (!product.isActive()) {
                 throw new BusinessException("Le produit " + product.getName() + " n'est plus disponible");
             }
 
@@ -95,11 +95,11 @@ public class OrderService {
             BigDecimal totalPrice = unitPrice.multiply(BigDecimal.valueOf(itemReq.getQuantity()));
 
             OrderItem item = OrderItem.builder()
-                    .productId(product.getId())
+                    .product(product)
                     .quantity(itemReq.getQuantity())
                     .unitPrice(unitPrice)
                     .totalPrice(totalPrice)
-                    .productSnapshot(buildProductSnapshot(product))
+                    .productSnapshot(toJson(buildProductSnapshot(product)))
                     .build();
 
             order.addItem(item);
@@ -361,5 +361,14 @@ public class OrderService {
             snap.put("image", product.getImages().get(0).getUrl());
         }
         return snap;
+    }
+
+    private String toJson(Object obj) {
+        if (obj == null) return null;
+        try {
+            return new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(obj);
+        } catch (Exception e) {
+            return null;
+        }
     }
 }
