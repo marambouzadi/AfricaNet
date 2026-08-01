@@ -162,6 +162,15 @@ export function Catalog() {
         // Fallback to local mock data
         let mapped = products
         
+        if (searchQuery) {
+          const q = searchQuery.toLowerCase()
+          mapped = mapped.filter((p) => 
+            p.name.toLowerCase().includes(q) || 
+            p.brand.toLowerCase().includes(q) || 
+            p.cpu.toLowerCase().includes(q)
+          )
+        }
+        
         mapped = mapped.filter((p) => p.price >= filters.priceMin && p.price <= filters.priceMax)
         if (filters.brands.length > 0) {
           mapped = mapped.filter((p) => filters.brands.includes(p.brand))
