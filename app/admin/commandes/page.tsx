@@ -106,7 +106,10 @@ export default function AdminCommandesPage() {
 
   return (
     <div className="admin-page">
-      <AdminHeader title="Gestion des Commandes" breadcrumb="Gestion · Commandes" />
+      <div className="mb-8">
+        <h1 className="text-3xl font-serif font-bold text-[#1A1A1A]">Gestion des Commandes</h1>
+        <p className="text-[#6B7280]">Suivez et gérez toutes les commandes de la boutique.</p>
+      </div>
       <div className="admin-content">
 
         {/* KPI Cards */}

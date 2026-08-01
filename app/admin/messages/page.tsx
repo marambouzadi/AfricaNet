@@ -51,7 +51,10 @@ export default function AdminMessagesPage() {
 
   return (
     <div className="admin-page">
-      <AdminHeader title="Messages de Contact" breadcrumb="Gestion · Messages" />
+      <div className="mb-8">
+        <h1 className="text-3xl font-serif font-bold text-[#1A1A1A]">Messages de Contact</h1>
+        <p className="text-[#6B7280]">Consultez et répondez aux messages des clients.</p>
+      </div>
       <div className="admin-content">
 
         <div className="admin-card">

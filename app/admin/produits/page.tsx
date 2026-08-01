@@ -1,78 +1,141 @@
 'use client'
 
-import { useState } from 'react'
-import { Plus, Search, Filter, Edit2, Trash2, Eye, Package, Check, X, ShieldAlert } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Plus, Search, Filter, Edit2, Trash2, Eye, Package, Check, X, ShieldAlert, Loader2 } from 'lucide-react'
 import { formatPrice } from '@/lib/products'
 
-interface ProductItem {
-  id: number
-  name: string
-  brand: string
-  category: string
-  condition: 'Neuf' | 'Reconditionné' | 'Occasion'
-  basePrice: number
-  salePrice?: number
-  stock: number
-  status: 'Actif' | 'Inactif'
+const API_BASE = 'http://localhost:8090/api';
+
+function getToken() {
+  return typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
 }
 
-const initialProducts: ProductItem[] = [
-  { id: 1, name: 'Dell XPS 13 9310', brand: 'Dell', category: 'PC Portable', condition: 'Neuf', basePrice: 3200, salePrice: 2990, stock: 8, status: 'Actif' },
-  { id: 2, name: 'MacBook Pro 14 M1 Pro', brand: 'Apple', category: 'PC Portable', condition: 'Reconditionné', basePrice: 4500, stock: 3, status: 'Actif' },
-  { id: 3, name: 'Lenovo ThinkPad T14 Gen 2', brand: 'Lenovo', category: 'PC Portable', condition: 'Occasion', basePrice: 1650, stock: 12, status: 'Actif' },
-  { id: 4, name: 'HP Spectre x360', brand: 'HP', category: 'PC Convertible', condition: 'Neuf', basePrice: 3800, salePrice: 3490, stock: 0, status: 'Inactif' },
-  { id: 5, name: 'Asus ROG Strix G15', brand: 'Asus', category: 'Gamer', condition: 'Reconditionné', basePrice: 2850, stock: 5, status: 'Actif' },
-]
-
 export default function AdminProduitsPage() {
-  const [productsList, setProductsList] = useState<ProductItem[]>(initialProducts)
+  const [productsList, setProductsList] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [conditionFilter, setConditionFilter] = useState<string>('Tous')
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
-  const [selectedProduct, setSelectedProduct] = useState<ProductItem | null>(null)
+  
+  // Available brands to suggest in datalist
+  const [availableBrands, setAvailableBrands] = useState<any[]>([])
 
   // Form State
   const [formData, setFormData] = useState({
     name: '',
-    brand: 'Dell',
-    category: 'PC Portable',
+    brandName: '', // Switched from strict brandId/brand select
+    categoryId: 1, // Default to a valid category (e.g. 1 = Laptops)
     condition: 'Neuf' as 'Neuf' | 'Reconditionné' | 'Occasion',
     basePrice: '',
     salePrice: '',
     stock: ''
   })
 
+  useEffect(() => {
+    fetchProducts();
+    fetchBrands();
+  }, [])
+
+  const fetchProducts = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/products?size=100`, { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        setProductsList(data.content || []);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const fetchBrands = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/brands`, { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        setAvailableBrands(data);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
   const filteredProducts = productsList.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) || p.brand.toLowerCase().includes(search.toLowerCase())
-    const matchesCondition = conditionFilter === 'Tous' || p.condition === conditionFilter
-    return matchesSearch && matchesCondition
+    const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) || 
+                          (p.brandName && p.brandName.toLowerCase().includes(search.toLowerCase()));
+    const matchesCondition = conditionFilter === 'Tous' || p.condition === conditionFilter;
+    return matchesSearch && matchesCondition;
   })
 
-  const handleCreateProduct = (e: React.FormEvent) => {
+  const handleCreateProduct = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!formData.name || !formData.basePrice) return
-    const newProduct: ProductItem = {
-      id: Date.now(),
+
+    const payload = {
       name: formData.name,
-      brand: formData.brand,
-      category: formData.category,
+      brandName: formData.brandName,
+      categoryId: formData.categoryId,
       condition: formData.condition,
       basePrice: parseFloat(formData.basePrice),
-      salePrice: formData.salePrice ? parseFloat(formData.salePrice) : undefined,
+      salePrice: formData.salePrice ? parseFloat(formData.salePrice) : null,
       stock: parseInt(formData.stock || '1', 10),
-      status: 'Actif'
+      isFeatured: false,
+      weightKg: 1.0,
+      description: "Description du produit " + formData.name
     }
-    setProductsList(prev => [newProduct, ...prev])
-    setIsAddModalOpen(false)
-    setFormData({ name: '', brand: 'Dell', category: 'PC Portable', condition: 'Neuf', basePrice: '', salePrice: '', stock: '' })
+
+    try {
+      const token = getToken();
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      };
+
+      const res = await fetch(`${API_BASE}/products`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        const newProduct = await res.json();
+        setProductsList(prev => [newProduct, ...prev]);
+        setIsAddModalOpen(false);
+        setFormData({ name: '', brandName: '', categoryId: 1, condition: 'Neuf', basePrice: '', salePrice: '', stock: '' });
+        fetchBrands(); // Refresh brands in case a new one was added
+      } else {
+        alert("Erreur lors de la création du produit");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Erreur réseau");
+    }
   }
 
-  const handleDeleteProduct = (id: number) => {
-    setProductsList(prev => prev.filter(p => p.id !== id))
+  const handleDeleteProduct = async (id: number) => {
+    if (!confirm("Voulez-vous vraiment désactiver ce produit ?")) return;
+    try {
+      const token = getToken();
+      const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
+      const res = await fetch(`${API_BASE}/products/${id}`, {
+        method: 'DELETE',
+        headers
+      });
+      if (res.ok) {
+        setProductsList(prev => prev.filter(p => p.id !== id));
+      }
+    } catch (err) {
+      console.error(err);
+    }
   }
 
-  const toggleStatus = (id: number) => {
-    setProductsList(prev => prev.map(p => p.id === id ? { ...p, status: p.status === 'Actif' ? 'Inactif' : 'Actif' } : p))
+  const toggleStatus = async (product: any) => {
+    // In this basic version, we can just flip isActive if we had a toggle endpoint.
+    // For now, we simulate UI change. To do it correctly, we'd PUT /api/products/{id}
+    setProductsList(prev => prev.map(p => p.id === product.id ? { ...p, isActive: !p.isActive } : p))
   }
 
   return (
@@ -100,87 +163,105 @@ export default function AdminProduitsPage() {
             placeholder="Rechercher par nom ou marque..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full bg-[#F5F5F3] border border-[#E2E2DF] rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30"
+            className="w-full pl-10 pr-4 py-2 border border-[#E2E2DF] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30 transition-shadow"
           />
         </div>
-        <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-[#6B7280]" />
-          <select
+        <div className="flex gap-3">
+          <select 
             value={conditionFilter}
             onChange={e => setConditionFilter(e.target.value)}
-            className="bg-[#F5F5F3] border border-[#E2E2DF] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30"
+            className="px-4 py-2 border border-[#E2E2DF] rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30"
           >
             <option value="Tous">Tous les états</option>
             <option value="Neuf">Neuf</option>
             <option value="Reconditionné">Reconditionné</option>
             <option value="Occasion">Occasion</option>
           </select>
+          <button className="px-4 py-2 border border-[#E2E2DF] rounded-lg text-sm font-medium hover:bg-gray-50 flex items-center gap-2">
+            <Filter className="h-4 w-4 text-[#6B7280]" />
+            Filtres
+          </button>
         </div>
       </div>
 
-      {/* Table */}
+      {/* Products Table */}
       <div className="bg-white rounded-xl shadow-sm border border-[#E2E2DF] overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-[#6B7280]">
-            <thead className="bg-[#F5F5F3] text-[#1A1A1A] uppercase text-xs font-semibold border-b border-[#E2E2DF]">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-[#F5F5F3] text-[#1A1A1A] font-semibold border-b border-[#E2E2DF]">
               <tr>
                 <th className="px-6 py-4">Produit</th>
                 <th className="px-6 py-4">Catégorie</th>
-                <th className="px-6 py-4">État</th>
-                <th className="px-6 py-4">Prix de base</th>
-                <th className="px-6 py-4">Stock</th>
+                <th className="px-6 py-4">Prix</th>
                 <th className="px-6 py-4">Statut</th>
                 <th className="px-6 py-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#E2E2DF]">
-              {filteredProducts.map(p => (
-                <tr key={p.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 font-bold text-[#1A1A1A]">
-                    {p.name}
-                    <span className="block text-xs font-normal text-[#6B7280]">{p.brand}</span>
-                  </td>
-                  <td className="px-6 py-4">{p.category}</td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                      p.condition === 'Neuf' ? 'bg-emerald-100 text-emerald-800' :
-                      p.condition === 'Reconditionné' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'
-                    }`}>
-                      {p.condition}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 font-semibold text-[#1A1A1A]">
-                    {formatPrice(p.basePrice)}
-                    {p.salePrice && <span className="block text-xs text-red-600 font-normal">Promo: {formatPrice(p.salePrice)}</span>}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`font-semibold ${p.stock === 0 ? 'text-red-600' : p.stock < 5 ? 'text-amber-600' : 'text-[#1A1A1A]'}`}>
-                      {p.stock} unités
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <button
-                      onClick={() => toggleStatus(p.id)}
-                      className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
-                        p.status === 'Actif' ? 'bg-green-100 text-green-800 hover:bg-green-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }`}
-                    >
-                      {p.status}
-                    </button>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => handleDeleteProduct(p.id)}
-                        className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Supprimer"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="py-12 text-center text-[#6B7280]">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto text-[#1A3FA0]" />
                   </td>
                 </tr>
-              ))}
+              ) : filteredProducts.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-12 text-center text-[#6B7280]">
+                    <Package className="h-12 w-12 mx-auto text-[#E2E2DF] mb-3" />
+                    Aucun produit trouvé.
+                  </td>
+                </tr>
+              ) : (
+                filteredProducts.map(p => (
+                  <tr key={p.id} className="hover:bg-[#F5F5F3]/50 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                          {p.images && p.images[0] ? (
+                            <img src={p.images[0].url} alt={p.name} className="w-10 h-10 object-cover mix-blend-multiply" />
+                          ) : (
+                            <Package className="h-6 w-6 text-gray-400" />
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-bold text-[#1A1A1A]">{p.name}</p>
+                          <p className="text-xs text-[#6B7280]">{p.brandName} • {p.condition}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#E8EDF8] text-[#1A3FA0]">
+                        {p.categoryName || 'Non classé'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 font-semibold text-[#1A1A1A]">
+                      {formatPrice(p.basePrice)}
+                      {p.salePrice && <span className="block text-xs text-red-600 font-normal">Promo: {formatPrice(p.salePrice)}</span>}
+                    </td>
+                    <td className="px-6 py-4">
+                      <button
+                        onClick={() => toggleStatus(p)}
+                        className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
+                          p.isActive !== false ? 'bg-green-100 text-green-800 hover:bg-green-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        {p.isActive !== false ? 'Actif' : 'Inactif'}
+                      </button>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleDeleteProduct(p.id)}
+                          className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Supprimer"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -209,18 +290,20 @@ export default function AdminProduitsPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-[#1A1A1A] mb-1">Marque</label>
-                  <select
-                    value={formData.brand}
-                    onChange={e => setFormData(f => ({ ...f, brand: e.target.value }))}
-                    className="w-full border border-[#E2E2DF] rounded-lg px-3 py-2 text-sm"
-                  >
-                    <option value="Dell">Dell</option>
-                    <option value="Apple">Apple</option>
-                    <option value="Lenovo">Lenovo</option>
-                    <option value="HP">HP</option>
-                    <option value="Asus">Asus</option>
-                    <option value="Acer">Acer</option>
-                  </select>
+                  <input
+                    type="text"
+                    list="brand-list"
+                    required
+                    placeholder="Saisissez ou choisissez"
+                    value={formData.brandName}
+                    onChange={e => setFormData(f => ({ ...f, brandName: e.target.value }))}
+                    className="w-full border border-[#E2E2DF] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30"
+                  />
+                  <datalist id="brand-list">
+                    {availableBrands.map((b: any) => (
+                      <option key={b.id} value={b.name} />
+                    ))}
+                  </datalist>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-[#1A1A1A] mb-1">État</label>

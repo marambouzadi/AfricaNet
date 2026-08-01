@@ -101,7 +101,7 @@ export default function AdminEchangesPage() {
 
   return (
     <div className="admin-page">
-      <AdminHeader title="Gestion des Échanges (Trade-In)" breadcrumb="Gestion · Échanges" />
+      <div><div className="mb-8"><h1 className="text-3xl font-serif font-bold text-[#1A1A1A]">Demandes de Reprise</h1><p className="text-[#6B7280]">Évaluez et gérez les demandes de reprise de matériel.</p></div></div>
       <div className="admin-content">
 
         {/* KPIs */}

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { User, Mail, Phone, Edit3, Plus, X, Trash2, Home } from 'lucide-react'
 import { useUser } from '@/lib/user-context'
 import { updateCurrentUser, getUserAddresses, createAddress, deleteAddress } from '@/lib/api'
+import { AddressForm, AddressFormData } from '@/components/shared/address-form'
 
 interface UserProfile {
   id: number
@@ -48,17 +49,7 @@ export default function ProfilPage() {
     avatarUrl: ''
   })
 
-  // Address Form state (Matches user_adresses DB table schema)
-  const [addressForm, setAddressForm] = useState({
-    label: '',
-    fullname: '',
-    street: '',
-    city: '',
-    state: '',
-    postalCode: '',
-    country: 'Tunisie',
-    isDefault: false
-  })
+  // Removed local addressForm state as it's now managed by the component
 
   const [actionError, setActionError] = useState('')
   const [actionSuccess, setActionSuccess] = useState('')
@@ -111,18 +102,16 @@ export default function ProfilPage() {
   }
 
   // Soumettre l'ajout d'adresse
-  const handleAddAddress = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleAddAddress = async (data: AddressFormData) => {
     setActionError('')
     setActionSuccess('')
     try {
-      const newAddress = await createAddress(addressForm)
+      const newAddress = await createAddress(data)
       setAddresses(prev => [...prev, newAddress])
       setActionSuccess('Adresse ajoutée avec succès !')
       setIsAddingAddress(false)
-      setAddressForm({ label: '', fullname: '', street: '', city: '', state: '', postalCode: '', country: 'Tunisie', isDefault: false })
     } catch {
-      setActionError('Impossible d\'ajouter l\'adresse. L\'API backend POST /api/addresses doit être implémentée.')
+      throw new Error('Impossible d\'ajouter l\'adresse. Vérifiez vos informations.')
     }
   }
 
@@ -319,115 +308,10 @@ export default function ProfilPage() {
             </div>
 
             {isAddingAddress ? (
-              // Inline add address form
-              <form onSubmit={handleAddAddress} className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-gray-600">Label (Ex: Maison, Bureau)</label>
-                    <input
-                      type="text"
-                      placeholder="Maison"
-                      value={addressForm.label}
-                      onChange={(e) => setAddressForm(a => ({ ...a, label: e.target.value }))}
-                      className="w-full px-3 py-2 border border-[#E2E2DF] rounded-lg text-sm focus:ring-2 focus:ring-[#1A3FA0]/30 outline-none"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-gray-600">Destinataire</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Prénom Nom"
-                      value={addressForm.fullname}
-                      onChange={(e) => setAddressForm(a => ({ ...a, fullname: e.target.value }))}
-                      className="w-full px-3 py-2 border border-[#E2E2DF] rounded-lg text-sm focus:ring-2 focus:ring-[#1A3FA0]/30 outline-none"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-gray-600">Adresse de rue</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="12 Rue de la Liberté"
-                    value={addressForm.street}
-                    onChange={(e) => setAddressForm(a => ({ ...a, street: e.target.value }))}
-                    className="w-full px-3 py-2 border border-[#E2E2DF] rounded-lg text-sm focus:ring-2 focus:ring-[#1A3FA0]/30 outline-none"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-gray-600">Ville</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Tunis"
-                      value={addressForm.city}
-                      onChange={(e) => setAddressForm(a => ({ ...a, city: e.target.value }))}
-                      className="w-full px-3 py-2 border border-[#E2E2DF] rounded-lg text-sm focus:ring-2 focus:ring-[#1A3FA0]/30 outline-none"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-gray-600">Gouvernorat</label>
-                    <input
-                      type="text"
-                      placeholder="Tunis"
-                      value={addressForm.state}
-                      onChange={(e) => setAddressForm(a => ({ ...a, state: e.target.value }))}
-                      className="w-full px-3 py-2 border border-[#E2E2DF] rounded-lg text-sm focus:ring-2 focus:ring-[#1A3FA0]/30 outline-none"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-gray-600">Code Postal</label>
-                    <input
-                      type="text"
-                      placeholder="1000"
-                      value={addressForm.postalCode}
-                      onChange={(e) => setAddressForm(a => ({ ...a, postalCode: e.target.value }))}
-                      className="w-full px-3 py-2 border border-[#E2E2DF] rounded-lg text-sm focus:ring-2 focus:ring-[#1A3FA0]/30 outline-none"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-gray-600">Pays</label>
-                    <input
-                      type="text"
-                      required
-                      value={addressForm.country}
-                      onChange={(e) => setAddressForm(a => ({ ...a, country: e.target.value }))}
-                      className="w-full px-3 py-2 border border-[#E2E2DF] rounded-lg text-sm focus:ring-2 focus:ring-[#1A3FA0]/30 outline-none"
-                    />
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 py-1">
-                  <input
-                    type="checkbox"
-                    id="isDefault"
-                    checked={addressForm.isDefault}
-                    onChange={(e) => setAddressForm(a => ({ ...a, isDefault: e.target.checked }))}
-                    className="rounded border-[#E2E2DF] text-[#1A3FA0] focus:ring-[#1A3FA0]/30 h-4 w-4"
-                  />
-                  <label htmlFor="isDefault" className="text-xs font-semibold text-gray-600 select-none cursor-pointer">
-                    Adresse par défaut
-                  </label>
-                </div>
-                <div className="flex gap-3 justify-end pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsAddingAddress(false)}
-                    className="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700"
-                  >
-                    Annuler
-                  </button>
-                  <button
-                    type="submit"
-                    className="bg-[#1A3FA0] hover:bg-[#0D2660] text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                  >
-                    Ajouter
-                  </button>
-                </div>
-              </form>
+              <AddressForm 
+                onSubmit={handleAddAddress} 
+                onCancel={() => setIsAddingAddress(false)} 
+              />
             ) : (
               // Display state: list of addresses
               <>

@@ -52,7 +52,7 @@ export default function AdminClientsPage() {
       c.lastName || '',
       c.email || '',
       c.role || '',
-      c.isActive ? 'Oui' : 'Non',
+      c.active ? 'Oui' : 'Non',
       c.createdAt ? new Date(c.createdAt).toLocaleDateString('fr-FR') : 'N/A',
     ]);
     exportToCSV('export_clients', headers, rows);
@@ -60,14 +60,17 @@ export default function AdminClientsPage() {
 
   const kpis = [
     { label: 'Total clients',   value: clients.length,                                       icon: Users,      color: '#1A3FA0', bg: '#EFF6FF' },
-    { label: 'Clients actifs',  value: clients.filter(c => c.isActive).length,               icon: ShoppingBag,color: '#16A34A', bg: '#F0FDF4' },
+    { label: 'Clients actifs',  value: clients.filter(c => c.active).length,               icon: ShoppingBag,color: '#16A34A', bg: '#F0FDF4' },
     { label: 'Administrateurs', value: clients.filter(c => c.role === 'ADMIN').length,        icon: Star,       color: '#F59E0B', bg: '#FFFBEB' },
-    { label: 'Désactivés',      value: clients.filter(c => !c.isActive).length,              icon: Ban,        color: '#EF4444', bg: '#FEF2F2' },
+    { label: 'Désactivés',      value: clients.filter(c => !c.active).length,              icon: Ban,        color: '#EF4444', bg: '#FEF2F2' },
   ];
 
   return (
     <div className="admin-page">
-      <AdminHeader title="Gestion des Clients" breadcrumb="Gestion · Clients" />
+      <div className="mb-8">
+        <h1 className="text-3xl font-serif font-bold text-[#1A1A1A]">Gestion des Clients</h1>
+        <p className="text-[#6B7280]">Gérez les comptes clients et administrateurs de la boutique.</p>
+      </div>
       <div className="admin-content">
 
         {/* KPI Cards */}
@@ -150,10 +153,10 @@ export default function AdminClientsPage() {
                     </td>
                     <td>
                       <span className="admin-status-badge" style={{
-                        background: client.isActive ? '#F0FDF4' : '#FEF2F2',
-                        color: client.isActive ? '#16A34A' : '#DC2626',
+                        background: client.active ? '#F0FDF4' : '#FEF2F2',
+                        color: client.active ? '#16A34A' : '#DC2626',
                       }}>
-                        {client.isActive ? 'Actif' : 'Désactivé'}
+                        {client.active ? 'Actif' : 'Désactivé'}
                       </span>
                     </td>
                     <td className="admin-table-date">

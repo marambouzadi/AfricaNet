@@ -10,6 +10,9 @@ import { Footer } from '@/components/layout/footer'
 import { useCart } from '@/lib/cart-context'
 import { formatPrice } from '@/lib/products'
 import { useUser } from '@/lib/user-context'
+import { useEffect } from 'react'
+import { getUserAddresses, createAddress } from '@/lib/api'
+import { AddressForm, AddressFormData } from '@/components/shared/address-form'
 
 type CheckoutStep = 'shipping' | 'payment' | 'success'
 
@@ -20,18 +23,33 @@ export default function CheckoutPage() {
   const [step, setStep] = useState<CheckoutStep>('shipping')
   const [isProcessing, setIsProcessing] = useState(false)
 
-  // Form State
-  const [shippingData, setShippingData] = useState({
-    firstName: '',
-    lastName: '',
-    address: '',
-    city: '',
-    phone: '',
-  })
-  
+  // Address Selection State
+  const [addresses, setAddresses] = useState<any[]>([])
+  const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null)
+  const [isCreatingAddress, setIsCreatingAddress] = useState(false)
+  const [loadingAddresses, setLoadingAddresses] = useState(true)
+
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'delivery'>('card')
   const shippingFee = totalPrice >= 200 ? 0 : 7
   const finalTotal = totalPrice + shippingFee
+
+  useEffect(() => {
+    if (user) {
+      getUserAddresses()
+        .then((data: any) => {
+          const fetchedAddresses = Array.isArray(data) ? data : data.content || []
+          setAddresses(fetchedAddresses)
+          if (fetchedAddresses.length > 0) {
+            const defaultAddr = fetchedAddresses.find((a: any) => a.isDefault) || fetchedAddresses[0]
+            setSelectedAddressId(defaultAddr.id)
+          } else {
+            setIsCreatingAddress(true)
+          }
+        })
+        .catch(console.error)
+        .finally(() => setLoadingAddresses(false))
+    }
+  }, [user])
 
   if (!isLoaded) return null
 
@@ -52,7 +70,22 @@ export default function CheckoutPage() {
 
   const handleShippingSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    if (!selectedAddressId) {
+      alert("Veuillez sélectionner ou ajouter une adresse de livraison.")
+      return
+    }
     setStep('payment')
+  }
+
+  const handleAddNewAddress = async (data: AddressFormData) => {
+    try {
+      const newAddress = await createAddress(data)
+      setAddresses(prev => [...prev, newAddress])
+      setSelectedAddressId(newAddress.id)
+      setIsCreatingAddress(false)
+    } catch (err: any) {
+      throw err
+    }
   }
 
   const handlePaymentSubmit = async (e: React.FormEvent) => {
@@ -63,19 +96,22 @@ export default function CheckoutPage() {
 
     try {
       // 1. Créer la commande backend
+      const selectedAddress = addresses.find(a => a.id === selectedAddressId)
+      if (!selectedAddress) throw new Error("Adresse introuvable")
+
       const orderPayload = {
         items: items.map(item => ({
           productId: Number(item.id),
           quantity: item.quantity
         })),
         shippingAddress: {
-          fullName: `${shippingData.firstName} ${shippingData.lastName}`,
-          street: shippingData.address,
-          city: shippingData.city,
-          state: shippingData.city,
-          postalCode: '1000',
-          country: 'Tunisie',
-          phone: shippingData.phone
+          fullName: selectedAddress.fullname,
+          street: selectedAddress.street,
+          city: selectedAddress.city,
+          state: selectedAddress.state || selectedAddress.city,
+          postalCode: selectedAddress.postalCode || '1000',
+          country: selectedAddress.country || 'Tunisie',
+          phone: selectedAddress.phone || user.phone || '00000000'
         },
         paymentMethod: paymentMethod === 'card' ? 'CARD' : 'CASH_ON_DELIVERY',
         customerNotes: ''
@@ -187,37 +223,65 @@ export default function CheckoutPage() {
                       <Truck className="h-5 w-5 text-[#1A3FA0]" />
                       <h2 className="text-xl font-bold text-[#1A1A1A]">Informations de livraison</h2>
                     </div>
-                    <form onSubmit={handleShippingSubmit} className="p-6 space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium text-[#1A1A1A]">Prénom</label>
-                          <input required type="text" className="w-full border border-[#E2E2DF] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30" value={shippingData.firstName} onChange={e => setShippingData({...shippingData, firstName: e.target.value})} />
+                    <div className="p-6">
+                      {loadingAddresses ? (
+                        <div className="text-center text-[#6B7280]">Chargement de vos adresses...</div>
+                      ) : (
+                        <div className="space-y-6">
+                          {!isCreatingAddress && addresses.length > 0 && (
+                            <div className="space-y-4">
+                              {addresses.map(addr => (
+                                <label 
+                                  key={addr.id}
+                                  className={`flex items-start gap-4 p-4 border rounded-xl cursor-pointer transition-colors ${selectedAddressId === addr.id ? 'border-[#1A3FA0] bg-[#1A3FA0]/5' : 'border-[#E2E2DF] hover:border-[#1A3FA0]/50'}`}
+                                >
+                                  <input 
+                                    type="radio" 
+                                    name="address" 
+                                    checked={selectedAddressId === addr.id}
+                                    onChange={() => setSelectedAddressId(addr.id)}
+                                    className="mt-1 w-4 h-4 text-[#1A3FA0] focus:ring-[#1A3FA0]" 
+                                  />
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span className="font-bold text-[#1A1A1A]">{addr.label || 'Adresse'}</span>
+                                      {addr.isDefault && <span className="text-[10px] uppercase font-bold bg-[#D1F232] text-[#1A1A1A] px-2 py-0.5 rounded-full">Défaut</span>}
+                                    </div>
+                                    <p className="text-sm font-medium text-[#1A1A1A]">{addr.fullname}</p>
+                                    <p className="text-sm text-[#6B7280] mt-1">{addr.street}</p>
+                                    <p className="text-sm text-[#6B7280]">{addr.city}, {addr.postalCode}</p>
+                                  </div>
+                                </label>
+                              ))}
+                              
+                              <button 
+                                type="button"
+                                onClick={() => setIsCreatingAddress(true)}
+                                className="text-sm font-medium text-[#1A3FA0] hover:underline"
+                              >
+                                + Ajouter une nouvelle adresse
+                              </button>
+
+                              <div className="pt-4 border-t border-[#E2E2DF]">
+                                <button onClick={handleShippingSubmit} className="w-full bg-[#1A3FA0] text-white py-3 rounded-lg font-medium hover:bg-[#0D2660] transition-colors">
+                                  Continuer vers le paiement
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
+                          {isCreatingAddress && (
+                            <div className="bg-[#F5F5F3] p-6 rounded-2xl border border-[#E2E2DF]">
+                              <h3 className="font-bold text-[#1A1A1A] mb-4">Nouvelle adresse de livraison</h3>
+                              <AddressForm 
+                                onSubmit={handleAddNewAddress}
+                                onCancel={() => addresses.length > 0 ? setIsCreatingAddress(false) : null}
+                              />
+                            </div>
+                          )}
                         </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium text-[#1A1A1A]">Nom</label>
-                          <input required type="text" className="w-full border border-[#E2E2DF] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30" value={shippingData.lastName} onChange={e => setShippingData({...shippingData, lastName: e.target.value})} />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-[#1A1A1A]">Adresse complète</label>
-                        <input required type="text" className="w-full border border-[#E2E2DF] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30" value={shippingData.address} onChange={e => setShippingData({...shippingData, address: e.target.value})} />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium text-[#1A1A1A]">Ville</label>
-                          <input required type="text" className="w-full border border-[#E2E2DF] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30" value={shippingData.city} onChange={e => setShippingData({...shippingData, city: e.target.value})} />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium text-[#1A1A1A]">Téléphone</label>
-                          <input required type="tel" className="w-full border border-[#E2E2DF] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30" value={shippingData.phone} onChange={e => setShippingData({...shippingData, phone: e.target.value})} />
-                        </div>
-                      </div>
-                      <div className="pt-4">
-                        <button type="submit" className="w-full bg-[#1A3FA0] text-white py-3 rounded-lg font-medium hover:bg-[#0D2660] transition-colors">
-                          Continuer vers le paiement
-                        </button>
-                      </div>
-                    </form>
+                      )}
+                    </div>
                   </div>
                 )}
 

@@ -229,3 +229,22 @@ export async function getRecommendations(userId: number, limit: number = 5) {
 export async function trackRecommendationClick(id: number) {
   await api.put(`/recommendations/${id}/click`)
 }
+
+// --- Favorites API ---
+export async function getFavorites(): Promise<PagedResponse<ProductResponse>> {
+  const { data } = await api.get('/favorites')
+  return data
+}
+
+export async function getFavoriteIds(): Promise<number[]> {
+  const { data } = await api.get('/favorites/ids')
+  return data
+}
+
+export async function addFavorite(productId: number): Promise<void> {
+  await api.post(`/favorites/${productId}`)
+}
+
+export async function removeFavorite(productId: number): Promise<void> {
+  await api.delete(`/favorites/${productId}`)
+}
