@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import { Navbar } from '@/components/layout/navbar'
 import { Footer } from '@/components/layout/footer'
 import { MultiStepForm } from '@/components/trade-in/multi-step-form'
@@ -15,11 +16,14 @@ export default function ReprisePage() {
 
   if (isLoading) return <div className="min-h-screen flex items-center justify-center">Chargement...</div>
 
-  if (!user) {
-    if (typeof window !== 'undefined') {
+  useEffect(() => {
+    if (!isLoading && !user) {
       router.push('/connexion?redirect=/reprise')
     }
-    return null
+  }, [isLoading, user, router])
+
+  if (isLoading || !user) {
+    return <div className="min-h-screen flex items-center justify-center">Chargement...</div>
   }
 
   return (
