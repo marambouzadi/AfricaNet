@@ -33,9 +33,9 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
         WHERE p.isActive = true
         AND (:categoryId IS NULL OR p.category.id = :categoryId)
         AND (:brandId IS NULL OR p.brand.id = :brandId)
-        AND (:condition IS NULL OR p.condition = :condition)
-        AND (:minPrice IS NULL OR p.basePrice >= :minPrice)
-        AND (:maxPrice IS NULL OR p.basePrice <= :maxPrice)
+        AND (cast(:condition as string) IS NULL OR cast(p.condition as string) = cast(:condition as string))
+        AND (cast(:minPrice as big_decimal) IS NULL OR p.basePrice >= :minPrice)
+        AND (cast(:maxPrice as big_decimal) IS NULL OR p.basePrice <= :maxPrice)
         """)
     @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"category", "brand", "images", "specifications"})
     Page<Product> searchWithFilters(

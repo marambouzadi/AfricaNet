@@ -80,8 +80,11 @@ public class SecurityConfig {
 
                 // Catalogue public (lecture seule)
                 .requestMatchers(HttpMethod.GET,
+                        "/api/products",
                         "/api/products/**",
+                        "/api/categories",
                         "/api/categories/**",
+                        "/api/brands",
                         "/api/brands/**"
                 ).permitAll()
 

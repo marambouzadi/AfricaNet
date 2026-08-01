@@ -36,13 +36,13 @@ public class TradeInEvaluationService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     // Scoring formula weights
-    private static final double MARKET_PRICE_WEIGHT = 0.40;
-    private static final double AGE_WEIGHT = 0.20;
-    private static final double CONDITION_WEIGHT = 0.30;
+    private static final double MARKET_PRICE_WEIGHT = 0.50;
+    private static final double AGE_WEIGHT = 0.15;
+    private static final double CONDITION_WEIGHT = 0.25;
     private static final double COMPONENT_WEIGHT = 0.10;
 
-    // Africa Net profit margin (20-30%, using 25%)
-    private static final double PROFIT_MARGIN_MULTIPLIER = 0.75;
+    // Africa Net profit margin (15% margin means we pay 85% to user)
+    private static final double PROFIT_MARGIN_MULTIPLIER = 0.85;
 
     // Fallback value when brand/model is not found in the database
     private static final double DEFAULT_BASE_VALUE = 1500.0;
