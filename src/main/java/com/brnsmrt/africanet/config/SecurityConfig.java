@@ -74,13 +74,17 @@ public class SecurityConfig {
                             "/api-docs/**",
                             "/v3/api-docs/**",
                             "/error",
-                            "/mock-flouci/**"
+                            "/mock-flouci/**",
+                            "/ws/**"
                     ).permitAll()
 
                 // Catalogue public (lecture seule)
                 .requestMatchers(HttpMethod.GET,
+                        "/api/products",
                         "/api/products/**",
+                        "/api/categories",
                         "/api/categories/**",
+                        "/api/brands",
                         "/api/brands/**"
                 ).permitAll()
 

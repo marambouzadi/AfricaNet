@@ -54,6 +54,15 @@ public class ProductService {
             Brand brand = brandRepository.findById(req.getBrandId())
                     .orElseThrow(() -> new ResourceNotFoundException("Marque introuvable"));
             product.setBrand(brand);
+        } else if (req.getBrandName() != null && !req.getBrandName().trim().isEmpty()) {
+            Brand brand = brandRepository.findByNameIgnoreCase(req.getBrandName().trim())
+                    .orElseGet(() -> {
+                        Brand newBrand = new Brand();
+                        newBrand.setName(req.getBrandName().trim());
+                        newBrand.setSlug(generateSlugFromText(req.getBrandName().trim()));
+                        return brandRepository.save(newBrand);
+                    });
+            product.setBrand(brand);
         }
 
         attachImages(product, req);
@@ -79,6 +88,14 @@ public class ProductService {
         if (req.getBrandId() != null) {
             Brand brand = brandRepository.findById(req.getBrandId())
                     .orElseThrow(() -> new ResourceNotFoundException("Marque introuvable"));
+            product.setBrand(brand);
+        } else if (req.getBrandName() != null && !req.getBrandName().trim().isEmpty()) {
+            Brand brand = brandRepository.findByNameIgnoreCase(req.getBrandName().trim())
+                    .orElseGet(() -> {
+                        Brand newBrand = new Brand();
+                        newBrand.setName(req.getBrandName().trim());
+                        return brandRepository.save(newBrand);
+                    });
             product.setBrand(brand);
         } else {
             product.setBrand(null);

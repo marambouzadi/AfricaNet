@@ -69,8 +69,9 @@ public class TradeInEvaluationService {
                 .orElseThrow(() -> new RuntimeException(
                         "Utilisateur introuvable avec l'ID : " + request.getUserId()));
 
-        Brand brand = brandRepository.findByNameIgnoreCase(request.getBrand());
-
+        Brand brand = brandRepository.findByNameIgnoreCase(request.getBrand())
+                .orElseThrow(() -> new RuntimeException(
+                        "Marque introuvable avec le nom : " + request.getBrand()));
         // 1. Prix de base marché depuis la DB
         double basePrice = computeBaseValue(request.getBrand(), request.getDeviceModel());
 

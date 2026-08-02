@@ -22,6 +22,7 @@ public class CreateProductRequest {
     private String shortDesc;
 
     private Long brandId;
+    private String brandName;
 
     @NotNull(message = "La catégorie est obligatoire")
     private Long categoryId;

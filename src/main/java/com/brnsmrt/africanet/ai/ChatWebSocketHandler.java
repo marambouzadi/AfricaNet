@@ -5,7 +5,6 @@ import com.brnsmrt.africanet.dto.response.ChatResponse;
 import com.brnsmrt.africanet.service.ChatHistoryService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -14,7 +13,6 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 @Slf4j
 @Component
-@Profile("ai")
 public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     private final ChatbotService chatbotService;

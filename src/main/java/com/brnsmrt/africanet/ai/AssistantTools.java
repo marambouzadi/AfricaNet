@@ -38,7 +38,7 @@ public class AssistantTools {
     private final TradeInEvaluationService tradeInEvaluationService;
     private final RecommendationService recommendationService;
 
-    public AssistantTools(UserRepository userRepository, 
+    public AssistantTools(UserRepository userRepository,
                           ProductRepository productRepository,
                           CategoryRepository categoryRepository,
                           OrderRepository orderRepository,
@@ -74,8 +74,8 @@ public class AssistantTools {
           and conditionScores (1-10) for screen, keyboard, battery, chassis, performance. \
           Also requires the userId of the customer submitting the trade-in.""")
     public String evaluateTradeIn(String deviceModel, String brand, Integer yearOfPurchase,
-                                   Integer screenScore, Integer keyboardScore, 
-                                   Integer batteryScore, Integer chassisScore, 
+                                   Integer screenScore, Integer keyboardScore,
+                                   Integer batteryScore, Integer chassisScore,
                                    Integer performanceScore, Long userId) {
         TradeInEvaluationRequest request = TradeInEvaluationRequest.builder()
                 .deviceModel(deviceModel)
@@ -117,12 +117,12 @@ public class AssistantTools {
           The profile must include a first name, last name, a valid email string, \
           and a contact phone number.""")
     public User registerNewCustomer(@jakarta.validation.Valid User newCustomer) {
-        newCustomer.setRole(com.brnsmrt.africanet.domain.enums.UserRole.CUSTOMER); 
-        newCustomer.setActive(true);
+        newCustomer.setRole(com.brnsmrt.africanet.domain.enums.UserRole.CUSTOMER);
+        newCustomer.setIsActive(true);
         // Provide dummy password and empty required fields for chatbot creation
         newCustomer.setPasswordHash("chatbot_created_no_password");
         newCustomer.setEmailVerified(false);
-        
+
         return userRepository.save(newCustomer);
     }
 
@@ -141,9 +141,9 @@ public class AssistantTools {
     public String trackOrderStatus(String orderNumber) {
         return orderRepository.findByOrderNumber(orderNumber)
                 .map(order -> String.format("Order %s status: %s. Payment status: %s. Total: %s TND.",
-                        order.getOrderNumber(), 
-                        order.getStatus(),        
-                        order.getPaymentStatus(), 
+                        order.getOrderNumber(),
+                        order.getStatus(),
+                        order.getPaymentStatus(),
                         order.getTotalAmount().toPlainString()))
                 .orElse("We couldn't find an order with that reference number. Please double-check it.");
     }

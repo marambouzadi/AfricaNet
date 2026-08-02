@@ -6,8 +6,8 @@ import com.brnsmrt.africanet.domain.enums.TradeInStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
+import org.hibernate.annotations.Type;
+import io.hypersistence.utils.hibernate.type.json.JsonType;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -52,7 +52,7 @@ public class TradeInRequest {
     @Column(name = "condition_overall", nullable = false, length = 20)
     private ConditionOverall conditionOverall;
 
-    @JdbcTypeCode(SqlTypes.JSON)
+    @Type(JsonType.class)
     @Column(name = "condition_details", nullable = false, columnDefinition = "jsonb")
     private Map<String, Object> conditionDetails;
     // ex: { "screen": {"score":8,"notes":"légère rayure"}, "battery": {...} }
@@ -70,7 +70,7 @@ public class TradeInRequest {
     @Column(nullable = false, length = 20)
     private TradeInStatus status = TradeInStatus.SUBMITTED;
 
-    @JdbcTypeCode(SqlTypes.JSON)
+    @Type(JsonType.class)
     @Column(name = "ai_evaluation", columnDefinition = "jsonb")
     private Map<String, Object> aiEvaluation;
 
