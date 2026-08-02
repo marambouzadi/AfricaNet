@@ -2,10 +2,10 @@ package com.brnsmrt.africanet.controller;
 
 import com.brnsmrt.africanet.ai.TradeInEvaluationService;
 import com.brnsmrt.africanet.ai.dto.EvaluationResult;
-import com.brnsmrt.africanet.domain.TradeInRequest;
+import com.brnsmrt.africanet.domain.User;
 import com.brnsmrt.africanet.dto.request.TradeInEvaluationRequest;
-import com.brnsmrt.africanet.dto.request.TradeInSubmitRequest;
 import com.brnsmrt.africanet.dto.response.TradeInResponse;
+import com.brnsmrt.africanet.repository.UserRepository;
 import com.brnsmrt.africanet.service.TradeInService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -33,6 +34,9 @@ public class TradeInControllerTest {
 
     @Mock
     private TradeInService tradeInService;
+
+    @Mock
+    private UserRepository userRepository;
 
     @Mock
     private Authentication authentication;
@@ -64,9 +68,14 @@ public class TradeInControllerTest {
                 .status("EVALUATING")
                 .build();
 
+        User mockUser = new User();
+        mockUser.setId(1L);
+
+        when(authentication.getName()).thenReturn("test@example.com");
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(mockUser));
         when(tradeInEvaluationService.evaluate(any())).thenReturn(expectedResult);
 
-        ResponseEntity<EvaluationResult> response = tradeInController.evaluateTradeIn(request);
+        ResponseEntity<EvaluationResult> response = tradeInController.evaluateTradeIn(request, authentication);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
