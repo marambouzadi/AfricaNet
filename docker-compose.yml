@@ -1,7 +1,6 @@
 services:
   postgres:
     image: postgres:17
-    container_name: africanet_postgres
     environment:
       POSTGRES_DB: africanet_db
       POSTGRES_USER: postgres
@@ -13,13 +12,11 @@ services:
 
   redis:
     image: redis:7
-    container_name: africanet_redis
     ports:
       - "6379:6379"
 
   backend:
     build: .
-    container_name: africanet_backend
     depends_on:
       - postgres
       - redis
@@ -40,7 +37,6 @@ services:
 
   frontend:
     build: ./sprint3-frontend
-    container_name: africanet_frontend
     depends_on:
       - backend
     ports:
