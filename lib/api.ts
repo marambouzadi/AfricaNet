@@ -29,7 +29,7 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
+    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('accessToken')
         localStorage.removeItem('refreshToken')
@@ -61,7 +61,10 @@ export interface PagedResponse<T> {
 
 export interface ProductImageResponse {
   id: number
-  imageUrl: string
+  url: string
+  imageUrl?: string  // legacy alias
+  altText?: string
+  sortOrder?: number
   isPrimary: boolean
 }
 
@@ -79,6 +82,7 @@ export interface ProductResponse {
   description: string
   shortDesc: string
   brandName: string
+  brand: string | { id: number; name: string } | null
   categoryName: string
   condition: Condition
   basePrice: number

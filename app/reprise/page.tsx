@@ -12,7 +12,7 @@ import { CheckCircle, Zap, Shield, Leaf } from 'lucide-react'
 
 export default function ReprisePage() {
   const router = useRouter()
-  const { user, isLoading } = useUser()
+  const { user, loading: isLoading } = useUser()
 
   if (isLoading) return <div className="min-h-screen flex items-center justify-center">Chargement...</div>
 

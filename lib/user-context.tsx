@@ -40,12 +40,13 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         setUser(null)
       }
     } catch (error: any) {
-      console.error('Failed to fetch user:', error)
-      setUser(null)
       // Only remove token if it's an auth error, not a network error
       if (error.response?.status === 401 || error.response?.status === 403) {
         localStorage.removeItem('accessToken')
+      } else {
+        console.error('Failed to fetch user:', error)
       }
+      setUser(null)
     } finally {
       setLoading(false)
     }

@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
         description,
         type: 'website',
         url: `https://africanet.tn/produit/${id}`,
-        images: product.images?.length > 0 ? [product.images[0].imageUrl] : ['/africanet-logo.jpg'],
+        images: product.images?.length > 0 ? [product.images[0].url] : ['/africanet-logo.jpg'],
       },
       twitter: {
         card: 'summary_large_image',
@@ -60,7 +60,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
       salePrice: localProduct.price,
       basePrice: localProduct.price,
       description: 'Ce produit est issu du catalogue de démonstration.',
-      images: [{ imageUrl: localProduct.image, isPrimary: true }],
+      images: [{ url: localProduct.image, isPrimary: true }],
       specifications: [
         { specKey: 'Processeur', specValue: localProduct.cpu },
         { specKey: 'RAM', specValue: localProduct.ram },
@@ -79,7 +79,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
     stock: 5, // Mocked for now since stock is in another API
     warranty: 'Garantie 3 mois AfricaNet',
     thumbnails: res.images?.length > 0 
-      ? res.images.map((img: any) => img.imageUrl) 
+      ? res.images.map((img: any) => img.url || img.imageUrl) 
       : ['/products/laptop-gray.png'],
     quickSpecs: res.specifications?.slice(0, 4).map((s: any) => ({
       icon: s.specKey.toLowerCase().includes('ram') ? 'ram' : 

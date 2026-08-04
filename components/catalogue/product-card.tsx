@@ -65,7 +65,15 @@ export function CatalogProductCard({ product, initialFavorited = false }: Produc
             <Heart className={`h-4 w-4 transition-all ${isWishlisted ? 'fill-current' : ''} ${isLoading ? 'animate-pulse' : ''}`} />
           </button>
           <div className="flex h-full w-full items-center justify-center p-6">
-            <LaptopSilhouette className="h-20 w-auto text-[#1A3FA0]/25 transition-transform duration-200 group-hover:scale-105" />
+            {product.image && product.image !== '/products/laptop-gray.png' ? (
+              <img
+                src={product.image}
+                alt={product.name}
+                className="h-full w-full object-contain mix-blend-multiply transition-transform duration-200 group-hover:scale-105"
+              />
+            ) : (
+              <LaptopSilhouette className="h-20 w-auto text-[#1A3FA0]/25 transition-transform duration-200 group-hover:scale-105" />
+            )}
           </div>
         </div>
       </Link>

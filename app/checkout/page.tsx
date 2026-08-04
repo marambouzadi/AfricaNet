@@ -19,7 +19,7 @@ type CheckoutStep = 'shipping' | 'payment' | 'success'
 export default function CheckoutPage() {
   const router = useRouter()
   const { items, totalPrice, clearCart, isLoaded } = useCart()
-  const { user, isLoading: isUserLoading } = useUser()
+  const { user, loading: isUserLoading } = useUser()
   const [step, setStep] = useState<CheckoutStep>('shipping')
   const [isProcessing, setIsProcessing] = useState(false)
 

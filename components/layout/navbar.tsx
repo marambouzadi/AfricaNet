@@ -1,14 +1,15 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Menu, Search, ShoppingCart, User, X, LogOut } from 'lucide-react'
+import { Menu, Search, ShoppingCart, User, X } from 'lucide-react'
 import { NAV_LINKS } from '@/lib/constants'
 import { useCart } from '@/lib/cart-context'
 import { useUser } from '@/lib/user-context'
-import { products } from '@/lib/products'
+import { searchProducts } from '@/lib/api'
+import type { ProductResponse } from '@/lib/api'
 
 function Logo() {
   return (
@@ -28,9 +29,13 @@ function Logo() {
 
 function SearchOverlay({ onClose }: { onClose: () => void }) {
   const [query, setQuery] = useState('')
+  const [results, setResults] = useState<ProductResponse[]>([])
+  const [isLoading, setIsLoading] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Focus input and setup ESC key
   useEffect(() => {
     inputRef.current?.focus()
     const handleEsc = (e: KeyboardEvent) => {
@@ -40,13 +45,31 @@ function SearchOverlay({ onClose }: { onClose: () => void }) {
     return () => document.removeEventListener('keydown', handleEsc)
   }, [onClose])
 
-  const results = query.trim().length >= 2
-    ? products.filter((p) =>
-        p.name.toLowerCase().includes(query.toLowerCase()) ||
-        p.brand.toLowerCase().includes(query.toLowerCase()) ||
-        p.cpu.toLowerCase().includes(query.toLowerCase())
-      ).slice(0, 6)
-    : []
+  // Debounced live search (300ms)
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+
+    if (query.trim().length < 2) {
+      setResults([])
+      return
+    }
+
+    debounceRef.current = setTimeout(async () => {
+      setIsLoading(true)
+      try {
+        const res = await searchProducts(query.trim(), 0, 6)
+        setResults(res.content)
+      } catch {
+        setResults([])
+      } finally {
+        setIsLoading(false)
+      }
+    }, 300)
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
+  }, [query])
 
   return (
     <div className="fixed inset-0 z-[60]">
@@ -60,7 +83,7 @@ function SearchOverlay({ onClose }: { onClose: () => void }) {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Rechercher un produit, une marque..."
+              placeholder="Rechercher un produit, une marque, une spec..."
               className="w-full text-base text-[#1A1A1A] placeholder:text-[#6B7280] outline-none"
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && query.trim()) {
@@ -81,34 +104,40 @@ function SearchOverlay({ onClose }: { onClose: () => void }) {
 
           {query.trim().length >= 2 && (
             <div className="max-h-80 overflow-y-auto">
-              {results.length === 0 ? (
+              {isLoading ? (
+                <div className="px-5 py-8 text-center text-sm text-[#6B7280]">
+                  Recherche en cours...
+                </div>
+              ) : results.length === 0 ? (
                 <p className="px-5 py-8 text-center text-sm text-[#6B7280]">
                   Aucun résultat pour &quot;{query}&quot;
                 </p>
               ) : (
                 <ul>
-                  {results.map((product) => (
-                    <li key={product.id}>
-                      <Link
-                        href={`/produit/${product.id}`}
-                        onClick={onClose}
-                        className="flex items-center gap-4 px-5 py-3 transition-colors hover:bg-[#F5F5F3]"
-                      >
-                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-[#E8EDF8]">
-                          <span className="text-xs font-bold text-[#1A3FA0]">{product.brand.substring(0, 2)}</span>
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium text-[#1A1A1A]">{product.name}</p>
-                          <p className="text-xs text-[#6B7280]">
-                            {product.cpu} · {product.ram} · {product.storage}
-                          </p>
-                        </div>
-                        <span className="shrink-0 text-sm font-bold text-[#1A3FA0]">
-                          {product.price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} TND
-                        </span>
-                      </Link>
-                    </li>
-                  ))}
+                  {results.map((product) => {
+                    const brandName = product.brandName || (typeof product.brand === 'string' ? product.brand : (product.brand as {name?: string})?.name) || ''
+                    const price = product.salePrice ?? product.basePrice ?? 0
+                    return (
+                      <li key={product.id}>
+                        <Link
+                          href={`/produit/${product.id}`}
+                          onClick={onClose}
+                          className="flex items-center gap-4 px-5 py-3 transition-colors hover:bg-[#F5F5F3]"
+                        >
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-[#E8EDF8]">
+                            <span className="text-xs font-bold text-[#1A3FA0]">{brandName.substring(0, 2).toUpperCase()}</span>
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium text-[#1A1A1A]">{product.name}</p>
+                            <p className="text-xs text-[#6B7280]">{brandName}</p>
+                          </div>
+                          <span className="shrink-0 text-sm font-bold text-[#1A3FA0]">
+                            {Number(price).toFixed(3)} TND
+                          </span>
+                        </Link>
+                      </li>
+                    )
+                  })}
                 </ul>
               )}
               {results.length > 0 && (
@@ -138,7 +167,6 @@ function SearchOverlay({ onClose }: { onClose: () => void }) {
     </div>
   )
 }
-
 
 export function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false)

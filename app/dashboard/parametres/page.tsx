@@ -1,9 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { Bell, Lock, Shield, CreditCard, ChevronRight, ChevronDown, Check, Eye, EyeOff, Save, Plus, Trash2, KeyRound } from 'lucide-react'
+import { Bell, Lock, Shield, CreditCard, ChevronRight, ChevronDown, Check, Eye, EyeOff, Save, Plus, Trash2, KeyRound, Loader2 } from 'lucide-react'
+import { useUser } from '@/lib/user-context'
+import { updateCurrentUser } from '@/lib/api'
 
 export default function SettingsPage() {
+  const { user } = useUser()
   // Notification states
   const [orderEmails, setOrderEmails] = useState(true)
   const [promoEmails, setPromoEmails] = useState(false)
@@ -19,12 +22,10 @@ export default function SettingsPage() {
     confirmPassword: ''
   })
   const [showPassword, setShowPassword] = useState(false)
+  const [pwLoading, setPwLoading] = useState(false)
 
   // Payment methods mock state
-  const [cards, setCards] = useState([
-    { id: 1, type: 'Visa', last4: '4242', exp: '12/26', default: true },
-    { id: 2, type: 'Mastercard', last4: '8888', exp: '08/27', default: false }
-  ])
+  const [cards, setCards] = useState<any[]>([])
   const [isAddingCard, setIsAddingCard] = useState(false)
   const [newCard, setNewCard] = useState({ number: '', name: '', exp: '', cvc: '' })
 
@@ -40,19 +41,34 @@ export default function SettingsPage() {
     setActiveSection(prev => prev === section ? null : section)
   }
 
-  const handlePasswordSubmit = (e: React.FormEvent) => {
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       showToast('❌ Les mots de passe ne correspondent pas.')
       return
     }
-    if (passwordForm.newPassword.length < 6) {
-      showToast('❌ Le mot de passe doit contenir au moins 6 caractères.')
+    if (passwordForm.newPassword.length < 8) {
+      showToast('❌ Le mot de passe doit contenir au moins 8 caractères.')
       return
     }
-    setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
-    setActiveSection(null)
-    showToast('✅ Mot de passe mis à jour avec succès !')
+    setPwLoading(true)
+    try {
+      await updateCurrentUser({
+        firstName: user?.firstName || '',
+        lastName: user?.lastName || '',
+        email: user?.email || '',
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword,
+      })
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
+      setActiveSection(null)
+      showToast('✅ Mot de passe mis à jour avec succès !')
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err.message || 'Mot de passe actuel incorrect.'
+      showToast(`❌ ${msg}`)
+    } finally {
+      setPwLoading(false)
+    }
   }
 
   const handleAddCard = (e: React.FormEvent) => {
@@ -215,9 +231,10 @@ export default function SettingsPage() {
                   </button>
                   <button
                     type="submit"
-                    className="bg-[#1A3FA0] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#0D2660] transition-colors flex items-center gap-2"
+                    disabled={pwLoading}
+                    className="bg-[#1A3FA0] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#0D2660] transition-colors flex items-center gap-2 disabled:opacity-50"
                   >
-                    <Save className="h-4 w-4" />
+                    {pwLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                     Enregistrer
                   </button>
                 </div>

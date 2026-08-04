@@ -135,7 +135,7 @@ export function Catalog() {
             screenSize: parseFloat(screenSpec.replace(',', '.')) || 15.6,
             price: p.salePrice || p.basePrice || 0,
             condition: p.condition as Condition,
-            image: p.images?.find((img: any) => img.isPrimary)?.imageUrl || '/products/laptop-gray.png'
+            image: p.images?.find((img: any) => img.isPrimary)?.url || p.images?.[0]?.url || '/products/laptop-gray.png'
           }
         })
 
