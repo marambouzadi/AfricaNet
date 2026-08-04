@@ -8,7 +8,7 @@ import { Menu, Search, ShoppingCart, User, X, LogOut } from 'lucide-react'
 import { NAV_LINKS } from '@/lib/constants'
 import { useCart } from '@/lib/cart-context'
 import { useUser } from '@/lib/user-context'
-import { products } from '@/lib/products'
+import { conditionFromApi } from '@/lib/products'
 
 function Logo() {
   return (
@@ -28,6 +28,7 @@ function Logo() {
 
 function SearchOverlay({ onClose }: { onClose: () => void }) {
   const [query, setQuery] = useState('')
+  const [results, setResults] = useState<any[]>([])
   const inputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
 
@@ -40,13 +41,37 @@ function SearchOverlay({ onClose }: { onClose: () => void }) {
     return () => document.removeEventListener('keydown', handleEsc)
   }, [onClose])
 
-  const results = query.trim().length >= 2
-    ? products.filter((p) =>
-        p.name.toLowerCase().includes(query.toLowerCase()) ||
-        p.brand.toLowerCase().includes(query.toLowerCase()) ||
-        p.cpu.toLowerCase().includes(query.toLowerCase())
-      ).slice(0, 6)
-    : []
+  useEffect(() => {
+    if (query.trim().length < 2) {
+      setResults([])
+      return
+    }
+    const controller = new AbortController()
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `http://localhost:8090/api/products?search=${encodeURIComponent(query.trim())}&size=6`,
+          { signal: controller.signal, cache: 'no-store' }
+        )
+        if (!res.ok) return
+        const data = await res.json()
+        const list = data.content || (Array.isArray(data) ? data : [])
+        const mapped = list.slice(0, 6).map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          brand: p.brandName || '',
+          cpu: p.specifications?.find((s: any) => s.specKey.toLowerCase().includes('processeur'))?.specValue || '',
+          ram: p.specifications?.find((s: any) => s.specKey.toLowerCase().includes('ram'))?.specValue || '',
+          storage: p.specifications?.find((s: any) => s.specKey.toLowerCase().includes('stockage'))?.specValue || '',
+          price: p.salePrice || p.basePrice || 0,
+        }))
+        setResults(mapped)
+      } catch (e) {
+        // aborted or network error — silently ignore
+      }
+    }, 300)
+    return () => { clearTimeout(timer); controller.abort() }
+  }, [query])
 
   return (
     <div className="fixed inset-0 z-[60]">
@@ -104,7 +129,7 @@ function SearchOverlay({ onClose }: { onClose: () => void }) {
                           </p>
                         </div>
                         <span className="shrink-0 text-sm font-bold text-[#1A3FA0]">
-                          {product.price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} TND
+                          {Number(product.price).toLocaleString('fr-FR')} TND
                         </span>
                       </Link>
                     </li>

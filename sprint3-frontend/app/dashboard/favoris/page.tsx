@@ -1,15 +1,76 @@
-import { Heart, ShoppingBag } from 'lucide-react'
+'use client'
+
+import { useState, useEffect } from 'react'
+import { Heart, ShoppingBag, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { CatalogProductCard } from '@/components/catalogue/product-card'
-import { products } from '@/lib/products'
+import { conditionFromApi, type Product } from '@/lib/products'
 
-export const metadata = {
-  title: 'Mes Favoris — AfricaNet',
+const API_BASE = 'http://localhost:8090/api'
+
+function getToken() {
+  return typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null
 }
 
 export default function FavorisPage() {
-  // Simulate having a few favorited products
-  const favoriteProducts = products.slice(0, 3)
+  const [favoriteProducts, setFavoriteProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function loadFavorites() {
+      setLoading(true)
+      const token = getToken()
+      if (!token) {
+        setFavoriteProducts([])
+        setLoading(false)
+        return
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/favorites`, {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: 'no-store',
+        })
+
+        if (!res.ok) {
+          setFavoriteProducts([])
+          return
+        }
+
+        const data = await res.json()
+        const rawList = data.content || (Array.isArray(data) ? data : [])
+
+        const mapped: Product[] = rawList.map((item: any) => {
+          const p = item.product || item
+          const ramSpec = p.specifications?.find((s: any) => s.specKey.toLowerCase().includes('ram'))?.specValue || '8 Go'
+          const screenSpec = p.specifications?.find((s: any) => s.specKey.toLowerCase().includes('écran') || s.specKey.toLowerCase().includes('ecran'))?.specValue || '15.6'
+
+          return {
+            id: p.id,
+            name: p.name,
+            brand: p.brandName || 'Unknown',
+            cpu: p.specifications?.find((s: any) => s.specKey.toLowerCase().includes('processeur'))?.specValue || 'N/A',
+            ram: ramSpec,
+            ramValue: parseInt(ramSpec, 10) || 8,
+            storage: p.specifications?.find((s: any) => s.specKey.toLowerCase().includes('stockage'))?.specValue || '256 Go SSD',
+            screenSize: parseFloat(screenSpec.replace(',', '.')) || 15.6,
+            price: p.salePrice || p.basePrice || 0,
+            condition: conditionFromApi(p.condition),
+            image: p.images?.find((img: any) => img.isPrimary)?.imageUrl || '/products/laptop-gray.png',
+          }
+        })
+
+        setFavoriteProducts(mapped)
+      } catch (err) {
+        console.error('Error fetching user favorites:', err)
+        setFavoriteProducts([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadFavorites()
+  }, [])
 
   return (
     <div>
@@ -18,7 +79,11 @@ export default function FavorisPage() {
         <p className="text-[#6B7280]">Retrouvez ici les produits que vous avez sauvegardés.</p>
       </div>
 
-      {favoriteProducts.length > 0 ? (
+      {loading ? (
+        <div className="py-12 flex justify-center text-[#1A3FA0]">
+          <Loader2 className="h-6 w-6 animate-spin" />
+        </div>
+      ) : favoriteProducts.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {favoriteProducts.map((product) => (
             <CatalogProductCard key={product.id} product={product} />

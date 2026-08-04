@@ -102,7 +102,7 @@ export interface ProductResponse {
 export async function fetchProducts(params?: {
   categoryId?: number
   brandId?: number
-  condition?: Condition
+  condition?: string
   minPrice?: number
   maxPrice?: number
   page?: number

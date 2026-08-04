@@ -11,7 +11,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react'
-import { products, type Product, type SortOption, type Condition, SORT_OPTIONS } from '@/lib/products'
+import { products, type Product, type SortOption, type Condition, SORT_OPTIONS, conditionFromApi, conditionToApi } from '@/lib/products'
 import { CatalogProductCard } from '@/components/catalogue/product-card'
 import { FiltersPanel, defaultFilters, type FilterState } from '@/components/catalogue/filters-panel'
 
@@ -38,22 +38,71 @@ export function Catalog() {
   const [brandCounts, setBrandCounts] = useState<{ brand: string; count: number }[]>([])
   const [conditionCounts, setConditionCounts] = useState<{ condition: Condition; count: number }[]>([])
 
+  // Helper to fetch approved trade-in items as catalog products
+  const fetchApprovedTradeIns = useCallback(async (): Promise<Product[]> => {
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null
+      const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {}
+
+      const res = await fetch('http://localhost:8090/api/admin/trade-in?size=100', { headers, cache: 'no-store' })
+      if (!res.ok) return []
+      const data = await res.json()
+      const list = data.content || (Array.isArray(data) ? data : [])
+
+      return list
+        .filter((t: any) => t.status === 'APPROVED' || t.status === 'COMPLETED')
+        .map((t: any) => {
+          const priceVal = Number(t.finalValue || t.estimatedValueAi || 950)
+          const modelStr = t.model || ''
+          const brandStr = t.brandName || 
+            (modelStr.toLowerCase().includes('dell') ? 'Dell' :
+             modelStr.toLowerCase().includes('hp') ? 'HP' :
+             modelStr.toLowerCase().includes('lenovo') ? 'Lenovo' : 'Dell')
+
+          const fullName = modelStr.toLowerCase().startsWith(brandStr.toLowerCase())
+            ? modelStr
+            : `${brandStr} ${modelStr}`
+
+          return {
+            id: 10000 + t.id,
+            name: fullName || `Appareil Repris #${t.id}`,
+            brand: brandStr,
+            cpu: 'Intel Core i7',
+            ram: '16 Go',
+            ramValue: 16,
+            storage: '512 Go SSD',
+            screenSize: 14,
+            price: priceVal,
+            condition: 'Reconditionné' as Condition,
+            image: t.images?.[0]?.url || '/products/laptop-gray.png'
+          }
+        })
+    } catch {
+      return []
+    }
+  }, [])
+
   // Fetch filter counts on mount
   useEffect(() => {
     async function fetchCounts() {
       try {
         const { fetchProducts } = await import('@/lib/api')
-        const res = await fetchProducts({ size: 1000 })
+        const [res, tradeInProducts] = await Promise.all([
+          fetchProducts({ size: 1000 }),
+          fetchApprovedTradeIns()
+        ])
+
         const products = res.content
+        const allProducts = [...products, ...tradeInProducts]
         
         const bCounts: Record<string, number> = {}
         const cCounts: Record<string, number> = {}
         
-        products.forEach((p: any) => {
-          const brand = p.brandName || 'Unknown'
+        allProducts.forEach((p: any) => {
+          const brand = p.brandName || p.brand || 'Unknown'
           bCounts[brand] = (bCounts[brand] || 0) + 1
           
-          const condition = p.condition as Condition
+          const condition = conditionFromApi(p.condition)
           if (condition) {
             cCounts[condition] = (cCounts[condition] || 0) + 1
           }
@@ -65,26 +114,13 @@ export function Catalog() {
           count,
         })))
       } catch (e) {
-        console.warn('Failed to load counts from API, falling back to local data', e)
-        const bCounts: Record<string, number> = {}
-        const cCounts: Record<string, number> = {}
-        
-        products.forEach((p) => {
-          const brand = p.brand || 'Unknown'
-          bCounts[brand] = (bCounts[brand] || 0) + 1
-          const condition = p.condition as Condition
-          if (condition) cCounts[condition] = (cCounts[condition] || 0) + 1
-        })
-        
-        setBrandCounts(Object.entries(bCounts).map(([brand, count]) => ({ brand, count })))
-        setConditionCounts(Object.entries(cCounts).map(([condition, count]) => ({
-          condition: condition as Condition,
-          count,
-        })))
+        console.error('Failed to load counts from API:', e)
+        setBrandCounts([])
+        setConditionCounts([])
       }
     }
     fetchCounts()
-  }, [])
+  }, [fetchApprovedTradeIns])
 
   // Fetch products from API
   useEffect(() => {
@@ -99,27 +135,39 @@ export function Catalog() {
         else if (sort === 'nouveautes') backendSort = 'createdAt,desc'
 
         let res
+        let tradeInProducts: Product[] = []
+
         if (searchQuery) {
           res = await searchProducts(searchQuery, page - 1, ITEMS_PER_PAGE)
         } else {
-          // Convert price to max/min
           const minPrice = filters.priceMin > 0 ? filters.priceMin : undefined
           const maxPrice = filters.priceMax < 5000 ? filters.priceMax : undefined
-          // If we had brand ID, we'd pass it. For now our API fallback handles local filtering.
-          
-          res = await fetchProducts({
-            page: page - 1,
-            size: ITEMS_PER_PAGE,
-            minPrice,
-            maxPrice,
-            condition: filters.conditions.length === 1 ? filters.conditions[0] : undefined,
-            sort: backendSort
-          })
+          const apiCondition = filters.conditions.length === 1 ? conditionToApi(filters.conditions[0]) : undefined
+
+          const [prodRes, tradeIns] = await Promise.all([
+            fetchProducts({
+              page: page - 1,
+              size: ITEMS_PER_PAGE,
+              minPrice,
+              maxPrice,
+              condition: apiCondition,
+              sort: backendSort
+            }),
+            fetchApprovedTradeIns()
+          ])
+
+          res = prodRes
+          tradeInProducts = tradeIns
         }
 
         // Map ProductResponse to local Product interface
         let mapped: Product[] = res.content.map((p: any) => {
-          if (p.price !== undefined && !p.basePrice) return p
+          if (p.price !== undefined && !p.basePrice) {
+            return {
+              ...p,
+              condition: conditionFromApi(p.condition)
+            }
+          }
           
           const ramSpec = p.specifications?.find((s: any) => s.specKey.toLowerCase().includes('ram'))?.specValue || '8 Go'
           const screenSpec = p.specifications?.find((s: any) => s.specKey.toLowerCase().includes('écran') || s.specKey.toLowerCase().includes('ecran'))?.specValue || '15.6'
@@ -134,8 +182,16 @@ export function Catalog() {
             storage: p.specifications?.find((s: any) => s.specKey.toLowerCase().includes('stockage'))?.specValue || '256 Go SSD',
             screenSize: parseFloat(screenSpec.replace(',', '.')) || 15.6,
             price: p.salePrice || p.basePrice || 0,
-            condition: p.condition as Condition,
+            condition: conditionFromApi(p.condition),
             image: p.images?.find((img: any) => img.isPrimary)?.imageUrl || '/products/laptop-gray.png'
+          }
+        })
+
+        // Combine DB products with approved trade-ins (avoiding duplicates)
+        const existingNames = new Set(mapped.map((p) => p.name.toLowerCase()))
+        tradeInProducts.forEach((tp) => {
+          if (!existingNames.has(tp.name.toLowerCase())) {
+            mapped.push(tp)
           }
         })
 
@@ -154,44 +210,25 @@ export function Catalog() {
           mapped = mapped.filter((p) => filters.screenSizes.includes(p.screenSize) || filters.screenSizes.some(s => Math.abs(p.screenSize - s) < 0.5))
         }
 
-        setPaginatedProducts(mapped)
-        setTotalPages(res.totalPages)
-        setTotalElements(res.totalElements)
-      } catch (err: any) {
-        console.warn('Failed to load products from API, falling back to local data. Reason:', err.message)
-        // Fallback to local mock data
-        let mapped = products
-        
-        mapped = mapped.filter((p) => p.price >= filters.priceMin && p.price <= filters.priceMax)
-        if (filters.brands.length > 0) {
-          mapped = mapped.filter((p) => filters.brands.includes(p.brand))
-        }
-        if (filters.conditions.length > 0) {
-          mapped = mapped.filter((p) => filters.conditions.includes(p.condition))
-        }
-        if (filters.ramValues.length > 0) {
-          mapped = mapped.filter((p) => filters.ramValues.includes(p.ramValue))
-        }
-        if (filters.screenSizes.length > 0) {
-          mapped = mapped.filter((p) => filters.screenSizes.includes(p.screenSize) || filters.screenSizes.some(s => Math.abs(p.screenSize - s) < 0.5))
-        }
-
-        // Apply sorting to local mock data
+        // Apply sorting
         if (sort === 'prix-asc') mapped = mapped.sort((a, b) => a.price - b.price)
         else if (sort === 'prix-desc') mapped = mapped.sort((a, b) => b.price - a.price)
-        else if (sort === 'nouveautes') mapped = mapped.sort((a, b) => b.id - a.id)
 
-        
-        setPaginatedProducts(mapped.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE))
-        setTotalPages(Math.ceil(mapped.length / ITEMS_PER_PAGE))
+        setPaginatedProducts(mapped)
+        setTotalPages(Math.max(1, Math.ceil(mapped.length / ITEMS_PER_PAGE)))
         setTotalElements(mapped.length)
+      } catch (err: any) {
+        console.error('Failed to load products from API:', err.message)
+        setPaginatedProducts([])
+        setTotalPages(1)
+        setTotalElements(0)
       } finally {
         setLoading(false)
       }
     }
     
     loadData()
-  }, [filters, sort, searchQuery, page])
+  }, [filters, sort, searchQuery, page, fetchApprovedTradeIns])
 
   // Active filter chips
   const activeChips = useMemo(() => {

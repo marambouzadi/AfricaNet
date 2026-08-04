@@ -7,7 +7,7 @@ import { ProductTabs } from '@/components/product/product-tabs'
 import { SimilarProducts } from '@/components/product/similar-products'
 import { MobileStickyBar } from '@/components/product/mobile-sticky-bar'
 import { fetchProductById } from '@/lib/api'
-import { getSimilarProducts, products } from '@/lib/products'
+import { getSimilarProducts, conditionFromApi } from '@/lib/products'
 import { notFound } from 'next/navigation'
 import { ProductJsonLd, BreadcrumbJsonLd } from '@/components/seo/json-ld'
 
@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   try {
     const product = await fetchProductById(id)
     const title = `${product.name} — AfricaNet`
-    const description = `${product.name} ${product.condition} — ${product.salePrice || product.basePrice} TND. Garantie 3 mois AfricaNet.`
+    const description = `${product.name} ${conditionFromApi(product.condition)} — ${product.salePrice || product.basePrice} TND. Garantie 3 mois AfricaNet.`
     
     return {
       title,
@@ -45,35 +45,49 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
   
   let res: any
   try {
-    res = await fetchProductById(productId)
+    if (productId >= 10000) {
+      // Fetch approved trade-in item
+      const tradeInId = productId - 10000
+      const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null
+      const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {}
+      const tRes = await fetch(`http://localhost:8090/api/admin/trade-in?size=100`, { headers, cache: 'no-store' })
+      if (!tRes.ok) notFound()
+      const data = await tRes.json()
+      const list = data.content || (Array.isArray(data) ? data : [])
+      const item = list.find((t: any) => t.id === tradeInId)
+      if (!item) notFound()
+
+      const brandStr = item.brandName || 'Dell'
+      const nameStr = item.model ? (item.model.toLowerCase().startsWith(brandStr.toLowerCase()) ? item.model : `${brandStr} ${item.model}`) : `Appareil Repris #${item.id}`
+      const priceVal = Number(item.finalValue || item.estimatedValueAi || 950)
+
+      res = {
+        id: productId,
+        name: nameStr,
+        condition: 'REFURBISHED',
+        salePrice: priceVal,
+        basePrice: priceVal,
+        description: `Appareil reconditionné issu du programme de reprise AfricaNet. Référence: ${item.referenceNumber}. Année: ${item.manufactureYear || 'N/A'}.`,
+        images: [{ imageUrl: item.images?.[0]?.url || '/products/laptop-gray.png', isPrimary: true }],
+        specifications: [
+          { specKey: 'Processeur', specValue: 'Intel Core i7' },
+          { specKey: 'RAM', specValue: '16 GB DDR4' },
+          { specKey: 'Stockage', specValue: '512 GB SSD NVMe' },
+          { specKey: 'Écran', specValue: '14 pouces Full HD' },
+        ]
+      }
+    } else {
+      res = await fetchProductById(productId)
+    }
   } catch (e) {
-    // Fallback to local mock product
-    const localProduct = products.find(p => p.id === productId)
-    if (!localProduct) {
-      notFound()
-    }
-    // Simulate backend response structure based on local mock
-    res = {
-      id: localProduct.id,
-      name: localProduct.name,
-      condition: localProduct.condition,
-      salePrice: localProduct.price,
-      basePrice: localProduct.price,
-      description: 'Ce produit est issu du catalogue de démonstration.',
-      images: [{ imageUrl: localProduct.image, isPrimary: true }],
-      specifications: [
-        { specKey: 'Processeur', specValue: localProduct.cpu },
-        { specKey: 'RAM', specValue: localProduct.ram },
-        { specKey: 'Stockage', specValue: localProduct.storage },
-      ]
-    }
+    notFound()
   }
   
   // Map backend response to local ProductDetail interface
   const product = {
     id: res.id,
     name: res.name,
-    condition: res.condition as any,
+    condition: conditionFromApi(res.condition),
     price: `${res.salePrice || res.basePrice} TND`,
     priceNum: res.salePrice || res.basePrice,
     stock: 5, // Mocked for now since stock is in another API

@@ -69,6 +69,9 @@ public class SecurityConfig {
                             "/api/auth/register",
                             "/api/auth/login",
                             "/api/auth/refresh",
+                            "/api/trade-in/evaluate",
+                            "/api/trade-in/*/accept",
+                            "/api/trade-in/*/counter-offer",
                             "/swagger-ui/**",
                             "/swagger-ui.html",
                             "/api-docs/**",
@@ -85,12 +88,14 @@ public class SecurityConfig {
                         "/api/categories",
                         "/api/categories/**",
                         "/api/brands",
-                        "/api/brands/**"
+                        "/api/brands/**",
+                        "/uploads/**"
                 ).permitAll()
 
                 // ── Routes Admin uniquement ───────────────────────────────
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/stock/**").hasAnyRole("ADMIN", "MANAGER")
+                .requestMatchers(HttpMethod.POST, "/api/upload/**").hasAnyRole("ADMIN", "MANAGER")
 
                 // ── Tout le reste nécessite d'être connecté ───────────────
                 .anyRequest().authenticated()

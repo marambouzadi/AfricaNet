@@ -64,14 +64,32 @@ public class TradeInEvaluationService {
      * Évalue un appareil et persiste le résultat dans trade_in_requests.
      */
     public EvaluationResult evaluate(TradeInEvaluationRequest request) {
-        // Valider que l'utilisateur existe
-        User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new RuntimeException(
-                        "Utilisateur introuvable avec l'ID : " + request.getUserId()));
+        User user = null;
+        if (request.getUserId() != null) {
+            user = userRepository.findById(request.getUserId()).orElse(null);
+        }
+        if (user == null) {
+            user = userRepository.findAll().stream().findFirst()
+                    .orElseThrow(() -> new RuntimeException("Aucun utilisateur disponible en base"));
+        }
 
-        Brand brand = brandRepository.findByNameIgnoreCase(request.getBrand())
-                .orElseThrow(() -> new RuntimeException(
-                        "Marque introuvable avec le nom : " + request.getBrand()));
+        String brandName = (request.getBrand() != null && !request.getBrand().trim().isEmpty())
+                ? request.getBrand().trim() : "Autre";
+        Brand brand = brandRepository.findByNameIgnoreCase(brandName)
+                .orElseGet(() -> {
+                    Brand newBrand = new Brand();
+                    newBrand.setName(brandName);
+                    String slug = brandName.toLowerCase()
+                            .replaceAll("[^a-z0-9\\s-]", "")
+                            .trim()
+                            .replaceAll("\\s+", "-");
+                    if (slug.isEmpty()) {
+                        slug = "brand-" + System.currentTimeMillis();
+                    }
+                    newBrand.setSlug(slug);
+                    newBrand.setIsActive(true);
+                    return brandRepository.save(newBrand);
+                });
         // 1. Prix de base marché depuis la DB
         double basePrice = computeBaseValue(request.getBrand(), request.getDeviceModel());
 

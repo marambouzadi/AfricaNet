@@ -25,6 +25,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     Optional<Product> findByIdAndIsActiveTrue(Long id);
     boolean existsBySlug(String slug);
+    boolean existsBySku(String sku);
 
     // ── Recherche avec filtres ────────────────────────────────────
 

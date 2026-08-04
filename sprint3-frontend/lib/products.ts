@@ -1,5 +1,33 @@
 export type Condition = 'Neuf' | 'Reconditionné' | 'Occasion' | 'Épuisé'
 
+// ── Condition mapping : Backend (Java enum) ↔ Frontend (French UI) ─────────
+// Backend sends: 'NEW', 'REFURBISHED', 'USED'
+// Frontend shows: 'Neuf', 'Reconditionné', 'Occasion'
+
+export const CONDITION_API_TO_FR: Record<string, Condition> = {
+  NEW:         'Neuf',
+  REFURBISHED: 'Reconditionné',
+  USED:        'Occasion',
+}
+
+export const CONDITION_FR_TO_API: Record<string, string> = {
+  Neuf:          'NEW',
+  Reconditionné: 'REFURBISHED',
+  Occasion:      'USED',
+}
+
+/** Converts an API condition string (e.g. 'NEW') to French label (e.g. 'Neuf'). */
+export function conditionFromApi(apiValue: string | undefined | null): Condition {
+  if (!apiValue) return 'Neuf'
+  return CONDITION_API_TO_FR[apiValue.toUpperCase()] ?? (apiValue as Condition)
+}
+
+/** Converts a French label (e.g. 'Reconditionné') to the API enum string (e.g. 'REFURBISHED'). */
+export function conditionToApi(frValue: string | undefined | null): string | undefined {
+  if (!frValue) return undefined
+  return CONDITION_FR_TO_API[frValue] ?? frValue.toUpperCase()
+}
+
 export type Product = {
   id: number
   name: string
@@ -14,11 +42,16 @@ export type Product = {
   image: string
 }
 
-export const conditionStyles: Record<Condition, string> = {
-  Neuf: 'bg-[#1A8A4A] text-white',
+export const conditionStyles: Record<string, string> = {
+  // French labels
+  Neuf:          'bg-[#1A8A4A] text-white',
   Reconditionné: 'bg-[#1A3FA0] text-white',
-  Occasion: 'bg-[#B45309] text-white',
-  Épuisé: 'bg-[#6B7280] text-white',
+  Occasion:      'bg-[#B45309] text-white',
+  Épuisé:        'bg-[#6B7280] text-white',
+  // English API values (fallback)
+  NEW:           'bg-[#1A8A4A] text-white',
+  REFURBISHED:   'bg-[#1A3FA0] text-white',
+  USED:          'bg-[#B45309] text-white',
 }
 
 export function formatPrice(price: number): string {

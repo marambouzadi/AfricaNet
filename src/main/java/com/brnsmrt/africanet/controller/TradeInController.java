@@ -58,4 +58,20 @@ public class TradeInController {
             @PathVariable Long id, Authentication authentication) {
         return ResponseEntity.ok(tradeInService.getMyTradeInById(id, authentication));
     }
+
+    @PostMapping("/{id}/accept")
+    public ResponseEntity<TradeInResponse> acceptOffer(
+            @PathVariable Long id,
+            Authentication authentication) {
+        return ResponseEntity.ok(tradeInService.acceptOffer(id, authentication));
+    }
+
+    @PostMapping("/{id}/counter-offer")
+    public ResponseEntity<TradeInResponse> proposeCounterOffer(
+            @PathVariable Long id,
+            @RequestBody java.util.Map<String, java.math.BigDecimal> body,
+            Authentication authentication) {
+        java.math.BigDecimal proposedPrice = body.get("proposedPrice");
+        return ResponseEntity.ok(tradeInService.proposeCounterOffer(id, proposedPrice, authentication));
+    }
 }
