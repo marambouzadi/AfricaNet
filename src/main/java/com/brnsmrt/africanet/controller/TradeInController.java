@@ -28,15 +28,15 @@ public class TradeInController {
 
     @PostMapping("/evaluate")
     public ResponseEntity<com.brnsmrt.africanet.ai.dto.EvaluationResult> evaluateTradeIn(
-            @Valid @RequestBody com.brnsmrt.africanet.dto.request.TradeInRequest request,
+            @Valid @RequestBody com.brnsmrt.africanet.dto.request.TradeInEvaluationRequest request,
             Authentication authentication) {
-        
+
         if (authentication != null) {
             com.brnsmrt.africanet.domain.User user = userRepository.findByEmail(authentication.getName())
                     .orElseThrow(() -> new RuntimeException("User not found"));
             request.setUserId(user.getId());
         }
-        
+
         return ResponseEntity.ok(tradeInEvaluationService.evaluate(request));
     }
 

@@ -92,14 +92,14 @@ public class TradeInService {
     public Page<TradeInResponse> getMyTradeIns(Authentication authentication, Pageable pageable) {
         User user = userRepository.findByEmail(authentication.getName())
                 .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable"));
-        return tradeInRepository.findByUserIdOrderByCreatedAtDesc(user.getId(), pageable)
+        return tradeInRepository.findByUser_IdOrderByCreatedAtDesc(user.getId(), pageable)
                 .map(this::toResponse);
     }
 
     public TradeInResponse getMyTradeInById(Long id, Authentication authentication) {
         User user = userRepository.findByEmail(authentication.getName())
                 .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable"));
-        TradeInRequest tradeIn = tradeInRepository.findByIdAndUserId(id, user.getId())
+        TradeInRequest tradeIn = tradeInRepository.findByIdAndUser_Id(id, user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Demande de reprise introuvable: " + id));
         return toResponse(tradeIn);
     }

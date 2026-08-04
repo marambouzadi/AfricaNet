@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -61,6 +62,13 @@ public class SecurityConfig {
             .sessionManagement(session ->
                     session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
+            // 3.5 Gestion des exceptions (401 au lieu de 403 pour unauthenticated)
+            .exceptionHandling(exceptions ->
+                    exceptions.authenticationEntryPoint((request, response, authException) -> {
+                        response.sendError(HttpServletResponse.SC_UNAUTHORIZED, authException.getMessage());
+                    })
+            )
+
             // 4. Règles d'autorisation des routes
             .authorizeHttpRequests(auth -> auth
 
@@ -75,7 +83,8 @@ public class SecurityConfig {
                             "/v3/api-docs/**",
                             "/error",
                             "/mock-flouci/**",
-                            "/ws/**"
+                            "/ws/**",
+                            "/api/contact"
                     ).permitAll()
 
                 // Catalogue public (lecture seule)

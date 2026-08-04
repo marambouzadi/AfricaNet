@@ -3,7 +3,7 @@ package com.brnsmrt.africanet.controller;
 import com.brnsmrt.africanet.ai.TradeInEvaluationService;
 import com.brnsmrt.africanet.ai.dto.EvaluationResult;
 import com.brnsmrt.africanet.domain.TradeIn;
-import com.brnsmrt.africanet.dto.request.TradeInRequest;
+import com.brnsmrt.africanet.dto.request.TradeInEvaluationRequest;
 import com.brnsmrt.africanet.repository.TradeInRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,7 +33,7 @@ public class TradeInControllerTest {
 
     @Test
     void testEvaluateTradeIn_success() {
-        TradeInRequest request = TradeInRequest.builder()
+        TradeInEvaluationRequest request = TradeInEvaluationRequest.builder()
                 .deviceModel("ThinkPad X1")
                 .brand("Lenovo")
                 .yearOfPurchase(2023)

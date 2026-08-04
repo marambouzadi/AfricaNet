@@ -8,10 +8,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import org.springframework.stereotype.Repository;
+
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
+@Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
 
     Optional<Product> findBySlugAndIsActiveTrue(String slug);
@@ -48,10 +51,13 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     );
 
     @Query("""
-        SELECT p FROM Product p
+        SELECT DISTINCT p FROM Product p
+        LEFT JOIN p.specifications s
         WHERE p.isActive = true
         AND (LOWER(p.name) LIKE LOWER(CONCAT('%', :query, '%'))
-             OR LOWER(p.description) LIKE LOWER(CONCAT('%', :query, '%')))
+             OR LOWER(p.description) LIKE LOWER(CONCAT('%', :query, '%'))
+             OR LOWER(p.brand.name) LIKE LOWER(CONCAT('%', :query, '%'))
+             OR LOWER(s.specValue) LIKE LOWER(CONCAT('%', :query, '%')))
         """)
     @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"category", "brand", "images", "specifications"})
     Page<Product> fullTextSearch(@Param("query") String query, Pageable pageable);

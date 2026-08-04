@@ -13,7 +13,7 @@ import com.brnsmrt.africanet.ai.dto.EvaluationResult;
 import com.brnsmrt.africanet.domain.enums.ConditionOverall;
 import com.brnsmrt.africanet.domain.enums.DeviceType;
 import com.brnsmrt.africanet.domain.enums.TradeInStatus;
-import com.brnsmrt.africanet.dto.request.TradeInRequest;
+import com.brnsmrt.africanet.dto.request.TradeInEvaluationRequest;
 
 import org.springframework.stereotype.Service;
 
@@ -65,7 +65,7 @@ public class TradeInEvaluationService {
      *   4. Specific components (10%)
      *   Final value = score * 0.75 (Africa Net 25% margin)
      */
-    public EvaluationResult evaluate(TradeInRequest request) {
+    public EvaluationResult evaluate(TradeInEvaluationRequest request) {
         // Validate user exists
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new RuntimeException(
@@ -160,7 +160,7 @@ public class TradeInEvaluationService {
         return ConditionOverall.POOR;
     }
 
-    private Map<String, Object> buildConditionDetailsJson(TradeInRequest request) {
+    private Map<String, Object> buildConditionDetailsJson(TradeInEvaluationRequest request) {
         Map<String, Object> root = new java.util.HashMap<>();
         root.put("screen", java.util.Map.of("score", request.getScreenScore()));
         root.put("keyboard", java.util.Map.of("score", request.getKeyboardScore()));
@@ -243,7 +243,7 @@ public class TradeInEvaluationService {
         return DEFAULT_BASE_VALUE;
     }
 
-    private String buildConditionSummary(TradeInRequest request, double basePrice,
+    private String buildConditionSummary(TradeInEvaluationRequest request, double basePrice,
                                           int age, double ageFactor,
                                           double conditionOverallScore,
                                           double avgComponentScore,

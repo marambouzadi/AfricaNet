@@ -35,7 +35,7 @@ public class AdminUserController {
                 .phone(user.getPhone())
                 .avatarUrl(user.getAvatarUrl())
                 .role(user.getRole())
-                .isActive(user.getIsActive())
+                .isActive(user.isActive())
                 .createdAt(user.getCreatedAt())
                 .build();
     }

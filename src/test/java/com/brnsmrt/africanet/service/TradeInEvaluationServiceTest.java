@@ -6,7 +6,7 @@ import com.brnsmrt.africanet.domain.Brand;
 import com.brnsmrt.africanet.domain.DeviceBaseValue;
 import com.brnsmrt.africanet.domain.TradeIn;
 import com.brnsmrt.africanet.domain.User;
-import com.brnsmrt.africanet.dto.request.TradeInRequest;
+import com.brnsmrt.africanet.dto.request.TradeInEvaluationRequest;
 import com.brnsmrt.africanet.repository.BrandRepository;
 import com.brnsmrt.africanet.repository.DeviceBaseValueRepository;
 import com.brnsmrt.africanet.repository.TradeInRepository;
@@ -72,7 +72,7 @@ class TradeInEvaluationServiceTest {
         brand.setId(1L);
         brand.setName("Apple");
 
-        TradeInRequest request = TradeInRequest.builder()
+        TradeInEvaluationRequest request = TradeInEvaluationRequest.builder()
                 .deviceModel("MacBook Pro")
                 .brand("Apple")
                 .yearOfPurchase(2023)

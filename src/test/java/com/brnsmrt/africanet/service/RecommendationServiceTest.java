@@ -92,7 +92,7 @@ class RecommendationServiceTest {
     @Test
     void testRecommend_noHistory_popularityFallback() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
-        when(orderRepository.findByUserId(1L)).thenReturn(Collections.emptyList());
+        when(orderRepository.findByUser_Id(1L)).thenReturn(Collections.emptyList());
         when(productViewRepository.countViewsPerCategoryByUser(1L)).thenReturn(Collections.emptyList());
 
         List<Object[]> mockCounts = new ArrayList<>();
@@ -123,7 +123,7 @@ class RecommendationServiceTest {
         item.setProductId(product1.getId());
         order.setItems(List.of(item));
 
-        when(orderRepository.findByUserId(1L)).thenReturn(List.of(order));
+        when(orderRepository.findByUser_Id(1L)).thenReturn(List.of(order));
         when(productRepository.findByCategoryIdIn(any())).thenReturn(List.of(product1, product2));
 
         List<Object[]> mockCounts = new ArrayList<>();

@@ -29,12 +29,10 @@ public class AdminSeeder implements CommandLineRunner {
 
         if (adminOpt.isPresent()) {
             User admin = adminOpt.get();
-            // Force the correct password hash
-            admin.setPasswordHash(passwordEncoder.encode("Admin@AfricaNet2026"));
             admin.setRole(UserRole.ADMIN);
             admin.setIsActive(true);
             userRepository.save(admin);
-            log.info("Admin account password has been reset to the correct hash.");
+            log.info("Admin account verified.");
         } else {
             User newAdmin = User.builder()
                     .email(adminEmail)

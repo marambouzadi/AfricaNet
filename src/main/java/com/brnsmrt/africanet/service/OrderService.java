@@ -59,19 +59,25 @@ public class OrderService {
         }
 
         // 2. Créer la commande
+        User userRef = new User();
+        userRef.setId(userId);
+
         Order order = Order.builder()
                 .orderNumber(orderNumberGenerator.generate())
-                .userId(userId)
+                .user(userRef)
                 .status(OrderStatus.PENDING)
                 .paymentStatus(PaymentStatus.PENDING)
                 .paymentMethod(request.getPaymentMethod())
                 .couponCode(request.getCouponCode())
                 .customerNotes(request.getCustomerNotes())
-                .shippingAddress(addressToMap(request.getShippingAddress()))
-                .billingAddress(request.getBillingAddress() != null
-                        ? addressToMap(request.getBillingAddress())
-                        : addressToMap(request.getShippingAddress()))
                 .build();
+        
+        order.setShippingAddress(addressToMap(request.getShippingAddress()));
+        if (request.getBillingAddress() != null) {
+            order.setBillingAddress(addressToMap(request.getBillingAddress()));
+        } else {
+            order.setBillingAddress(addressToMap(request.getShippingAddress()));
+        }
 
         BigDecimal subtotal = BigDecimal.ZERO;
 
@@ -94,13 +100,16 @@ public class OrderService {
                     : product.getBasePrice();
             BigDecimal totalPrice = unitPrice.multiply(BigDecimal.valueOf(itemReq.getQuantity()));
 
+            Product productRef = new Product();
+            productRef.setId(product.getId());
+
             OrderItem item = OrderItem.builder()
-                    .productId(product.getId())
+                    .product(productRef)
                     .quantity(itemReq.getQuantity())
                     .unitPrice(unitPrice)
                     .totalPrice(totalPrice)
-                    .productSnapshot(buildProductSnapshot(product))
                     .build();
+            item.setProductSnapshot(buildProductSnapshot(product));
 
             order.addItem(item);
             subtotal = subtotal.add(totalPrice);
@@ -161,7 +170,7 @@ public class OrderService {
      */
     @Transactional(readOnly = true)
     public Page<OrderResponse> getUserOrders(Long userId, Pageable pageable) {
-        return orderRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable)
+        return orderRepository.findByUser_IdOrderByCreatedAtDesc(userId, pageable)
                 .map(orderMapper::toResponse);
     }
 
@@ -307,7 +316,7 @@ public class OrderService {
     // ================== HELPERS ==================
 
     private Order findOrderOrThrow(Long orderId, Long userId) {
-        return orderRepository.findByIdAndUserId(orderId, userId)
+        return orderRepository.findByIdAndUser_Id(orderId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Commande introuvable"));
     }
 
@@ -358,7 +367,7 @@ public class OrderService {
         snap.put("salePrice", product.getSalePrice());
         // Ajoute l'image primaire si dispo
         if (product.getImages() != null && !product.getImages().isEmpty()) {
-            snap.put("image", product.getImages().get(0).getUrl());
+            snap.put("image", product.getImages().iterator().next().getUrl());
         }
         return snap;
     }

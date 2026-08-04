@@ -9,9 +9,9 @@ import java.util.Optional;
 
 public interface TradeInRequestRepository extends JpaRepository<TradeInRequest, Long> {
 
-    Page<TradeInRequest> findByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
+    Page<TradeInRequest> findByUser_IdOrderByCreatedAtDesc(Long userId, Pageable pageable);
 
-    Optional<TradeInRequest> findByIdAndUserId(Long id, Long userId);
+    Optional<TradeInRequest> findByIdAndUser_Id(Long id, Long userId);
 
     Page<TradeInRequest> findByStatus(TradeInStatus status, Pageable pageable);
 

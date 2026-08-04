@@ -14,18 +14,18 @@ import java.util.Optional;
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
     Optional<Order> findByOrderNumber(String orderNumber);
-    java.util.List<Order> findByUserId(Long userId);
+    java.util.List<Order> findByUser_Id(Long userId);
 
-    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"items"})
-    Page<Order> findByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"orderItems"})
+    Page<Order> findByUser_IdOrderByCreatedAtDesc(Long userId, Pageable pageable);
 
     Page<Order> findByStatusOrderByCreatedAtDesc(OrderStatus status, Pageable pageable);
 
-    Optional<Order> findByIdAndUserId(Long id, Long userId);
+    Optional<Order> findByIdAndUser_Id(Long id, Long userId);
 
     @Query("SELECT COUNT(o) FROM Order o WHERE o.createdAt >= :startOfDay")
     long countOrdersToday(@Param("startOfDay") LocalDateTime startOfDay);
 
-    @Query("SELECT o FROM Order o LEFT JOIN FETCH o.items WHERE o.id = :id")
+    @Query("SELECT o FROM Order o LEFT JOIN FETCH o.orderItems WHERE o.id = :id")
     Optional<Order> findByIdWithItems(@Param("id") Long id);
 }

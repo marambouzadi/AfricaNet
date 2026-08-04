@@ -107,7 +107,7 @@ public class AuthService {
                 .phone(user.getPhone())
                 .avatarUrl(user.getAvatarUrl())
                 .role(user.getRole())
-                .isActive(user.getIsActive())
+                .isActive(user.isActive())
                 .createdAt(user.getCreatedAt())
                 .build();
 
@@ -170,7 +170,7 @@ public class AuthService {
                 .phone(user.getPhone())
                 .avatarUrl(user.getAvatarUrl())
                 .role(user.getRole())
-                .isActive(user.getIsActive())
+                .isActive(user.isActive())
                 .createdAt(user.getCreatedAt())
                 .build();
     }
@@ -194,6 +194,17 @@ public class AuthService {
             user.setEmail(request.getEmail());
         }
 
+        // Mise à jour du mot de passe si fourni
+        if (request.getNewPassword() != null && !request.getNewPassword().isBlank()) {
+            if (request.getCurrentPassword() == null || request.getCurrentPassword().isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Le mot de passe actuel est requis");
+            }
+            if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mot de passe actuel incorrect");
+            }
+            user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        }
+
         user.setUpdatedAt(LocalDateTime.now());
 
         User savedUser = userRepository.save(user);
@@ -206,7 +217,7 @@ public class AuthService {
                 .phone(savedUser.getPhone())
                 .avatarUrl(savedUser.getAvatarUrl())
                 .role(savedUser.getRole())
-                .isActive(savedUser.getIsActive())
+                .isActive(savedUser.isActive())
                 .createdAt(savedUser.getCreatedAt())
                 .build();
     }

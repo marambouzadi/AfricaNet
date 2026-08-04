@@ -2,11 +2,7 @@ package com.brnsmrt.africanet.domain;
 
 import com.brnsmrt.africanet.domain.enums.UserRole;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -17,43 +13,44 @@ import java.util.List;
 
 @Entity
 @Table(name = "users")
-@Data
-@EqualsAndHashCode(callSuper = false)
+@Getter
+@Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class User implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
-    private String email;
-
-    @Column(name = "password_hash")
-    private String passwordHash;
-
-    @Column(name = "first_name", nullable = false)
+    @Column(name = "first_name", nullable = false, length = 100)
     private String firstName;
 
-    @Column(name = "last_name", nullable = false)
+    @Column(name = "last_name", nullable = false, length = 100)
     private String lastName;
 
+    @Column(nullable = false, unique = true, length = 255)
+    private String email;
+
+    @Column(name = "password_hash", length = 255)
+    private String passwordHash;
+
+    @Column(length = 20)
     private String phone;
 
-    @Column(name = "avatar_url")
+    @Column(name = "avatar_url", length = 500)
     private String avatarUrl;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20)
     private UserRole role;
 
     @Column(name = "is_active", nullable = false)
-    private Boolean isActive;
+    private boolean isActive = true;
 
     @Column(name = "email_verified", nullable = false)
-    private Boolean emailVerified;
+    private boolean emailVerified = false;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -61,7 +58,26 @@ public class User implements UserDetails {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    // ── Méthodes requises par UserDetails ──────────────────────────
+    @PrePersist
+    protected void onCreate() {
+        if (createdAt == null) createdAt = LocalDateTime.now();
+        if (updatedAt == null) updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+
+    // ── UserDetails ────────────────────────────────────────────
+
+    public void setIsActive(boolean active) {
+        this.isActive = active;
+    }
+
+    public void setActive(boolean active) {
+        this.isActive = active;
+    }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -75,7 +91,7 @@ public class User implements UserDetails {
 
     @Override
     public String getUsername() {
-        return email; // on utilise l'email comme identifiant de connexion
+        return email;
     }
 
     @Override
@@ -85,7 +101,7 @@ public class User implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return isActive != null && isActive;
+        return true;
     }
 
     @Override
@@ -95,6 +111,6 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return isActive != null && isActive;
+        return isActive;
     }
 }

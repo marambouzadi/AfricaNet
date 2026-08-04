@@ -18,7 +18,7 @@ import com.brnsmrt.africanet.dto.response.RecommendationResponse;
 
 import com.brnsmrt.africanet.ai.dto.EvaluationResult;
 
-import com.brnsmrt.africanet.dto.request.TradeInRequest;
+import com.brnsmrt.africanet.dto.request.TradeInEvaluationRequest;
 
 import com.brnsmrt.africanet.ai.RecommendationService;
 
@@ -77,7 +77,7 @@ public class AssistantTools {
                                    Integer screenScore, Integer keyboardScore, 
                                    Integer batteryScore, Integer chassisScore, 
                                    Integer performanceScore, Long userId) {
-        TradeInRequest request = TradeInRequest.builder()
+        TradeInEvaluationRequest request = TradeInEvaluationRequest.builder()
                 .deviceModel(deviceModel)
                 .brand(brand)
                 .yearOfPurchase(yearOfPurchase)
