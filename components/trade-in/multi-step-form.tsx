@@ -25,6 +25,7 @@ export function MultiStepForm() {
     const [step, setStep] = useState<Step>(1)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [error, setError] = useState('')
+    const [images, setImages] = useState<File[]>([])
     const [evaluationResult, setEvaluationResult] = useState<any>(null)
     const [formData, setFormData] = useState({
         deviceType: '',
@@ -194,11 +195,26 @@ export function MultiStepForm() {
 
                         <div className="pt-4 space-y-3">
                             <label className="text-sm font-medium text-[#1A1A1A]">Photos (optionnel mais recommandé)</label>
-                            <div className="border-2 border-dashed border-[#E2E2DF] rounded-xl p-8 text-center hover:bg-gray-50 transition-colors cursor-pointer">
+                            <label className="block border-2 border-dashed border-[#E2E2DF] rounded-xl p-8 text-center hover:bg-gray-50 transition-colors cursor-pointer">
+                                <input type="file" multiple accept="image/jpeg, image/png" className="hidden" onChange={(e) => {
+                                    if (e.target.files) {
+                                        setImages(Array.from(e.target.files))
+                                    }
+                                }} />
                                 <UploadCloud className="h-8 w-8 text-[#1A3FA0] mx-auto mb-3" />
                                 <p className="font-medium text-[#1A1A1A]">Cliquez ou glissez vos photos ici</p>
                                 <p className="text-sm text-[#6B7280] mt-1">Formats acceptés : JPG, PNG (Max 5MB)</p>
-                            </div>
+                            </label>
+                            {images.length > 0 && (
+                                <div className="mt-4 space-y-2">
+                                    <p className="text-sm font-medium text-[#1A1A1A]">{images.length} fichier(s) sélectionné(s) :</p>
+                                    <ul className="text-sm text-[#6B7280] list-disc list-inside">
+                                        {images.map((img, idx) => (
+                                            <li key={idx}>{img.name}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
