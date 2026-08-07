@@ -1,5 +1,5 @@
 'use client'
-
+import './admin.css'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useUser } from '@/lib/user-context'
@@ -15,7 +15,8 @@ import {
   ShieldCheck,
   Box,
   Store,
-  ChevronRight
+  ChevronRight,
+  Mail
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
@@ -26,6 +27,7 @@ const adminNavItems = [
     { href: '/admin/stock', label: 'Stock & Inventaire', icon: Box },
     { href: '/admin/trade-ins', label: 'Reprises (Trade-in)', icon: RefreshCw },
     { href: '/admin/clients', label: 'Clients', icon: Users },
+    { href: '/admin/messages', label: 'Messages', icon: Mail },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
