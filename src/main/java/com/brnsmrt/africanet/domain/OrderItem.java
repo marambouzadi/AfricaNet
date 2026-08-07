@@ -3,6 +3,8 @@ package com.brnsmrt.africanet.domain;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.util.Map;
@@ -28,6 +30,7 @@ public class OrderItem {
     @JoinColumn(name = "product_id")
     private Product product;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "product_snapshot", nullable = false, columnDefinition = "jsonb")
     private String productSnapshot;
 

@@ -6,6 +6,8 @@ import com.brnsmrt.africanet.domain.enums.PaymentStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -56,9 +58,11 @@ public class Order {
     @Column(name = "total_amount", nullable = false, precision = 10, scale = 3)
     private BigDecimal totalAmount;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "shipping_address", nullable = false, columnDefinition = "jsonb")
     private String shippingAddress;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "billing_address", columnDefinition = "jsonb")
     private String billingAddress;
 
