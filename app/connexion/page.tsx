@@ -39,7 +39,6 @@ export default function ConnexionPage() {
         throw new Error('No access token received')
       }
     } catch (err: any) {
-      console.error(err)
       setError(err.response?.data?.message || 'Email ou mot de passe incorrect. Veuillez réessayer.')
     } finally {
       setLoading(false)
@@ -97,7 +96,6 @@ export default function ConnexionPage() {
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <label htmlFor="password" className="text-sm font-medium text-[#1A1A1A]">Mot de passe</label>
-                  <a href="#" className="text-xs text-[#1A3FA0] hover:underline">Mot de passe oublié ?</a>
                 </div>
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#6B7280]" />
@@ -122,10 +120,15 @@ export default function ConnexionPage() {
                 </div>
               </div>
 
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input type="checkbox" className="w-4 h-4 text-[#1A3FA0] rounded" />
-                <span className="text-sm text-[#6B7280]">Se souvenir de moi</span>
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input type="checkbox" className="w-4 h-4 text-[#1A3FA0] rounded" />
+                  <span className="text-sm text-[#6B7280]">Se souvenir de moi</span>
+                </label>
+                <Link href="/mot-de-passe-oublie" className="text-sm font-medium text-[#1A3FA0] hover:underline">
+                  Mot de passe oublié ?
+                </Link>
+              </div>
 
               <button
                 type="submit"

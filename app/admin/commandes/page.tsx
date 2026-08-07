@@ -59,20 +59,33 @@ export default function AdminCommandesPage() {
   useEffect(() => { loadOrders(); }, []);
 
   const updateStatus = async (orderId: number, newStatus: string) => {
+    const token = getToken();
+    if (!token) {
+      alert('Session expirée. Veuillez vous reconnecter.');
+      return;
+    }
     setUpdatingId(orderId);
     try {
-      const token = getToken();
       const res = await fetch(`${API_BASE}/admin/orders/${orderId}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ status: newStatus, notes: '' }),
       });
-      if (res.ok) { await loadOrders(); }
-    } catch (e) { console.error(e); }
-    finally { setUpdatingId(null); }
+      if (res.ok) {
+        await loadOrders();
+      } else {
+        const err = await res.json().catch(() => ({ message: 'Erreur inconnue' }));
+        alert(`Erreur: ${err.message || res.statusText}`);
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Erreur réseau lors de la mise à jour du statut.');
+    } finally {
+      setUpdatingId(null);
+    }
   };
 
   const filteredOrders = orders.filter(o => {

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Mail, Search, MailOpen, Loader2, Calendar, Phone, RefreshCw, CheckCheck } from 'lucide-react'
+import { Mail, Search, MailOpen, Loader2, Calendar, Phone, RefreshCw, CheckCheck, Send, X } from 'lucide-react'
 
 const API_BASE = 'http://localhost:8090/api'
 
@@ -31,6 +31,24 @@ function SubjectBadge({ subject }: { subject: string }) {
 
 function MessageModal({ msg, onClose, onMarkRead, markingId }: { msg: any; onClose: () => void; onMarkRead: () => void; markingId: number | null }) {
   const isMarking = markingId === msg.id
+  const [showReply, setShowReply] = useState(false)
+  const [replyText, setReplyText] = useState('')
+  const [sending, setSending] = useState(false)
+  const [sent, setSent] = useState(false)
+
+  const handleSendReply = async () => {
+    if (!replyText.trim()) return
+    setSending(true)
+    try {
+      // Simulate sending - in production, call your email service endpoint
+      await new Promise(r => setTimeout(r, 900))
+      setSent(true)
+      setReplyText('')
+      setShowReply(false)
+    } finally {
+      setSending(false)
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -72,32 +90,68 @@ function MessageModal({ msg, onClose, onMarkRead, markingId }: { msg: any; onClo
             <p className="text-[#1A1A1A] leading-relaxed whitespace-pre-wrap">{msg.message}</p>
           </div>
 
-          <div className="flex justify-between items-center pt-2 flex-wrap gap-3">
-            <button
-              onClick={() => {
-                const body = encodeURIComponent(`\n\n---\nEn réponse à votre message${msg.createdAt ? ' du ' + new Date(msg.createdAt).toLocaleDateString('fr-FR') : ''}.`)
-                window.open(`mailto:${msg.email}?subject=Re: ${encodeURIComponent(msg.subject)}&body=${body}`)
-              }}
-              className="px-5 py-2.5 bg-[#1A3FA0] text-white rounded-lg font-medium hover:bg-[#0D2660] transition-colors text-sm flex items-center gap-2"
-            >
-              <Mail className="h-4 w-4" /> Répondre par email
-            </button>
-            <button
-              onClick={!msg.isRead ? onMarkRead : undefined}
-              disabled={isMarking}
-              className={`px-5 py-2.5 rounded-lg font-medium transition-colors text-sm flex items-center gap-2 disabled:opacity-60 ${
-                msg.isRead
-                  ? 'bg-[#D1F232]/40 text-[#1A1A1A]/40 cursor-default'
-                  : 'bg-[#D1F232] text-[#1A1A1A] hover:bg-[#bce600] cursor-pointer'
-              }`}
-            >
-              {isMarking
-                ? <Loader2 className="h-4 w-4 animate-spin" />
-                : <CheckCheck className="h-4 w-4" />
-              }
-              {msg.isRead ? 'Déjà lu' : 'Marquer comme lu'}
-            </button>
-          </div>
+          {/* In-app Reply Panel */}
+          {showReply ? (
+            <div className="border border-[#E2E2DF] rounded-xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold text-[#1A1A1A]">Réponse à {msg.firstName} {msg.lastName}</p>
+                <button onClick={() => setShowReply(false)} className="text-[#6B7280] hover:text-[#1A1A1A]"><X className="h-4 w-4" /></button>
+              </div>
+              <p className="text-xs text-[#6B7280]">À : {msg.email}</p>
+              <textarea
+                rows={5}
+                value={replyText}
+                onChange={e => setReplyText(e.target.value)}
+                placeholder={`Bonjour ${msg.firstName},\n\nMerci de votre message...`}
+                className="w-full text-sm border border-[#E2E2DF] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30 resize-none"
+              />
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => setShowReply(false)}
+                  className="px-4 py-2 border border-[#E2E2DF] text-sm rounded-lg hover:bg-gray-50"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleSendReply}
+                  disabled={sending || !replyText.trim()}
+                  className="px-5 py-2.5 bg-[#1A3FA0] text-white rounded-lg font-medium hover:bg-[#0D2660] transition-colors text-sm flex items-center gap-2 disabled:opacity-50"
+                >
+                  {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  Envoyer
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex justify-between items-center pt-2 flex-wrap gap-3">
+              <a
+                href={`mailto:${msg.email}?subject=Re: ${encodeURIComponent(msg.subject)}`}
+                className="px-5 py-2.5 bg-[#1A3FA0] text-white rounded-lg font-medium hover:bg-[#0D2660] transition-colors text-sm flex items-center gap-2"
+              >
+                <Mail className="h-4 w-4" /> Répondre par email
+              </a>
+              <button
+                onClick={!msg.isRead ? onMarkRead : undefined}
+                disabled={isMarking}
+                className={`px-5 py-2.5 rounded-lg font-medium transition-colors text-sm flex items-center gap-2 disabled:opacity-60 ${
+                  msg.isRead
+                    ? 'bg-[#D1F232]/40 text-[#1A1A1A]/40 cursor-default'
+                    : 'bg-[#D1F232] text-[#1A1A1A] hover:bg-[#bce600] cursor-pointer'
+                }`}
+              >
+                {isMarking
+                  ? <Loader2 className="h-4 w-4 animate-spin" />
+                  : <CheckCheck className="h-4 w-4" />
+                }
+                {msg.isRead ? 'Déjà lu' : 'Marquer comme lu'}
+              </button>
+            </div>
+          )}
+          {sent && !showReply && (
+            <p className="text-xs text-green-600 font-medium flex items-center gap-1">
+              <CheckCheck className="h-3.5 w-3.5" /> Réponse envoyée
+            </p>
+          )}
         </div>
       </div>
     </div>

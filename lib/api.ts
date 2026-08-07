@@ -154,6 +154,14 @@ export async function updateCurrentUser(profileData: any) {
   return data
 }
 
+export async function forgotPassword(email: string) {
+  await api.post('/auth/forgot-password', { email })
+}
+
+export async function resetPassword(token: string, newPassword: string) {
+  await api.post('/auth/reset-password', { token, newPassword })
+}
+
 // --- Address API ---
 export async function getUserAddresses() {
   const { data } = await api.get('/addresses')

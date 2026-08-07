@@ -124,8 +124,12 @@ function SearchOverlay({ onClose }: { onClose: () => void }) {
                           onClick={onClose}
                           className="flex items-center gap-4 px-5 py-3 transition-colors hover:bg-[#F5F5F3]"
                         >
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-[#E8EDF8]">
-                            <span className="text-xs font-bold text-[#1A3FA0]">{brandName.substring(0, 2).toUpperCase()}</span>
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-[#F5F5F3] relative overflow-hidden">
+                            {product.images && product.images.length > 0 ? (
+                              <Image src={product.images[0].url} alt={product.name} fill className="object-contain p-1 mix-blend-multiply" sizes="48px" />
+                            ) : (
+                              <span className="text-xs font-bold text-[#1A3FA0]">{brandName.substring(0, 2).toUpperCase()}</span>
+                            )}
                           </div>
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-sm font-medium text-[#1A1A1A]">{product.name}</p>

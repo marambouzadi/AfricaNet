@@ -12,6 +12,7 @@ export type Product = {
   price: number
   condition: Condition
   image: string
+  images?: string[]
 }
 
 export const conditionStyles: Record<Condition, string> = {

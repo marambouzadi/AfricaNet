@@ -41,6 +41,15 @@ export function Catalog() {
   // Fetch filter counts on mount
   useEffect(() => {
     async function fetchCounts() {
+      const condMap: Record<string, Condition> = {
+        NEW: 'Neuf',
+        REFURBISHED: 'Reconditionné',
+        USED: 'Occasion',
+        // Also accept already-mapped values
+        'Neuf': 'Neuf',
+        'Reconditionné': 'Reconditionné',
+        'Occasion': 'Occasion',
+      }
       try {
         const { fetchProducts } = await import('@/lib/api')
         const res = await fetchProducts({ size: 1000 })
@@ -53,7 +62,8 @@ export function Catalog() {
           const brand = p.brandName || 'Unknown'
           bCounts[brand] = (bCounts[brand] || 0) + 1
           
-          const condition = p.condition as Condition
+          const rawCondition = p.condition as string
+          const condition = condMap[rawCondition] as Condition
           if (condition) {
             cCounts[condition] = (cCounts[condition] || 0) + 1
           }
@@ -100,24 +110,25 @@ export function Catalog() {
 
         let res
         if (searchQuery) {
-          res = await searchProducts(searchQuery, page - 1, ITEMS_PER_PAGE)
+          res = await searchProducts(searchQuery, 0, 1000)
         } else {
-          // Convert price to max/min
-          const minPrice = filters.priceMin > 0 ? filters.priceMin : undefined
-          const maxPrice = filters.priceMax < 5000 ? filters.priceMax : undefined
-          // If we had brand ID, we'd pass it. For now our API fallback handles local filtering.
-          
           res = await fetchProducts({
-            page: page - 1,
-            size: ITEMS_PER_PAGE,
-            minPrice,
-            maxPrice,
-            condition: filters.conditions.length === 1 ? filters.conditions[0] : undefined,
-            sort: backendSort
+            page: 0,
+            size: 1000,
+            // Fetch everything and filter locally to support multi-filters properly
           })
         }
 
         // Map ProductResponse to local Product interface
+        const condMap: Record<string, Condition> = {
+          NEW: 'Neuf',
+          REFURBISHED: 'Reconditionné',
+          USED: 'Occasion',
+          'Neuf': 'Neuf',
+          'Reconditionné': 'Reconditionné',
+          'Occasion': 'Occasion',
+        }
+
         let mapped: Product[] = res.content.map((p: any) => {
           if (p.price !== undefined && !p.basePrice) return p
           
@@ -134,8 +145,9 @@ export function Catalog() {
             storage: p.specifications?.find((s: any) => s.specKey.toLowerCase().includes('stockage'))?.specValue || '256 Go SSD',
             screenSize: parseFloat(screenSpec.replace(',', '.')) || 15.6,
             price: p.salePrice || p.basePrice || 0,
-            condition: p.condition as Condition,
-            image: p.images?.find((img: any) => img.isPrimary)?.url || p.images?.[0]?.url || '/products/laptop-gray.png'
+            condition: (condMap[p.condition as string] || p.condition) as Condition,
+            image: p.images?.find((img: any) => img.isPrimary)?.url || p.images?.[0]?.url || '/products/laptop-gray.png',
+            images: p.images?.length > 0 ? p.images.map((img: any) => img.url) : ['/products/laptop-gray.png']
           }
         })
 
@@ -154,9 +166,18 @@ export function Catalog() {
           mapped = mapped.filter((p) => filters.screenSizes.includes(p.screenSize) || filters.screenSizes.some(s => Math.abs(p.screenSize - s) < 0.5))
         }
 
+        // Apply local sorting
+        if (sort === 'prix-asc') mapped = mapped.sort((a, b) => a.price - b.price)
+        else if (sort === 'prix-desc') mapped = mapped.sort((a, b) => b.price - a.price)
+        else if (sort === 'nouveautes') mapped = mapped.sort((a, b) => b.id - a.id)
+
+        setTotalElements(mapped.length)
+        setTotalPages(Math.ceil(mapped.length / ITEMS_PER_PAGE))
+        
+        // Apply pagination locally
+        mapped = mapped.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
+
         setPaginatedProducts(mapped)
-        setTotalPages(res.totalPages)
-        setTotalElements(res.totalElements)
       } catch (err: any) {
         console.warn('Failed to load products from API, falling back to local data. Reason:', err.message)
         // Fallback to local mock data

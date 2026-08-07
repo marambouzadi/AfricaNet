@@ -1,3 +1,6 @@
+'use client'
+
+import { useEffect, useState } from 'react'
 import { Navbar } from '@/components/layout/navbar'
 import { Footer } from '@/components/layout/footer'
 import { Hero } from '@/components/home/hero'
@@ -5,42 +8,76 @@ import { ValueProps } from '@/components/home/value-props'
 import { ProductSection } from '@/components/home/product-section'
 import { WhyChoose } from '@/components/home/why-choose'
 import { OrganizationJsonLd } from '@/components/seo/json-ld'
+import { fetchProducts } from '@/lib/api'
 import type { SimpleProduct } from '@/components/home/product-section'
 
-const FEATURED: SimpleProduct[] = [
-  { id: 1, name: 'HP EliteBook 840 G8', spec: 'i5-1135G7 / 8 Go / 256 Go SSD', price: '1 250 TND', priceNum: 1250, condition: 'Reconditionné' },
-  { id: 2, name: 'Dell Latitude 5420', spec: 'i7-1165G7 / 16 Go / 512 Go SSD', price: '1 890 TND', priceNum: 1890, condition: 'Reconditionné' },
-  { id: 3, name: 'Lenovo ThinkPad T14', spec: 'i5-10210U / 8 Go / 256 Go SSD', price: '980 TND', priceNum: 980, condition: 'Occasion' },
-  { id: 4, name: 'HP 15s-fq2', spec: 'i3-1115G4 / 8 Go / 256 Go SSD', price: '799 TND', priceNum: 799, condition: 'Neuf' },
-]
-
-const NEW_ARRIVALS: SimpleProduct[] = [
-  { id: 5, name: 'Asus VivoBook 15', spec: 'Ryzen 5 5500U / 8 Go / 512 Go', price: '920 TND', priceNum: 920, condition: 'Neuf' },
-  { id: 6, name: 'Dell Inspiron 15 3520', spec: 'i5-1235U / 12 Go / 512 Go SSD', price: '1 050 TND', priceNum: 1050, condition: 'Neuf' },
-  { id: 7, name: 'Lenovo IdeaPad 5', spec: 'i7-1165G7 / 16 Go / 512 Go SSD', price: '1 450 TND', priceNum: 1450, condition: 'Reconditionné' },
-  { id: 8, name: 'HP ProBook 450 G8', spec: 'i5-1135G7 / 8 Go / 256 Go SSD', price: '1 100 TND', priceNum: 1100, condition: 'Reconditionné' },
-]
+function mapApiProduct(p: any): SimpleProduct {
+  const image = p.images?.find((i: any) => i.isPrimary) ?? p.images?.[0]
+  const condMap: Record<string, string> = {
+    NEW: 'Neuf',
+    REFURBISHED: 'Reconditionné',
+    USED: 'Occasion',
+  }
+  const price = p.salePrice ?? p.basePrice ?? 0
+  return {
+    id: p.id,
+    name: p.name,
+    slug: p.slug,
+    spec: p.shortDesc ?? p.description?.slice(0, 80) ?? '',
+    price: `${Number(price).toLocaleString('fr-TN')} TND`,
+    priceNum: Number(price),
+    condition: (condMap[p.condition] ?? 'Neuf') as any,
+    imageUrl: image?.url ?? image?.imageUrl ?? null,
+    imageUrls: p.images?.map((i: any) => i.url ?? i.imageUrl) ?? []
+  }
+}
 
 export default function HomePage() {
+  const [featured, setFeatured] = useState<SimpleProduct[]>([])
+  const [newest, setNewest] = useState<SimpleProduct[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const [featuredData, newestData] = await Promise.all([
+          fetchProducts({ size: 4, sort: 'viewCount,desc' }),
+          fetchProducts({ size: 4, sort: 'createdAt,desc' }),
+        ])
+        setFeatured((featuredData.content ?? []).map(mapApiProduct))
+        setNewest((newestData.content ?? []).map(mapApiProduct))
+      } catch (e) {
+        console.error('Failed to load homepage products', e)
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [])
+
   return (
     <div className="min-h-screen bg-[#F5F5F3]">
       <Navbar />
       <main>
         <OrganizationJsonLd />
-        <Hero />
+        <Hero featuredProduct={featured[0]} />
         <ValueProps />
-        <ProductSection
-          id="catalogue"
-          title="Produits Vedettes"
-          products={FEATURED}
-          background="page"
-        />
-        <ProductSection
-          title="Nouveautés"
-          products={NEW_ARRIVALS}
-          background="white"
-          scrollOnMobile
-        />
+        {!loading && featured.length > 0 && (
+          <ProductSection
+            id="catalogue"
+            title="Produits Vedettes"
+            products={featured}
+            background="page"
+          />
+        )}
+        {!loading && newest.length > 0 && (
+          <ProductSection
+            title="Nouveautés"
+            products={newest}
+            background="white"
+            scrollOnMobile
+          />
+        )}
         <WhyChoose />
       </main>
       <Footer />

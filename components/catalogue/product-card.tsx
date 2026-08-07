@@ -1,10 +1,11 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { conditionStyles, formatPrice, type Product } from '@/lib/products'
 import { LaptopSilhouette } from '@/components/shared/laptop-silhouette'
 import { useCart } from '@/lib/cart-context'
-import { ShoppingCart, Heart } from 'lucide-react'
+import { ShoppingCart, Heart, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useState } from 'react'
 import { addFavorite, removeFavorite } from '@/lib/api'
 import { useUser } from '@/lib/user-context'
@@ -19,6 +20,9 @@ export function CatalogProductCard({ product, initialFavorited = false }: Produc
   const { user } = useUser()
   const [isWishlisted, setIsWishlisted] = useState(initialFavorited)
   const [isLoading, setIsLoading] = useState(false)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+
+  const images = product.images && product.images.length > 0 ? product.images : [product.image]
 
   const handleWishlistToggle = async (e: React.MouseEvent) => {
     e.preventDefault()
@@ -64,15 +68,51 @@ export function CatalogProductCard({ product, initialFavorited = false }: Produc
           >
             <Heart className={`h-4 w-4 transition-all ${isWishlisted ? 'fill-current' : ''} ${isLoading ? 'animate-pulse' : ''}`} />
           </button>
-          <div className="flex h-full w-full items-center justify-center p-6">
-            {product.image && product.image !== '/products/laptop-gray.png' ? (
-              <img
-                src={product.image}
+          <div className="flex h-full w-full items-center justify-center p-6 relative">
+            {images[currentImageIndex] && images[currentImageIndex] !== '/products/laptop-gray.png' ? (
+              <Image
+                src={images[currentImageIndex]}
                 alt={product.name}
-                className="h-full w-full object-contain mix-blend-multiply transition-transform duration-200 group-hover:scale-105"
+                fill
+                className="object-contain p-6 mix-blend-multiply transition-transform duration-200 group-hover:scale-105"
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
               />
             ) : (
               <LaptopSilhouette className="h-20 w-auto text-[#1A3FA0]/25 transition-transform duration-200 group-hover:scale-105" />
+            )}
+            
+            {images.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    setCurrentImageIndex(prev => prev === 0 ? images.length - 1 : prev - 1)
+                  }}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-white/80 hover:bg-white text-gray-700 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    setCurrentImageIndex(prev => prev === images.length - 1 ? 0 : prev + 1)
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-white/80 hover:bg-white text-gray-700 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+                
+                {/* Dots */}
+                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 z-20">
+                  {images.map((_, idx) => (
+                    <div key={idx} className={`w-1.5 h-1.5 rounded-full transition-colors ${idx === currentImageIndex ? 'bg-[#1A3FA0]' : 'bg-gray-300'}`} />
+                  ))}
+                </div>
+              </>
             )}
           </div>
         </div>

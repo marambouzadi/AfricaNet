@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import AdminHeader from '@/components/admin/AdminHeader';
 import {
   Search, ChevronDown, Eye, Loader2, Download,
-  Users, ShoppingBag, Star, Ban
+  Users, ShoppingBag, Star, Ban, Check
 } from 'lucide-react';
 import { exportToCSV } from '@/lib/export';
 
@@ -20,22 +20,42 @@ export default function AdminClientsPage() {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('Tous les rôles');
   const [viewClient, setViewClient] = useState<any>(null);
+  const [togglingId, setTogglingId] = useState<number | null>(null);
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const token = getToken();
-        const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
-        const res = await fetch(`${API_BASE}/admin/users?size=100`, { headers, cache: 'no-store' });
-        if (res.ok) {
-          const data = await res.json();
-          setClients(data.content || data || []);
+  const loadClients = async () => {
+    try {
+      const token = getToken();
+      const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
+      const res = await fetch(`${API_BASE}/admin/users?size=100`, { headers, cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        setClients(data.content || data || []);
+      }
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { loadClients(); }, []);
+
+  const handleToggleActive = async (clientId: number) => {
+    setTogglingId(clientId);
+    try {
+      const token = getToken();
+      const res = await fetch(`${API_BASE}/admin/users/${clientId}/toggle-active`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        await loadClients();
+        // Refresh modal data
+        if (viewClient?.id === clientId) {
+          const updated = await res.json().catch(() => null);
+          if (updated) setViewClient(updated);
         }
-      } catch (e) { console.error(e); }
-      finally { setLoading(false); }
-    }
-    load();
-  }, []);
+      }
+    } catch (e) { console.error(e); }
+    finally { setTogglingId(null); }
+  };
 
   const filtered = clients.filter(c => {
     const name = `${c.firstName || ''} ${c.lastName || ''}`.toLowerCase();
@@ -163,9 +183,23 @@ export default function AdminClientsPage() {
                       {client.createdAt ? new Date(client.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
                     </td>
                     <td>
-                      <button className="admin-action-btn" title="Voir profil" onClick={() => setViewClient(client)}>
-                        <Eye size={15} />
-                      </button>
+                      <div className="admin-actions" style={{ gap: 6 }}>
+                        <button className="admin-action-btn" title="Voir profil" onClick={() => setViewClient(client)}>
+                          <Eye size={15} />
+                        </button>
+                        {client.role !== 'ADMIN' && (
+                          <button
+                            className="admin-btn-outline"
+                            style={{ fontSize: 11, padding: '3px 8px', color: client.active ? '#DC2626' : '#16A34A', borderColor: client.active ? '#DC2626' : '#16A34A' }}
+                            disabled={togglingId === client.id}
+                            title={client.active ? 'Bloquer' : 'Débloquer'}
+                            onClick={() => handleToggleActive(client.id)}
+                          >
+                            {togglingId === client.id ? <Loader2 size={12} className="spin" /> : (client.active ? <Ban size={12} /> : <Check size={12} />)}
+                            {' '}{client.active ? 'Bloquer' : 'Débloquer'}
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -203,10 +237,27 @@ export default function AdminClientsPage() {
                   </div>
                 </div>
                 <div><strong>Rôle :</strong> {viewClient.role === 'ADMIN' ? 'Administrateur' : 'Client'}</div>
-                <div><strong>Statut :</strong> <span style={{ color: viewClient.isActive ? '#16A34A' : '#DC2626' }}>{viewClient.isActive ? 'Actif' : 'Désactivé'}</span></div>
+                <div><strong>Statut :</strong> <span style={{ color: viewClient.active ? '#16A34A' : '#DC2626' }}>{viewClient.active ? 'Actif' : 'Désactivé'}</span></div>
                 <div><strong>Téléphone :</strong> {viewClient.phone || '—'}</div>
                 <div><strong>Inscription :</strong> {viewClient.createdAt ? new Date(viewClient.createdAt).toLocaleString('fr-FR') : 'N/A'}</div>
               </div>
+              {viewClient.role !== 'ADMIN' && (
+                <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid #E2E2DF' }}>
+                  <button
+                    onClick={() => handleToggleActive(viewClient.id)}
+                    disabled={togglingId === viewClient.id}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px',
+                      borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13,
+                      background: viewClient.active ? '#FEF2F2' : '#F0FDF4',
+                      color: viewClient.active ? '#DC2626' : '#16A34A',
+                    }}
+                  >
+                    {togglingId === viewClient.id ? <Loader2 size={14} className="spin" /> : (viewClient.active ? <Ban size={14} /> : <Check size={14} />)}
+                    {viewClient.active ? 'Bloquer cet utilisateur' : 'Débloquer cet utilisateur'}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}

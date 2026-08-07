@@ -181,7 +181,7 @@ export function Chatbot() {
                 </div>
                 
                 {/* Bubble */}
-                <div className={`px-4 py-2.5 rounded-2xl text-sm shadow-sm ${
+                <div className={`px-4 py-2.5 rounded-2xl text-sm shadow-sm whitespace-pre-wrap ${
                   msg.role === 'user' 
                     ? 'bg-[#1A3FA0] text-white rounded-tr-none' 
                     : 'bg-white text-[#1A1A1A] rounded-tl-none border border-[#E2E2DF]'

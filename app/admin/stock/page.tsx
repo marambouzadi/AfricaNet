@@ -1,10 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Box, AlertTriangle, ArrowUpRight, ArrowDownRight, Search, Plus, Minus, X, RefreshCw } from 'lucide-react'
+import { api } from '@/lib/api'
 
 interface StockItem {
   id: number
+  productId: number
   productName: string
   sku: string
   quantity: number
@@ -14,42 +16,65 @@ interface StockItem {
   lastUpdated: string
 }
 
-const initialStock: StockItem[] = [
-  { id: 1, productName: 'Dell XPS 13 9310', sku: 'DELL-XPS-9310', quantity: 8, reserved: 2, minThreshold: 5, warehouse: 'Tunis Entrepôt A', lastUpdated: 'Aujourd\'hui, 09:30' },
-  { id: 2, productName: 'MacBook Pro 14 M1 Pro', sku: 'APP-MBP14-M1', quantity: 3, reserved: 1, minThreshold: 5, warehouse: 'Tunis Entrepôt A', lastUpdated: 'Hier, 14:15' },
-  { id: 3, productName: 'Lenovo ThinkPad T14 Gen 2', sku: 'LEN-T14-G2', quantity: 12, reserved: 0, minThreshold: 5, warehouse: 'Ariana Entrepôt B', lastUpdated: '26 Juil 2026' },
-  { id: 4, productName: 'HP Spectre x360', sku: 'HP-SPEC-X360', quantity: 0, reserved: 0, minThreshold: 5, warehouse: 'Tunis Entrepôt A', lastUpdated: '24 Juil 2026' },
-  { id: 5, productName: 'Asus ROG Strix G15', sku: 'ASUS-ROG-G15', quantity: 5, reserved: 1, minThreshold: 3, warehouse: 'Sousse Entrepôt C', lastUpdated: '22 Juil 2026' },
-]
-
 export default function AdminStockPage() {
-  const [stockList, setStockList] = useState<StockItem[]>(initialStock)
+  const [stockList, setStockList] = useState<StockItem[]>([])
   const [search, setSearch] = useState('')
   const [selectedStock, setSelectedStock] = useState<StockItem | null>(null)
   const [adjustment, setAdjustment] = useState<number>(0)
   const [notes, setNotes] = useState('')
+  const [loading, setLoading] = useState(true)
+
+  const loadStock = async () => {
+    try {
+      setLoading(true)
+      const { data } = await api.get('/stock', { params: { size: 1000 } })
+      const mapped = (data.content || []).map((item: any) => ({
+        id: item.id,
+        productId: item.productId,
+        productName: item.productName || 'Produit Inconnu',
+        sku: item.sku || 'N/A',
+        quantity: item.quantity,
+        reserved: item.reservedQuantity,
+        minThreshold: item.minThreshold || 5,
+        warehouse: item.warehouseLocation || 'Entrepôt Principal',
+        lastUpdated: new Date(item.lastUpdated || item.createdAt).toLocaleDateString('fr-FR'),
+      }))
+      setStockList(mapped)
+    } catch (e) {
+      console.error('Failed to load stock', e)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadStock()
+  }, [])
 
   const filteredStock = stockList.filter(s =>
     s.productName.toLowerCase().includes(search.toLowerCase()) ||
     s.sku.toLowerCase().includes(search.toLowerCase())
   )
 
-  const lowStockCount = stockList.filter(s => s.quantity <= s.minThreshold).length
-  const outOfStockCount = stockList.filter(s => s.quantity === 0).length
+  const lowStockCount = stockList.filter(s => s.quantity <= s.minThreshold && s.quantity > 0).length
+  const outOfStockCount = stockList.filter(s => s.quantity <= 0).length
 
-  const handleAdjustStock = (e: React.FormEvent) => {
+  const handleAdjustStock = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedStock) return
-    setStockList(prev => prev.map(s => {
-      if (s.id === selectedStock.id) {
-        const newQty = Math.max(0, s.quantity + adjustment)
-        return { ...s, quantity: newQty, lastUpdated: 'À l\'instant' }
-      }
-      return s
-    }))
-    setSelectedStock(null)
-    setAdjustment(0)
-    setNotes('')
+    try {
+      await api.put(`/stock/${selectedStock.productId}`, {
+        movementType: 'ADJUSTMENT',
+        quantity: adjustment,
+        notes: notes || 'Ajustement manuel'
+      })
+      await loadStock()
+      setSelectedStock(null)
+      setAdjustment(0)
+      setNotes('')
+    } catch (err) {
+      alert("Erreur lors de l'ajustement du stock")
+    }
   }
 
   return (

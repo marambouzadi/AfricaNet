@@ -1,25 +1,33 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { ConditionBadge } from '@/components/shared/condition-badge'
 import { LaptopSilhouette } from '@/components/shared/laptop-silhouette'
 import { useCart } from '@/lib/cart-context'
-import { ShoppingCart } from 'lucide-react'
+import { ShoppingCart, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useState } from 'react'
 import type { Condition } from '@/lib/products'
 
 export type SimpleProduct = {
   id?: number
   name: string
+  slug?: string
   spec: string
   price: string
   priceNum?: number
   condition: Condition
+  imageUrl?: string | null
+  imageUrls?: string[]
 }
 
 function HomeProductCard({ product }: { product: SimpleProduct }) {
   const { addItem } = useCart()
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const soldOut = product.condition === 'Épuisé'
   const hasLink = product.id !== undefined
+
+  const images = product.imageUrls && product.imageUrls.length > 0 ? product.imageUrls : (product.imageUrl ? [product.imageUrl] : [])
 
   const cardContent = (
     <>
@@ -27,8 +35,52 @@ function HomeProductCard({ product }: { product: SimpleProduct }) {
         <div className="absolute left-3 top-3 z-10">
           <ConditionBadge condition={product.condition} />
         </div>
-        <div className="flex h-full w-full items-center justify-center p-6">
-          <LaptopSilhouette className="h-20 w-auto text-[#1A3FA0]/25 transition-transform duration-200 group-hover:scale-105" />
+        <div className="flex h-full w-full items-center justify-center p-6 relative">
+          {images.length > 0 ? (
+            <Image
+              src={images[currentImageIndex]}
+              alt={product.name}
+              fill
+              className="object-contain p-6 mix-blend-multiply transition-transform duration-200 group-hover:scale-105"
+              sizes="(max-width: 640px) 50vw, 25vw"
+            />
+          ) : (
+            <LaptopSilhouette className="h-20 w-auto text-[#1A3FA0]/25 transition-transform duration-200 group-hover:scale-105" />
+          )}
+
+          {images.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  setCurrentImageIndex(prev => prev === 0 ? images.length - 1 : prev - 1)
+                }}
+                className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-white/80 hover:bg-white text-gray-700 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity z-20"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  setCurrentImageIndex(prev => prev === images.length - 1 ? 0 : prev + 1)
+                }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-white/80 hover:bg-white text-gray-700 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity z-20"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+              
+              {/* Dots */}
+              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 z-20">
+                {images.map((_, idx) => (
+                  <div key={idx} className={`w-1.5 h-1.5 rounded-full transition-colors ${idx === currentImageIndex ? 'bg-[#1A3FA0]' : 'bg-gray-300'}`} />
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </div>
 

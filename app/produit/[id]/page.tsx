@@ -6,15 +6,16 @@ import { ProductInfo } from '@/components/product/product-info'
 import { ProductTabs } from '@/components/product/product-tabs'
 import { SimilarProducts } from '@/components/product/similar-products'
 import { MobileStickyBar } from '@/components/product/mobile-sticky-bar'
-import { fetchProductById } from '@/lib/api'
-import { getSimilarProducts, products } from '@/lib/products'
+import { fetchProductById, fetchProducts } from '@/lib/api'
 import { notFound } from 'next/navigation'
 import { ProductJsonLd, BreadcrumbJsonLd } from '@/components/seo/json-ld'
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   try {
-    const product = await fetchProductById(id)
+    const fetchRes = await fetch(`http://localhost:8090/api/products/${id}`, { cache: 'no-store' })
+    if (!fetchRes.ok) throw new Error('Not found')
+    const product = await fetchRes.json()
     const title = `${product.name} — AfricaNet`
     const description = `${product.name} ${product.condition} — ${product.salePrice || product.basePrice} TND. Garantie 3 mois AfricaNet.`
     
@@ -45,35 +46,26 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
   
   let res: any
   try {
-    res = await fetchProductById(productId)
+    const fetchRes = await fetch(`http://localhost:8090/api/products/${productId}`, {
+      cache: 'no-store'
+    })
+    if (!fetchRes.ok) throw new Error('Product not found')
+    res = await fetchRes.json()
   } catch (e) {
-    // Fallback to local mock product
-    const localProduct = products.find(p => p.id === productId)
-    if (!localProduct) {
-      notFound()
-    }
-    // Simulate backend response structure based on local mock
-    res = {
-      id: localProduct.id,
-      name: localProduct.name,
-      condition: localProduct.condition,
-      salePrice: localProduct.price,
-      basePrice: localProduct.price,
-      description: 'Ce produit est issu du catalogue de démonstration.',
-      images: [{ url: localProduct.image, isPrimary: true }],
-      specifications: [
-        { specKey: 'Processeur', specValue: localProduct.cpu },
-        { specKey: 'RAM', specValue: localProduct.ram },
-        { specKey: 'Stockage', specValue: localProduct.storage },
-      ]
-    }
+    notFound()
   }
   
   // Map backend response to local ProductDetail interface
+  const condMap: Record<string, string> = {
+    NEW: 'Neuf',
+    REFURBISHED: 'Reconditionné',
+    USED: 'Occasion',
+  }
+
   const product = {
     id: res.id,
     name: res.name,
-    condition: res.condition as any,
+    condition: (condMap[res.condition] ?? res.condition) as any,
     price: `${res.salePrice || res.basePrice} TND`,
     priceNum: res.salePrice || res.basePrice,
     stock: 5, // Mocked for now since stock is in another API
@@ -88,16 +80,30 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
       label: s.specValue
     })) || [],
     specs: res.specifications?.map((s: any) => [s.specKey, s.specValue] as [string, string]) || [],
-    conditionNote: res.description || 'Appareil testé et vérifié par nos experts.',
+    conditionNote: '',
     ratings: [
-      { label: 'Écran', score: 9 },
-      { label: 'Batterie', score: 8 },
-      { label: 'Performances', score: 9 },
-      { label: 'Esthétique', score: 7 },
-    ],
+      { label: 'Écran', score: parseInt(res.specifications?.find((s:any) => s.specKey.toLowerCase() === 'écran' || s.specKey.toLowerCase() === 'ecran')?.specValue) || 0 },
+      { label: 'Batterie', score: parseInt(res.specifications?.find((s:any) => s.specKey.toLowerCase() === 'batterie')?.specValue) || 0 },
+      { label: 'Performances', score: parseInt(res.specifications?.find((s:any) => s.specKey.toLowerCase() === 'performances' || s.specKey.toLowerCase() === 'performance')?.specValue) || 0 },
+      { label: 'Esthétique', score: parseInt(res.specifications?.find((s:any) => s.specKey.toLowerCase() === 'esthétique' || s.specKey.toLowerCase() === 'esthetique')?.specValue) || 0 },
+    ].filter(r => r.score > 0),
   }
 
-  const similar = getSimilarProducts(productId)
+  // Fetch similar products from API
+  let similar: any[] = []
+  try {
+    const simData = await fetchProducts({ size: 4, sort: 'viewCount,desc' })
+    similar = (simData.content ?? [])
+      .filter((p: any) => p.id !== productId)
+      .slice(0, 4)
+      .map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        spec: p.shortDesc ?? '',
+        price: `${p.salePrice || p.basePrice} TND`,
+        condition: (condMap[p.condition] ?? 'Neuf') as any,
+      }))
+  } catch { similar = [] }
 
   return (
     <div className="min-h-screen bg-[#F5F5F3]">

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { User, Mail, Phone, Edit3, Plus, X, Trash2, Home, Lock, Eye, EyeOff } from 'lucide-react'
+import { User, Mail, Phone, Edit3, Plus, X, Trash2, Home, Lock } from 'lucide-react'
 import { useUser } from '@/lib/user-context'
 import { updateCurrentUser, getUserAddresses, createAddress, deleteAddress } from '@/lib/api'
 import { AddressForm, AddressFormData } from '@/components/shared/address-form'
@@ -54,12 +54,7 @@ export default function ProfilPage() {
   const [actionError, setActionError] = useState('')
   const [actionSuccess, setActionSuccess] = useState('')
 
-  // Password change state
-  const [isChangingPassword, setIsChangingPassword] = useState(false)
-  const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' })
-  const [showCurrentPw, setShowCurrentPw] = useState(false)
-  const [showNewPw, setShowNewPw] = useState(false)
-  const [pwLoading, setPwLoading] = useState(false)
+  // Removed password state (handled in Paramètres page)
 
   // Charger les adresses
   useEffect(() => {
@@ -398,100 +393,27 @@ export default function ProfilPage() {
         </div>
       </div>
 
-      {/* Password Change Card */}
+      {/* Security Card — links to Paramètres */}
       <div className="bg-white rounded-xl shadow-sm border border-[#E2E2DF] p-6">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-[#E8EDF8] text-[#1A3FA0] flex items-center justify-center shrink-0">
               <Lock className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-[#1A1A1A]">Mot de passe</h2>
-              <p className="text-sm text-[#6B7280]">Modifiez votre mot de passe de connexion</p>
+              <h2 className="text-xl font-bold text-[#1A1A1A]">Sécurité du compte</h2>
+              <p className="text-sm text-[#6B7280]">Gérez votre mot de passe et vos préférences de sécurité</p>
             </div>
           </div>
-          {!isChangingPassword && (
-            <button
-              onClick={() => setIsChangingPassword(true)}
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-[#1A3FA0] hover:underline"
-            >
-              <Edit3 className="h-4 w-4" /> Modifier
-            </button>
-          )}
+          <a
+            href="/dashboard/parametres"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-[#1A3FA0] hover:underline"
+          >
+            <Edit3 className="h-4 w-4" /> Accéder aux Paramètres
+          </a>
         </div>
-
-        {isChangingPassword ? (
-          <form onSubmit={handleChangePassword} className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl">
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-gray-600">Mot de passe actuel</label>
-              <div className="relative">
-                <input
-                  type={showCurrentPw ? 'text' : 'password'}
-                  required
-                  value={passwordForm.currentPassword}
-                  onChange={e => setPasswordForm(p => ({ ...p, currentPassword: e.target.value }))}
-                  className="w-full px-3 py-2 pr-9 border border-[#E2E2DF] rounded-lg text-sm focus:ring-2 focus:ring-[#1A3FA0]/30 outline-none"
-                />
-                <button type="button" onClick={() => setShowCurrentPw(v => !v)} className="absolute right-2.5 top-2.5 text-[#6B7280]">
-                  {showCurrentPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-gray-600">Nouveau mot de passe</label>
-              <div className="relative">
-                <input
-                  type={showNewPw ? 'text' : 'password'}
-                  required
-                  minLength={8}
-                  value={passwordForm.newPassword}
-                  onChange={e => setPasswordForm(p => ({ ...p, newPassword: e.target.value }))}
-                  className="w-full px-3 py-2 pr-9 border border-[#E2E2DF] rounded-lg text-sm focus:ring-2 focus:ring-[#1A3FA0]/30 outline-none"
-                />
-                <button type="button" onClick={() => setShowNewPw(v => !v)} className="absolute right-2.5 top-2.5 text-[#6B7280]">
-                  {showNewPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-gray-600">Confirmer le mot de passe</label>
-              <input
-                type="password"
-                required
-                minLength={8}
-                value={passwordForm.confirmPassword}
-                onChange={e => setPasswordForm(p => ({ ...p, confirmPassword: e.target.value }))}
-                className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-[#1A3FA0]/30 outline-none ${
-                  passwordForm.confirmPassword && passwordForm.newPassword !== passwordForm.confirmPassword
-                    ? 'border-red-400' : 'border-[#E2E2DF]'
-                }`}
-              />
-            </div>
-            <div className="sm:col-span-3 flex gap-3 justify-end pt-1">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsChangingPassword(false)
-                  setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
-                }}
-                className="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700"
-              >
-                Annuler
-              </button>
-              <button
-                type="submit"
-                disabled={pwLoading}
-                className="bg-[#1A3FA0] hover:bg-[#0D2660] text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-60 flex items-center gap-2"
-              >
-                {pwLoading && <span className="h-3.5 w-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
-                Enregistrer
-              </button>
-            </div>
-          </form>
-        ) : (
-          <p className="text-sm text-[#6B7280]">Votre mot de passe est sécurisé. Cliquez sur &quot;Modifier&quot; pour le changer.</p>
-        )}
       </div>
     </div>
   )
-}
+}
+
