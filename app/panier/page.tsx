@@ -2,7 +2,8 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { Trash2, Plus, Minus, ArrowRight, ShoppingBag } from 'lucide-react'
+import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, ArrowLeft } from 'lucide-react'
+import { LaptopSilhouette } from '@/components/shared/laptop-silhouette'
 import { Navbar } from '@/components/layout/navbar'
 import { Footer } from '@/components/layout/footer'
 import { useCart } from '@/lib/cart-context'
@@ -58,12 +59,16 @@ export default function CartPage() {
                 {items.map((item) => (
                   <div key={item.id} className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-[#E2E2DF] flex flex-col sm:flex-row gap-6 items-start sm:items-center">
                     <div className="w-24 h-24 sm:w-32 sm:h-32 bg-[#F5F5F3] rounded-lg shrink-0 flex items-center justify-center relative overflow-hidden">
-                      <Image 
-                        src={item.image || '/products/laptop-gray.png'} 
-                        alt={item.name}
-                        fill
-                        className="object-contain p-2"
-                      />
+                      {item.image && item.image !== '/products/laptop-gray.png' ? (
+                        <Image 
+                          src={item.image} 
+                          alt={item.name}
+                          fill
+                          className="object-contain p-2"
+                        />
+                      ) : (
+                        <LaptopSilhouette className="h-12 w-auto text-[#1A3FA0]/25" />
+                      )}
                     </div>
                     
                     <div className="flex-1 min-w-0">

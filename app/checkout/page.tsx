@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, Check, CreditCard, Truck, ShieldCheck, CheckCircle2 } from 'lucide-react'
+import { LaptopSilhouette } from '@/components/shared/laptop-silhouette'
 import { Navbar } from '@/components/layout/navbar'
 import { Footer } from '@/components/layout/footer'
 import { useCart } from '@/lib/cart-context'
@@ -353,9 +354,15 @@ export default function CheckoutPage() {
                 <div className="space-y-4 mb-6">
                   {items.map(item => (
                     <div key={item.id} className="flex gap-4">
-                      <div className="w-16 h-16 bg-[#F5F5F3] rounded-lg shrink-0 flex items-center justify-center relative overflow-hidden">
-                        <Image src={item.image || '/products/laptop-gray.png'} alt={item.name} fill className="object-contain p-1" />
-                        <span className="absolute -top-2 -right-2 bg-[#1A3FA0] text-white w-5 h-5 flex items-center justify-center rounded-full text-xs font-bold z-10">{item.quantity}</span>
+                      <div className="relative h-16 w-16 shrink-0 rounded-md border border-[#E2E2DF] bg-white overflow-hidden flex items-center justify-center">
+                        <span className="absolute -right-2 -top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-[#1A3FA0] text-xs font-bold text-white">
+                          {item.quantity}
+                        </span>
+                        {item.image && item.image !== '/products/laptop-gray.png' ? (
+                          <Image src={item.image} alt={item.name} fill className="object-contain p-1" />
+                        ) : (
+                          <LaptopSilhouette className="h-8 w-auto text-[#1A3FA0]/25" />
+                        )}
                       </div>
                       <div className="flex-1 flex flex-col justify-center">
                         <p className="text-sm font-medium text-[#1A1A1A] line-clamp-2 leading-tight">{item.name}</p>

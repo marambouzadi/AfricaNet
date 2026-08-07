@@ -98,7 +98,7 @@ function HomeProductCard({ product }: { product: SimpleProduct }) {
             e.preventDefault()
             e.stopPropagation()
             if (product.id && product.priceNum) {
-              addItem({ id: product.id, name: product.name, price: product.priceNum })
+              addItem({ id: product.id, name: product.name, price: product.priceNum, image: images[0] })
             }
           }}
           className="mt-3 w-full rounded-lg bg-[#1A3FA0] py-2 text-sm font-medium text-white transition-colors duration-200 hover:bg-[#0D2660] disabled:cursor-not-allowed disabled:bg-[#6B7280] flex items-center justify-center gap-2"

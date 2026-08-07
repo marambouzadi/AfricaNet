@@ -11,7 +11,7 @@ export function MobileStickyBar({ product }: { product: ProductDetail }) {
       <span className="text-xl font-bold text-[#1A3FA0]">{product.price}</span>
       <button
         type="button"
-        onClick={() => addItem({ id: product.id, name: product.name, price: product.priceNum })}
+        onClick={() => addItem({ id: product.id, name: product.name, price: product.priceNum, image: product.thumbnails?.[0] })}
         className="rounded-lg bg-[#1A3FA0] px-6 py-2.5 font-medium text-white transition-colors duration-200 hover:bg-[#0D2660]"
       >
         Ajouter au panier
