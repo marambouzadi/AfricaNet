@@ -27,7 +27,7 @@ export default function ContactPage() {
     e.preventDefault()
     setSending(true)
     try {
-      await fetch('http://localhost:8090/api/contact', {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8090/api'}/contact`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form)

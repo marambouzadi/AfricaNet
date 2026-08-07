@@ -117,7 +117,7 @@ export default function CheckoutPage() {
         customerNotes: ''
       }
 
-      const orderRes = await fetch('http://localhost:8090/api/orders', {
+      const orderRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8090/api'}/orders`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -135,7 +135,7 @@ export default function CheckoutPage() {
 
       // 2. Si carte bancaire / Flouci -> Initier paiement Flouci
       if (paymentMethod === 'card') {
-        const flouciRes = await fetch(`http://localhost:8090/api/payments/flouci/initiate?orderId=${orderData.id}`, {
+        const flouciRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8090/api'}/payments/flouci/initiate?orderId=${orderData.id}`, {
           method: 'POST',
           headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         })

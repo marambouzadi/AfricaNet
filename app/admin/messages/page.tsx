@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Mail, Search, MailOpen, Loader2, Calendar, Phone, RefreshCw, CheckCheck, Send, X } from 'lucide-react'
 
-const API_BASE = 'http://localhost:8090/api'
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8090/api'
 
 function getToken() {
   return typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null

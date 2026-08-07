@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useUser } from '@/lib/user-context'
 import { UploadCloud, CheckCircle2, Laptop, HardDrive, Smartphone, ChevronRight, ChevronLeft, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
 
@@ -20,6 +21,7 @@ const CONDITION_MAP: Record<string, { code: string; score: number }> = {
 }
 
 export function MultiStepForm() {
+    const { user } = useUser()
     const [step, setStep] = useState<Step>(1)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [error, setError] = useState('')
@@ -28,6 +30,7 @@ export function MultiStepForm() {
         deviceType: '',
         brand: '',
         model: '',
+        yearOfPurchase: new Date().getFullYear() - 2,
         condition: '',
         hasCharger: false,
         firstName: '',
@@ -53,7 +56,8 @@ export function MultiStepForm() {
         const conditionInfo = CONDITION_MAP[formData.condition] || { code: 'FAIR', score: 5 }
 
         try {
-            const res = await fetch('http://localhost:8090/api/trade-in/evaluate', {
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8090/api'
+            const res = await fetch(`${API_URL}/trade-in/evaluate`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -62,7 +66,7 @@ export function MultiStepForm() {
                 body: JSON.stringify({
                     brand: formData.brand,
                     deviceModel: formData.model,
-                    yearOfPurchase: 2022,
+                    yearOfPurchase: formData.yearOfPurchase,
                     screenScore: conditionInfo.score,
                     keyboardScore: conditionInfo.score,
                     batteryScore: conditionInfo.score,
@@ -138,16 +142,26 @@ export function MultiStepForm() {
                             ))}
                         </div>
 
-                        <div className="space-y-4 pt-4">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-[#1A1A1A]">Marque</label>
-                                <input required type="text" placeholder="Ex: Dell, Apple, HP..." className="w-full border border-[#E2E2DF] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30" value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} />
+                            <div className="space-y-4 pt-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-[#1A1A1A]">Marque</label>
+                                        <input required type="text" placeholder="Ex: Dell, Apple, HP..." className="w-full border border-[#E2E2DF] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30" value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-[#1A1A1A]">Année d'achat</label>
+                                        <select required className="w-full border border-[#E2E2DF] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30" value={formData.yearOfPurchase} onChange={e => setFormData({...formData, yearOfPurchase: parseInt(e.target.value)})}>
+                                            {Array.from({ length: 15 }, (_, i) => new Date().getFullYear() - i).map(y => (
+                                                <option key={y} value={y}>{y}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-[#1A1A1A]">Modèle exact</label>
+                                    <input required type="text" placeholder="Ex: XPS 13 9310" className="w-full border border-[#E2E2DF] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30" value={formData.model} onChange={e => setFormData({...formData, model: e.target.value})} />
+                                </div>
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-[#1A1A1A]">Modèle exact</label>
-                                <input required type="text" placeholder="Ex: XPS 13 9310" className="w-full border border-[#E2E2DF] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30" value={formData.model} onChange={e => setFormData({...formData, model: e.target.value})} />
-                            </div>
-                        </div>
                     </div>
                 )}
 
@@ -197,15 +211,15 @@ export function MultiStepForm() {
                         <div className="space-y-4">
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-[#1A1A1A]">Prénom</label>
-                                <input required type="text" className="w-full border border-[#E2E2DF] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30" value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} />
+                                <input required type="text" className="w-full border border-[#E2E2DF] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30" value={formData.firstName || user?.firstName || ''} onChange={e => setFormData({...formData, firstName: e.target.value})} />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-[#1A1A1A]">Email</label>
-                                <input required type="email" className="w-full border border-[#E2E2DF] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+                                <input required type="email" className="w-full border border-[#E2E2DF] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30 bg-gray-50" readOnly value={user?.email || formData.email} />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-[#1A1A1A]">Téléphone (pour un traitement plus rapide)</label>
-                                <input type="tel" className="w-full border border-[#E2E2DF] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+                                <input type="tel" className="w-full border border-[#E2E2DF] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30" value={formData.phone || user?.phone || ''} onChange={e => setFormData({...formData, phone: e.target.value})} />
                             </div>
                         </div>
                     </div>

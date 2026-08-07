@@ -13,7 +13,7 @@ import { ProductJsonLd, BreadcrumbJsonLd } from '@/components/seo/json-ld'
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   try {
-    const fetchRes = await fetch(`http://localhost:8090/api/products/${id}`, { cache: 'no-store' })
+    const fetchRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8090/api'}/products/${id}`, { cache: 'no-store' })
     if (!fetchRes.ok) throw new Error('Not found')
     const product = await fetchRes.json()
     const title = `${product.name} — AfricaNet`
@@ -46,7 +46,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
   
   let res: any
   try {
-    const fetchRes = await fetch(`http://localhost:8090/api/products/${productId}`, {
+    const fetchRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8090/api'}/products/${productId}`, {
       cache: 'no-store'
     })
     if (!fetchRes.ok) throw new Error('Product not found')
@@ -68,7 +68,8 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
     condition: (condMap[res.condition] ?? res.condition) as any,
     price: `${res.salePrice || res.basePrice} TND`,
     priceNum: res.salePrice || res.basePrice,
-    stock: 5, // Mocked for now since stock is in another API
+    // Real stock from product stock field
+    stock: res.stock ?? 0,
     warranty: 'Garantie 3 mois AfricaNet',
     thumbnails: res.images?.length > 0 
       ? res.images.map((img: any) => img.url || img.imageUrl) 
@@ -109,7 +110,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
     <div className="min-h-screen bg-[#F5F5F3]">
       <ProductJsonLd 
         name={product.name}
-        description={product.conditionNote}
+        description={product.specs.length > 0 ? `${product.name} — ${product.specs.slice(0,2).map(([k,v]) => `${k}: ${v}`).join(', ')}` : product.name}
         image={product.thumbnails[0]}
         price={product.priceNum}
         condition={product.condition}

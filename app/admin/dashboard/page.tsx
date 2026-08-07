@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { TrendingUp, Users, ShoppingCart, DollarSign, Package, AlertCircle, Loader2 } from 'lucide-react'
 import { formatPrice } from '@/lib/products'
 
-const API_BASE = 'http://localhost:8090/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8090/api';
 
 function getToken() {
   return typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
@@ -72,10 +72,10 @@ export default function AdminDashboardPage() {
   }, []);
 
   const stats = [
-    { name: 'Chiffre d\'affaires', value: revenue, change: '+12.5%', trend: 'up', icon: DollarSign },
-    { name: 'Commandes', value: orders.length, change: '+5.2%', trend: 'up', icon: ShoppingCart },
-    { name: 'Clients', value: usersCount, change: '+2.1%', trend: 'up', icon: Users },
-    { name: 'Demandes Reprise', value: tradeInCount, change: '+15.0%', trend: 'up', icon: Package },
+    { name: 'Chiffre d\'affaires', value: revenue, change: null, trend: 'up', icon: DollarSign },
+    { name: 'Commandes', value: orders.length, change: null, trend: 'up', icon: ShoppingCart },
+    { name: 'Clients', value: usersCount, change: null, trend: 'up', icon: Users },
+    { name: 'Demandes Reprise', value: tradeInCount, change: null, trend: 'up', icon: Package },
   ]
 
   const recentOrders = [...orders]

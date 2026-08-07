@@ -1,7 +1,7 @@
 import axios from 'axios'
 import type { Condition } from './products'
 
-const API_BASE_URL = 'http://localhost:8090/api'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8090/api'
 
 export const api = axios.create({
   baseURL: API_BASE_URL,

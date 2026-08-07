@@ -22,6 +22,8 @@ export function Chatbot() {
   ])
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
+  const [wsConnected, setWsConnected] = useState(false)
+  const [wsConnecting, setWsConnecting] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const wsRef = useRef<WebSocket | null>(null)
   const sessionIdRef = useRef<string>(`session-${Date.now()}`)
@@ -35,9 +37,13 @@ export function Chatbot() {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) return
 
     const ws = new WebSocket('ws://localhost:8090/ws/chat')
+    setWsConnecting(true)
+    setWsConnected(false)
     
     ws.onopen = () => {
       console.log('Connected to AI Chatbot')
+      setWsConnected(true)
+      setWsConnecting(false)
     }
     
     ws.onmessage = (event) => {
@@ -79,6 +85,13 @@ export function Chatbot() {
     
     ws.onerror = () => {
       setIsTyping(false)
+      setWsConnected(false)
+      setWsConnecting(false)
+    }
+
+    ws.onclose = () => {
+      setWsConnected(false)
+      setWsConnecting(false)
     }
 
     wsRef.current = ws
@@ -157,8 +170,8 @@ export function Chatbot() {
             <div>
               <h3 className="font-bold text-sm">Assistant AfricaNet</h3>
               <p className="text-xs text-[#E8EDF8] flex items-center gap-1">
-                <span className="w-1.5 h-1.5 bg-[#D1F232] rounded-full inline-block"></span>
-                En ligne
+                <span className={`w-1.5 h-1.5 rounded-full inline-block ${wsConnected ? 'bg-[#D1F232]' : wsConnecting ? 'bg-yellow-300 animate-pulse' : 'bg-red-400'}`}></span>
+                {wsConnected ? 'En ligne' : wsConnecting ? 'Connexion...' : 'Hors ligne'}
               </p>
             </div>
           </div>

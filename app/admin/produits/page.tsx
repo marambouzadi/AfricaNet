@@ -5,7 +5,7 @@ import { Plus, Search, Filter, Edit2, Trash2, Eye, Package, Check, X, ShieldAler
 import { formatPrice } from '@/lib/products'
 import Image from 'next/image'
 
-const API_BASE = 'http://localhost:8090/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8090/api';
 
 function getToken() {
   return typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;

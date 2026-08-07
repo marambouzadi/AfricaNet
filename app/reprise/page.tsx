@@ -14,16 +14,16 @@ export default function ReprisePage() {
   const router = useRouter()
   const { user, loading: isLoading } = useUser()
 
-  if (isLoading) return <div className="min-h-screen flex items-center justify-center">Chargement...</div>
-
   useEffect(() => {
     if (!isLoading && !user) {
       router.push('/connexion?redirect=/reprise')
     }
   }, [isLoading, user, router])
 
-  if (isLoading || !user) {
-    return <div className="min-h-screen flex items-center justify-center">Chargement...</div>
+  if (isLoading) return <div className="min-h-screen flex items-center justify-center">Chargement...</div>
+
+  if (!user) {
+    return <div className="min-h-screen flex items-center justify-center">Redirection...</div>
   }
 
   return (

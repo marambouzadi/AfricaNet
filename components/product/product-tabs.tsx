@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { Star, User } from 'lucide-react'
 import type { ProductDetail } from '@/lib/products'
+
+const RATING_KEYS = ['écran', 'ecran', 'batterie', 'performances', 'performance', 'esthétique', 'esthetique']
 
 const tabs = ['Spécifications', 'État & Notes']
 
@@ -44,7 +45,9 @@ export function ProductTabs({ product }: { product: ProductDetail }) {
 
         {active === 0 && (
           <div className="overflow-hidden rounded-xl bg-white shadow-sm">
-            {product.specs.map(([name, value], i) => (
+            {product.specs
+              .filter(([name]) => !RATING_KEYS.includes(name.toLowerCase()))
+              .map(([name, value], i) => (
               <div
                 key={name}
                 className={`grid grid-cols-1 gap-1 px-5 py-3 sm:grid-cols-3 ${
