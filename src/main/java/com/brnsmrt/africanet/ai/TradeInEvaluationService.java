@@ -66,10 +66,11 @@ public class TradeInEvaluationService {
      *   Final value = score * 0.75 (Africa Net 25% margin)
      */
     public EvaluationResult evaluate(TradeInEvaluationRequest request) {
-        // Validate user exists
-        User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new RuntimeException(
-                        "Customer not found with ID: " + request.getUserId()));
+        // Validate user exists if userId is provided
+        User user = null;
+        if (request.getUserId() != null) {
+            user = userRepository.findById(request.getUserId()).orElse(null);
+        }
 
         Brand brand = brandRepository.findByNameIgnoreCase(request.getBrand()).orElse(null);
 
@@ -263,7 +264,7 @@ public class TradeInEvaluationService {
         sb.append(String.format("Overall Condition: %.1f/10\n", conditionOverallScore));
         sb.append(String.format("Component Average: %.1f/10\n", avgComponentScore));
         sb.append(String.format("Score Before Margin: %.2f TND\n", scoreBeforeMargin));
-        sb.append(String.format("Africa Net Margin: 25%%\n"));
+        sb.append(String.format("Africa Net Margin: 15%%\n"));
         sb.append(String.format("Estimated Trade-In Value: %.2f TND", estimatedValue));
         if (request.getNotes() != null && !request.getNotes().isBlank()) {
             sb.append(String.format("\nNotes: %s", request.getNotes()));

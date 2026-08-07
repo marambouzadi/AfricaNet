@@ -50,11 +50,27 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                     // Log complete AI response to DB
                     chatHistoryService.logMessage(clientSessionId, "ASSISTANT", aiResponseBuilder.toString());
                 })
-                .onError(error -> sendResponse(session, clientSessionId, "Error: " + error.getMessage()))
+                .onError(error -> {
+                    log.error("Ollama Chatbot error (fallback to simulation): ", error);
+                    // Fallback to simulated response if AI fails
+                    new Thread(() -> {
+                        String response = "Bonjour ! Je suis l'assistant virtuel AfricaNet (Mode Simulé). Je peux vous aider à choisir un ordinateur ou estimer la reprise de votre ancien matériel. Que souhaitez-vous savoir ?";
+                        String[] words = response.split(" ");
+                        for (String word : words) {
+                            try { Thread.sleep(50); } catch (InterruptedException e) {}
+                            sendResponse(session, clientSessionId, word + " ");
+                            aiResponseBuilder.append(word).append(" ");
+                        }
+                        chatHistoryService.logMessage(clientSessionId, "ASSISTANT", aiResponseBuilder.toString());
+                    }).start();
+                })
                 .start();
     }
 
     private void sendResponse(WebSocketSession session, String clientSessionId, String token) {
+        if (session == null || !session.isOpen()) {
+            return;
+        }
         try {
             ChatResponse chatResponse = ChatResponse.builder()
                     .sessionId(clientSessionId)
@@ -62,7 +78,11 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                     .build();
             
             String jsonPayload = objectMapper.writeValueAsString(chatResponse);
-            session.sendMessage(new TextMessage(jsonPayload));
+            synchronized (session) {
+                if (session.isOpen()) {
+                    session.sendMessage(new TextMessage(jsonPayload));
+                }
+            }
         } catch (Exception e) {
             log.error("Error sending WebSocket response", e);
         }

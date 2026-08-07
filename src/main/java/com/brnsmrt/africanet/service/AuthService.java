@@ -10,7 +10,10 @@ import com.brnsmrt.africanet.dto.response.AuthResponse;
 import com.brnsmrt.africanet.dto.response.UserResponse;
 import com.brnsmrt.africanet.repository.RefreshTokenRepository;
 import com.brnsmrt.africanet.repository.UserRepository;
+import com.brnsmrt.africanet.repository.PasswordResetTokenRepository;
 import com.brnsmrt.africanet.security.JwtTokenProvider;
+import com.brnsmrt.africanet.domain.PasswordResetToken;
+import com.brnsmrt.africanet.service.EmailService;
 import com.brnsmrt.africanet.exception.AccountDisabledException;
 import com.brnsmrt.africanet.exception.DuplicateEmailException;
 import com.brnsmrt.africanet.exception.InvalidCredentialsException;
@@ -21,6 +24,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.charset.StandardCharsets;
@@ -29,6 +33,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Base64;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -36,8 +41,10 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final EmailService emailService;
 
     @Value("${jwt.refresh-token-expiration}")
     private long refreshTokenExpiration;
@@ -231,5 +238,49 @@ public class AuthService {
                     token.setIsRevoked(true);
                     refreshTokenRepository.save(token);
                 });
+    }
+
+    // ── PASSWORD RESET ────────────────────────────────────────
+
+    @Transactional
+    public void forgotPassword(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Aucun compte associé à cet email"));
+
+        // Delete any existing token for this user
+        passwordResetTokenRepository.deleteByUser(user);
+
+        // Generate new token
+        String token = UUID.randomUUID().toString();
+        PasswordResetToken resetToken = PasswordResetToken.builder()
+                .token(token)
+                .user(user)
+                .expiryDate(LocalDateTime.now().plusHours(1))
+                .build();
+
+        passwordResetTokenRepository.save(resetToken);
+
+        // Send email with reset link
+        String resetLink = "http://localhost:3000/reinitialiser-mot-de-passe?token=" + token;
+        emailService.sendPasswordResetEmail(user.getEmail(), resetLink);
+    }
+
+    @Transactional
+    public void resetPassword(String token, String newPassword) {
+        PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(token)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Token invalide ou expiré"));
+
+        if (resetToken.isExpired()) {
+            passwordResetTokenRepository.delete(resetToken);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Le lien de réinitialisation a expiré");
+        }
+
+        User user = resetToken.getUser();
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        user.setUpdatedAt(LocalDateTime.now());
+        userRepository.save(user);
+
+        // Token consumed, delete it
+        passwordResetTokenRepository.delete(resetToken);
     }
 }
