@@ -1,0 +1,33 @@
+databaseChangeLog:
+  # Module Utilisateurs
+  - include:
+      file: db/changelog/changes/001-create-users-table.yaml
+
+  # Module Authentification (refresh tokens, verification tokens, OAuth)
+  - include:
+      file: db/changelog/changes/002-create-auth-tables.yaml
+
+  # Module Catalogue (categories, brands, products, tags)
+  - include:
+      file: db/changelog/changes/003-create-catalog-tables.yaml
+
+  - include:
+      file: db/changelog/changes/004-create-stock-tables.yaml
+
+  - include:
+      file: db/changelog/changes/005-create-orders.yaml
+
+  - include:
+      file: db/changelog/changes/006-create-tradein-tables.yaml
+
+  - include:
+      file: db/changelog/changes/007-create-user-adresses.yaml
+
+  - include:
+      file: db/changelog/changes/008-create-payments-table.yaml
+
+  - include:
+      file: db/changelog/changes/009-add-flouci-payment-id.yaml
+
+  - include:
+      file: db/changelog/changes/0010-fix-metadata-column-type.yaml

@@ -1,0 +1,9 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0010-fix-metadata-column-type
+      author: maram
+      changes:
+        - modifyDataType:
+            tableName: payments
+            columnName: metadata
+            newDataType: TEXT

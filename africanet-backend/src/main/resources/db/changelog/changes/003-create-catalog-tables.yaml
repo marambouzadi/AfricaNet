@@ -1,0 +1,364 @@
+databaseChangeLog:
+  # ─────────────────────────────────────────────────────────
+  # CHANGESET 1 : Table categories
+  # ─────────────────────────────────────────────────────────
+  - changeSet:
+      id: 003-create-categories-table
+      author: maram
+      changes:
+        - createTable:
+            tableName: categories
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_categories
+              - column:
+                  name: name
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: slug
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+                    unique: true
+                    uniqueConstraintName: uq_categories_slug
+              - column:
+                  name: parent_id
+                  type: BIGINT
+                  constraints:
+                    foreignKeyName: fk_categories_parent
+                    references: categories(id)
+                    deleteCascade: false
+              - column:
+                  name: description
+                  type: TEXT
+              - column:
+                  name: image_url
+                  type: VARCHAR(500)
+              - column:
+                  name: sort_order
+                  type: INTEGER
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: is_active
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+
+  # ─────────────────────────────────────────────────────────
+  # CHANGESET 2 : Table brands
+  # ─────────────────────────────────────────────────────────
+  - changeSet:
+      id: 003-create-brands-table
+      author: maram
+      changes:
+        - createTable:
+            tableName: brands
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_brands
+              - column:
+                  name: name
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+                    unique: true
+                    uniqueConstraintName: uq_brands_name
+              - column:
+                  name: slug
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+                    unique: true
+                    uniqueConstraintName: uq_brands_slug
+              - column:
+                  name: logo_url
+                  type: VARCHAR(500)
+              - column:
+                  name: description
+                  type: TEXT
+              - column:
+                  name: is_active
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+
+  # ─────────────────────────────────────────────────────────
+  # CHANGESET 3 : Table products
+  # ─────────────────────────────────────────────────────────
+  - changeSet:
+      id: 003-create-products-table
+      author: maram
+      changes:
+        - createTable:
+            tableName: products
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_products
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: slug
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+                    unique: true
+                    uniqueConstraintName: uq_products_slug
+              - column:
+                  name: description
+                  type: TEXT
+              - column:
+                  name: short_desc
+                  type: VARCHAR(500)
+              - column:
+                  name: brand_id
+                  type: BIGINT
+                  constraints:
+                    foreignKeyName: fk_products_brand
+                    references: brands(id)
+                    deleteCascade: false
+              - column:
+                  name: category_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_products_category
+                    references: categories(id)
+              - column:
+                  name: condition
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: base_price
+                  type: DECIMAL(10,3)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: sale_price
+                  type: DECIMAL(10,3)
+              - column:
+                  name: sku
+                  type: VARCHAR(100)
+                  constraints:
+                    unique: true
+                    uniqueConstraintName: uq_products_sku
+              - column:
+                  name: weight_kg
+                  type: DECIMAL(8,3)
+              - column:
+                  name: is_active
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: is_featured
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: meta_title
+                  type: VARCHAR(255)
+              - column:
+                  name: meta_desc
+                  type: VARCHAR(500)
+              - column:
+                  name: view_count
+                  type: INTEGER
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+
+  # ─────────────────────────────────────────────────────────
+  # CHANGESET 4 : Table product_images
+  # ─────────────────────────────────────────────────────────
+  - changeSet:
+      id: 003-create-product-images-table
+      author: maram
+      changes:
+        - createTable:
+            tableName: product_images
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_product_images
+              - column:
+                  name: product_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_product_images_product
+                    references: products(id)
+                    deleteCascade: true
+              - column:
+                  name: url
+                  type: VARCHAR(500)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: alt_text
+                  type: VARCHAR(255)
+              - column:
+                  name: sort_order
+                  type: INTEGER
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: is_primary
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+
+  # ─────────────────────────────────────────────────────────
+  # CHANGESET 5 : Table product_specifications
+  # ─────────────────────────────────────────────────────────
+  - changeSet:
+      id: 003-create-product-specifications-table
+      author: maram
+      changes:
+        - createTable:
+            tableName: product_specifications
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_product_specs
+              - column:
+                  name: product_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_product_specs_product
+                    references: products(id)
+                    deleteCascade: true
+              - column:
+                  name: spec_key
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: spec_value
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: sort_order
+                  type: INTEGER
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+
+  # ─────────────────────────────────────────────────────────
+  # CHANGESET 6 : Table tags
+  # ─────────────────────────────────────────────────────────
+  - changeSet:
+      id: 003-create-tags-table
+      author: maram
+      changes:
+        - createTable:
+            tableName: tags
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_tags
+              - column:
+                  name: name
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+                    unique: true
+                    uniqueConstraintName: uq_tags_name
+              - column:
+                  name: slug
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+                    unique: true
+                    uniqueConstraintName: uq_tags_slug
+
+  # ─────────────────────────────────────────────────────────
+  # CHANGESET 7 : Table product_tags
+  # ─────────────────────────────────────────────────────────
+  - changeSet:
+      id: 003-create-product-tags-table
+      author: maram
+      changes:
+        - createTable:
+            tableName: product_tags
+            columns:
+              - column:
+                  name: product_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_product_tags_product
+                    references: products(id)
+                    deleteCascade: true
+              - column:
+                  name: tag_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_product_tags_tag
+                    references: tags(id)
+                    deleteCascade: true
+        - addPrimaryKey:
+            tableName: product_tags
+            columnNames: product_id, tag_id
+            constraintName: pk_product_tags

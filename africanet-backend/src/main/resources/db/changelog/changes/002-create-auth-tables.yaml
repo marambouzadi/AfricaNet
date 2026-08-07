@@ -1,0 +1,185 @@
+databaseChangeLog:
+
+  # ─────────────────────────────────────────────────────────
+  # CHANGESET 1 : Table refresh_tokens
+  # Stocke les refresh tokens JWT (hachés) pour chaque user
+  # ─────────────────────────────────────────────────────────
+  - changeSet:
+      id: 002-create-refresh-tokens-table
+      author: maram
+      changes:
+        - createTable:
+            tableName: refresh_tokens
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_refresh_tokens
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_refresh_tokens_user
+                    references: users(id)
+                    deleteCascade: true
+              - column:
+                  name: token_hash
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+                    unique: true
+                    uniqueConstraintName: uq_refresh_token_hash
+              - column:
+                  name: expires_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: is_revoked
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+
+        # Index pour accélérer les recherches par user_id
+        - createIndex:
+            indexName: idx_refresh_tokens_user_id
+            tableName: refresh_tokens
+            columns:
+              - column:
+                  name: user_id
+
+  # ─────────────────────────────────────────────────────────
+  # CHANGESET 2 : Table verification_tokens
+  # Utilisé pour : vérification email + reset password
+  # ─────────────────────────────────────────────────────────
+  - changeSet:
+      id: 002-create-verification-tokens-table
+      author: maram
+      changes:
+        - createTable:
+            tableName: verification_tokens
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_verification_tokens
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_verification_tokens_user
+                    references: users(id)
+                    deleteCascade: true
+              - column:
+                  name: token
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+                    unique: true
+                    uniqueConstraintName: uq_verification_token
+              - column:
+                  name: type
+                  type: VARCHAR(30)
+                  constraints:
+                    nullable: false
+                    # Valeurs autorisées : EMAIL_VERIFY, PASSWORD_RESET
+              - column:
+                  name: expires_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: used_at
+                  type: TIMESTAMP
+                  # NULL = token pas encore utilisé
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+
+        # Index pour recherche rapide par token
+        - createIndex:
+            indexName: idx_verification_tokens_token
+            tableName: verification_tokens
+            columns:
+              - column:
+                  name: token
+        # Index pour recherche par user + type
+        - createIndex:
+            indexName: idx_verification_tokens_user_type
+            tableName: verification_tokens
+            columns:
+              - column:
+                  name: user_id
+              - column:
+                  name: type
+
+  # ─────────────────────────────────────────────────────────
+  # CHANGESET 3 : Table oauth_providers
+  # Connexions sociales (Google, Facebook, etc.)
+  # ─────────────────────────────────────────────────────────
+  - changeSet:
+      id: 002-create-oauth-providers-table
+      author: maram
+      changes:
+        - createTable:
+            tableName: oauth_providers
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_oauth_providers
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_oauth_providers_user
+                    references: users(id)
+                    deleteCascade: true
+              - column:
+                  name: provider
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+                    # Valeurs : google, facebook
+              - column:
+                  name: provider_user_id
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: access_token
+                  type: TEXT
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+
+        # Contrainte UNIQUE sur (provider, provider_user_id)
+        - addUniqueConstraint:
+            tableName: oauth_providers
+            columnNames: provider, provider_user_id
+            constraintName: uq_oauth_provider_user
