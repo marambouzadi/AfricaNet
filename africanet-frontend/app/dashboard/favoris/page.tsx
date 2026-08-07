@@ -113,7 +113,7 @@ export default function FavorisPage() {
                     <p className="text-lg font-bold text-[#1A3FA0]">{formatPrice(price)}</p>
                     <button
                       type="button"
-                      onClick={() => addItem({ id: product.id, name: product.name, price })}
+                      onClick={() => addItem({ id: product.id, name: product.name, price, image: imageUrl })}
                       className="w-full mt-3 bg-[#1A3FA0] hover:bg-[#0D2660] text-white rounded-lg py-2 text-sm font-medium transition-colors flex items-center justify-center gap-2"
                     >
                       <ShoppingBag className="h-4 w-4" />
