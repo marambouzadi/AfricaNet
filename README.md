@@ -1,4 +1,4 @@
-﻿# 🌍 AfricaNet — Rapport d'Architecture & Document des Exigences (RAD)
+﻿# AfricaNet — Rapport d'Architecture & Document des Exigences (RAD)
 
 > **Plateforme E-Commerce de Matériel Informatique Reconditionné & Système Intelligent de Reprise (Trade-In)**
 
@@ -16,7 +16,7 @@
 
 ---
 
-## 1. 🎯 Présentation Générale & Vision
+## 1. Présentation Générale & Vision
 
 **AfricaNet** est une plateforme web moderne et performante dédiée au marché tunisien et africain pour la vente de matériel informatique (PC portables, ordinateurs de bureau, écrans, accessoires) neuf, reconditionné ou d'occasion garanti, couplée à un système innovant de **Reprise/Trade-in** permettant aux clients de revendre leur ancien matériel.
 
@@ -27,7 +27,7 @@
 
 ---
 
-## 2. 🛠️ Architecture Système & Stack Technique
+## 2.  Architecture Système & Stack Technique
 
 Le projet repose sur une architecture découplée **Client-Serveur (REST API + SPA)** garantissant une haute scalabilité, une maintenance aisée et une séparation nette des responsabilités.
 
@@ -43,7 +43,7 @@ Le projet repose sur une architecture découplée **Client-Serveur (REST API + S
   - Se connecte à :
     - **Base de données PostgreSQL 15** — Schéma géré par Liquibase
     - **Stockage local** — `public/images/`
-### 🧰 Stack Technique Backend :
+###  Stack Technique Backend :
 - **Langage & Framework** : Java 17, Spring Boot 3.4.x
 - **Sécurité & Authentification** : Spring Security 6, JWT (HMAC-SHA256), hachage BCrypt (Strength 12), Architecture Stateless
 - **Persistance & Base de données** : Spring Data JPA, Hibernate 7, Database PostgreSQL 15, Migration de schéma automatique Liquibase
@@ -51,7 +51,7 @@ Le projet repose sur une architecture découplée **Client-Serveur (REST API + S
 - **Génération de Documents** : iText 7 (Génération automatique des Factures PDF)
 - **Tests & Assurance Qualité** : JUnit 5, Mockito, AssertJ
 
-### 🎨 Stack Technique Frontend :
+###  Stack Technique Frontend :
 - **Framework Web** : Next.js 16.2 (Turbopack, App Router)
 - **Bibliothèque UI** : React 19, TypeScript
 - **Design & Styles** : Vanilla CSS 3 moderne, variables CSS dynamiques, Glassmorphism, animations fluides
@@ -60,7 +60,7 @@ Le projet repose sur une architecture découplée **Client-Serveur (REST API + S
 
 ---
 
-## 3. 📊 Schéma d'Architecture & Flux de Données
+## 3.  Schéma d'Architecture & Flux de Données
 
 ```mermaid
 graph TD
@@ -77,7 +77,7 @@ graph TD
 
 ---
 
-## 4. ⚙️ Spécifications des Modules & Fonctionnalités
+## 4.  Spécifications des Modules & Fonctionnalités
 
 ### A. Front-Office (Client)
 
@@ -137,7 +137,7 @@ graph TD
 
 ---
 
-## 5. 🧪 Tests Unitaires & Assurance Qualité
+## 5.  Tests Unitaires & Assurance Qualité
 
 L'application bénéficie d'une suite complète de tests unitaires backend développés avec **JUnit 5**, **Mockito** et **AssertJ**, garantissant le respect des règles métiers sans dépendance externe :
 
