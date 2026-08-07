@@ -15,7 +15,29 @@ export type Product = {
   images?: string[]
 }
 
-export const conditionStyles: Record<Condition, string> = {
+export const CONDITION_API_TO_FR: Record<string, Condition> = {
+  NEW:         'Neuf',
+  REFURBISHED: 'Reconditionné',
+  USED:        'Occasion',
+}
+
+export const CONDITION_FR_TO_API: Record<string, string> = {
+  Neuf:          'NEW',
+  Reconditionné: 'REFURBISHED',
+  Occasion:      'USED',
+}
+
+export function conditionFromApi(apiValue: string | undefined | null): Condition {
+  if (!apiValue) return 'Neuf'
+  return CONDITION_API_TO_FR[apiValue.toUpperCase()] ?? (apiValue as Condition)
+}
+
+export function conditionToApi(frValue: string | undefined | null): string | undefined {
+  if (!frValue) return undefined
+  return CONDITION_FR_TO_API[frValue] ?? frValue.toUpperCase()
+}
+
+export const conditionStyles: Record<string, string> = {
   Neuf: 'bg-[#1A8A4A] text-white',
   Reconditionné: 'bg-[#1A3FA0] text-white',
   Occasion: 'bg-[#B45309] text-white',
