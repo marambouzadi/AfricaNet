@@ -223,30 +223,38 @@ public class OrderService {
 
         validateStatusTransition(order.getStatus(), request.getStatus());
 
-        // Si annulation par admin : libérer le stock
+        // Si annulation par admin : libérer le stock (best-effort)
         if (request.getStatus() == OrderStatus.CANCELLED && canBeCancelled(order.getStatus())) {
             for (OrderItem item : order.getItems()) {
-                AdjustStockRequest releaseReq = new AdjustStockRequest();
-                releaseReq.setMovementType(MovementType.RELEASE);
-                releaseReq.setQuantity(item.getQuantity());
-                stockService.adjustStock(item.getProductId(), releaseReq, null);
+                try {
+                    AdjustStockRequest releaseReq = new AdjustStockRequest();
+                    releaseReq.setMovementType(MovementType.RELEASE);
+                    releaseReq.setQuantity(item.getQuantity());
+                    stockService.adjustStock(item.getProductId(), releaseReq, null);
+                } catch (Exception e) {
+                    log.warn("Could not release stock for product {}: {}", item.getProductId(), e.getMessage());
+                }
             }
         }
 
-        // Si passage à SHIPPED : décrémenter effectivement le stock
+        // Si passage à SHIPPED : décrémenter effectivement le stock (best-effort)
         if (request.getStatus() == OrderStatus.SHIPPED) {
             for (OrderItem item : order.getItems()) {
-                AdjustStockRequest releaseReq = new AdjustStockRequest();
-                releaseReq.setMovementType(MovementType.RELEASE);
-                releaseReq.setQuantity(item.getQuantity());
-                stockService.adjustStock(item.getProductId(), releaseReq, null);
+                try {
+                    AdjustStockRequest releaseReq = new AdjustStockRequest();
+                    releaseReq.setMovementType(MovementType.RELEASE);
+                    releaseReq.setQuantity(item.getQuantity());
+                    stockService.adjustStock(item.getProductId(), releaseReq, null);
 
-                AdjustStockRequest outReq = new AdjustStockRequest();
-                outReq.setMovementType(MovementType.OUT);
-                outReq.setQuantity(item.getQuantity());
-                outReq.setReferenceType(ReferenceType.ORDER);
-                outReq.setReferenceId(order.getId());
-                stockService.adjustStock(item.getProductId(), outReq, null);
+                    AdjustStockRequest outReq = new AdjustStockRequest();
+                    outReq.setMovementType(MovementType.OUT);
+                    outReq.setQuantity(item.getQuantity());
+                    outReq.setReferenceType(ReferenceType.ORDER);
+                    outReq.setReferenceId(order.getId());
+                    stockService.adjustStock(item.getProductId(), outReq, null);
+                } catch (Exception e) {
+                    log.warn("Could not adjust stock for product {}: {}", item.getProductId(), e.getMessage());
+                }
             }
         }
 
