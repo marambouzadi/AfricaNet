@@ -4,7 +4,7 @@
 
 ---
 
-## 📋 Table des Matières
+##  Table des Matières
 1. [Présentation Générale & Vision](#1-présentation-générale--vision)
 2. [Architecture Système & Stack Technique](#2-architecture-système--stack-technique)
 3. [Schéma d'Architecture & Flux de Données](#3-schéma-darchitecture--flux-de-données)
@@ -151,7 +151,7 @@ L'application bénéficie d'une suite complète de tests unitaires backend déve
 
 ---
 
-## 6. 🚀 Guide d'Installation & Déploiement
+## 6.  Guide d'Installation & Déploiement
 
 ### Prérequis
 - Java 17+ & Maven 3.8+
