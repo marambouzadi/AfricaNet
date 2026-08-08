@@ -29,14 +29,16 @@ function SimilarProductCard({ id, name, spec, price, condition }: SimilarProduct
           </h3>
         </Link>
         <p className="mt-1 text-xs text-[#6B7280]">{spec}</p>
-        <p className="mt-2 text-lg font-bold text-[#1A3FA0]">{price}</p>
-        <button
-          type="button"
-          onClick={() => addItem({ id, name, price: priceNum })}
-          className="mt-3 w-full rounded-lg bg-[#1A3FA0] py-2 text-sm font-medium text-white transition-colors duration-200 hover:bg-[#0D2660]"
-        >
-          Ajouter au panier
-        </button>
+        <div className="mt-auto pt-2">
+          <p className="text-lg font-bold text-[#1A3FA0]">{price}</p>
+          <button
+            type="button"
+            onClick={() => addItem({ id, name, price: priceNum })}
+            className="mt-3 w-full rounded-lg bg-[#1A3FA0] py-2 text-sm font-medium text-white transition-colors duration-200 hover:bg-[#0D2660]"
+          >
+            Ajouter au panier
+          </button>
+        </div>
       </div>
     </article>
   )

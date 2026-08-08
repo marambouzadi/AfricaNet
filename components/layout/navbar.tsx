@@ -228,7 +228,7 @@ export function Navbar() {
             })}
           </nav>
 
-          <div className="flex items-center gap-1 md:gap-3">
+          <div className="flex items-center gap-4 md:gap-6">
             <button
               type="button"
               className="relative rounded-full p-2 text-[#1A1A1A] transition-colors hover:bg-[#F5F5F3]"

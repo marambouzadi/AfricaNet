@@ -57,7 +57,7 @@ function HomeProductCard({ product }: { product: SimpleProduct }) {
                   e.stopPropagation()
                   setCurrentImageIndex(prev => prev === 0 ? images.length - 1 : prev - 1)
                 }}
-                className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-white/80 hover:bg-white text-gray-700 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-white/80 hover:bg-white text-gray-700 shadow-sm opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-20"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
@@ -68,7 +68,7 @@ function HomeProductCard({ product }: { product: SimpleProduct }) {
                   e.stopPropagation()
                   setCurrentImageIndex(prev => prev === images.length - 1 ? 0 : prev + 1)
                 }}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-white/80 hover:bg-white text-gray-700 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-white/80 hover:bg-white text-gray-700 shadow-sm opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-20"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
@@ -88,24 +88,25 @@ function HomeProductCard({ product }: { product: SimpleProduct }) {
         <h3 className="line-clamp-2 font-serif text-sm font-semibold leading-tight text-[#1A1A1A] group-hover:text-[#1A3FA0] transition-colors">
           {product.name}
         </h3>
-        <p className="mt-1 text-xs text-[#6B7280]">{product.spec}</p>
-        <p className="mt-2 text-lg font-bold text-[#1A3FA0]">{product.price}</p>
+        <div className="mt-auto pt-2">
+          <p className="text-lg font-bold text-[#1A3FA0]">{product.price}</p>
 
-        <button
-          type="button"
-          disabled={soldOut}
-          onClick={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-            if (product.id && product.priceNum) {
-              addItem({ id: product.id, name: product.name, price: product.priceNum, image: images[0] })
-            }
-          }}
-          className="mt-3 w-full rounded-lg bg-[#1A3FA0] py-2 text-sm font-medium text-white transition-colors duration-200 hover:bg-[#0D2660] disabled:cursor-not-allowed disabled:bg-[#6B7280] flex items-center justify-center gap-2"
-        >
-          <ShoppingCart className="h-3.5 w-3.5" />
-          {soldOut ? 'Indisponible' : 'Ajouter au panier'}
-        </button>
+          <button
+            type="button"
+            disabled={soldOut}
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              if (product.id && product.priceNum) {
+                addItem({ id: product.id, name: product.name, price: product.priceNum, image: images[0] })
+              }
+            }}
+            className="mt-3 w-full rounded-lg bg-[#1A3FA0] py-2 text-sm font-medium text-white transition-colors duration-200 hover:bg-[#0D2660] disabled:cursor-not-allowed disabled:bg-[#6B7280] flex items-center justify-center gap-2"
+          >
+            <ShoppingCart className="h-3.5 w-3.5" />
+            {soldOut ? 'Indisponible' : 'Ajouter au panier'}
+          </button>
+        </div>
       </div>
     </>
   )

@@ -95,7 +95,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     </div>
                 </div>
 
-                <div className="p-4 flex-1 overflow-y-auto">
+                <div className="p-4 pt-20 md:pt-4 flex-1 overflow-y-auto">
                     <div className="space-y-1">
                         {adminNavItems.map((item) => {
                             const isActive = pathname.startsWith(item.href)

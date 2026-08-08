@@ -90,7 +90,7 @@ export function CatalogProductCard({ product, initialFavorited = false }: Produc
                     e.stopPropagation()
                     setCurrentImageIndex(prev => prev === 0 ? images.length - 1 : prev - 1)
                   }}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-white/80 hover:bg-white text-gray-700 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-white/80 hover:bg-white text-gray-700 shadow-sm opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-20"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
@@ -101,7 +101,7 @@ export function CatalogProductCard({ product, initialFavorited = false }: Produc
                     e.stopPropagation()
                     setCurrentImageIndex(prev => prev === images.length - 1 ? 0 : prev + 1)
                   }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-white/80 hover:bg-white text-gray-700 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-white/80 hover:bg-white text-gray-700 shadow-sm opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-20"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </button>

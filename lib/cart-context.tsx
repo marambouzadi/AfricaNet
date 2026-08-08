@@ -71,6 +71,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return [...prev, { ...item, quantity }]
     })
     setNotification(`${item.name} ajouté au panier`)
+    setIsCartOpen(true)
     setTimeout(() => setNotification(null), 3000)
   }, [])
 
