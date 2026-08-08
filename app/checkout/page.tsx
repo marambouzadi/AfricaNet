@@ -52,20 +52,28 @@ export default function CheckoutPage() {
     }
   }, [user])
 
+  useEffect(() => {
+    if (isLoaded && items.length === 0 && step !== 'success') {
+      router.push('/panier')
+    }
+  }, [isLoaded, items, step, router])
+
+  useEffect(() => {
+    if (isLoaded && !isUserLoading && !user) {
+      router.push('/connexion?redirect=/checkout')
+    }
+  }, [isLoaded, isUserLoading, user, router])
+
   if (!isLoaded) return null
 
-  // If cart is empty and not on success page, redirect to cart
+  // If cart is empty and not on success page, wait for redirect
   if (items.length === 0 && step !== 'success') {
-    router.push('/panier')
     return null
   }
 
   if (isUserLoading) return <div className="min-h-screen flex items-center justify-center">Chargement...</div>
 
   if (!user) {
-    if (typeof window !== 'undefined') {
-      router.push('/connexion?redirect=/checkout')
-    }
     return null
   }
 
