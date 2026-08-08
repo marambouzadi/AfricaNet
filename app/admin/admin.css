@@ -1,4 +1,4 @@
-﻿/* ================================================
+/* ================================================
    ADMIN LAYOUT
    ================================================ */
 
@@ -537,7 +537,7 @@
   vertical-align: middle;
 }
 
-.admin-table-full { margin: 0 -20px; width: calc(100% + 40px); }
+.admin-table-full { margin: 0; width: 100%; }
 .admin-table-full th:first-child, .admin-table-full td:first-child { padding-left: 20px; }
 .admin-table-full th:last-child, .admin-table-full td:last-child { padding-right: 20px; }
 
@@ -906,4 +906,31 @@
 /* Spinner */
 .spin { animation: spin 0.8s linear infinite; }
 
+/* ================================================
+   RESPONSIVE DESIGN (MOBILE & TABLET)
+   ================================================ */
+@media (max-width: 1024px) {
+  .admin-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .admin-charts-row, .admin-bottom-row {
+    grid-template-columns: 1fr;
+  }
+}
 
+@media (max-width: 640px) {
+  .admin-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+  .admin-filters-right {
+    margin-left: 0;
+    width: 100%;
+    justify-content: space-between;
+  }
+  .admin-search-field {
+    width: 100%;
+  }
+  .admin-input {
+    width: 100%;
+  }
+}
