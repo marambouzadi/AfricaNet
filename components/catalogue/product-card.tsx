@@ -49,7 +49,7 @@ export function CatalogProductCard({ product, initialFavorited = false }: Produc
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col group">
+    <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col h-full group">
       <Link href={`/produit/${product.id}`}>
         <div className="relative aspect-[4/3] bg-gray-100 rounded-t-xl overflow-hidden">
           <span

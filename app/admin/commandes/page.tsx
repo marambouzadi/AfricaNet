@@ -167,57 +167,59 @@ export default function AdminCommandesPage() {
           {loading ? (
             <div className="admin-empty-state"><Loader2 size={24} className="spin" style={{ color: '#1A3FA0' }} /></div>
           ) : (
-            <table className="admin-table admin-table-full">
-              <thead>
-                <tr>
-                  <th>N° COMMANDE</th>
-                  <th>CLIENT</th>
-                  <th>MONTANT</th>
-                  <th>STATUT</th>
-                  <th>DATE</th>
-                  <th>ACTIONS</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredOrders.map(order => {
-                  const cfg = STATUS_CONFIG[order.status] || { label: order.status, bg: '#F3F4F6', color: '#374151' };
-                  const transitions = STATUS_TRANSITIONS[order.status] || [];
-                  return (
-                    <tr key={order.id}>
-                      <td className="admin-product-ref">{order.orderNumber || `CMD-${order.id}`}</td>
-                      <td>{order.shippingAddress?.fullName || `Client #${order.userId}`}</td>
-                      <td className="admin-table-price">{(order.totalAmount || 0).toLocaleString('fr-FR')} TND</td>
-                      <td>
-                        <span className="admin-status-badge" style={{ background: cfg.bg, color: cfg.color }}>
-                          {cfg.label}
-                        </span>
-                      </td>
-                      <td className="admin-table-date">
-                        {order.createdAt ? new Date(order.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
-                      </td>
-                      <td>
-                        <div className="admin-actions" style={{ gap: 6 }}>
-                          <button className="admin-action-btn" title="Voir détails" onClick={() => setViewOrder(order)}>
-                            <Eye size={15} />
-                          </button>
-                          {transitions.map(next => (
-                            <button
-                              key={next}
-                              disabled={updatingId === order.id}
-                              onClick={() => updateStatus(order.id, next)}
-                              className="admin-btn-outline"
-                              style={{ fontSize: 11, padding: '3px 8px' }}
-                            >
-                              {updatingId === order.id ? <Loader2 size={12} className="spin" /> : STATUS_CONFIG[next]?.label || next}
+            <div className="overflow-x-auto">
+              <table className="admin-table admin-table-full">
+                <thead>
+                  <tr>
+                    <th>N° COMMANDE</th>
+                    <th>CLIENT</th>
+                    <th>MONTANT</th>
+                    <th>STATUT</th>
+                    <th>DATE</th>
+                    <th>ACTIONS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredOrders.map(order => {
+                    const cfg = STATUS_CONFIG[order.status] || { label: order.status, bg: '#F3F4F6', color: '#374151' };
+                    const transitions = STATUS_TRANSITIONS[order.status] || [];
+                    return (
+                      <tr key={order.id}>
+                        <td className="admin-product-ref">{order.orderNumber || `CMD-${order.id}`}</td>
+                        <td>{order.shippingAddress?.fullName || `Client #${order.userId}`}</td>
+                        <td className="admin-table-price">{(order.totalAmount || 0).toLocaleString('fr-FR')} TND</td>
+                        <td>
+                          <span className="admin-status-badge" style={{ background: cfg.bg, color: cfg.color }}>
+                            {cfg.label}
+                          </span>
+                        </td>
+                        <td className="admin-table-date">
+                          {order.createdAt ? new Date(order.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
+                        </td>
+                        <td>
+                          <div className="admin-actions" style={{ gap: 6 }}>
+                            <button className="admin-action-btn" title="Voir détails" onClick={() => setViewOrder(order)}>
+                              <Eye size={15} />
                             </button>
-                          ))}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                            {transitions.map(next => (
+                              <button
+                                key={next}
+                                disabled={updatingId === order.id}
+                                onClick={() => updateStatus(order.id, next)}
+                                className="admin-btn-outline"
+                                style={{ fontSize: 11, padding: '3px 8px' }}
+                              >
+                                {updatingId === order.id ? <Loader2 size={12} className="spin" /> : STATUS_CONFIG[next]?.label || next}
+                              </button>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           )}
 
           {!loading && filteredOrders.length === 0 && (
