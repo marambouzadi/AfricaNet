@@ -125,11 +125,7 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
 
         // Origines autorisées
-        config.setAllowedOrigins(List.of(
-                "http://localhost:4200",     // Angular dev
-                "http://localhost:3000", // Next.js dev
-                "http://localhost:8090"
-        ));
+        config.setAllowedOriginPatterns(List.of("*"));
 
         // Méthodes HTTP autorisées
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
