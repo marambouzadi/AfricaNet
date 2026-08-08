@@ -75,7 +75,7 @@ export function Hero({ featuredProduct }: HeroProps) {
                     e.stopPropagation()
                     setCurrentImageIndex(prev => prev === 0 ? images.length - 1 : prev - 1)
                   }}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 hover:bg-white text-gray-700 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 hover:bg-white text-gray-700 shadow-sm md:opacity-0 md:group-hover:opacity-100 transition-opacity z-20"
                 >
                   <ChevronLeft className="h-5 w-5" />
                 </button>
@@ -86,7 +86,7 @@ export function Hero({ featuredProduct }: HeroProps) {
                     e.stopPropagation()
                     setCurrentImageIndex(prev => prev === images.length - 1 ? 0 : prev + 1)
                   }}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 hover:bg-white text-gray-700 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 hover:bg-white text-gray-700 shadow-sm md:opacity-0 md:group-hover:opacity-100 transition-opacity z-20"
                 >
                   <ChevronRight className="h-5 w-5" />
                 </button>
