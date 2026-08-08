@@ -15,7 +15,7 @@ import org.springframework.context.annotation.Profile;
 public class AssistantConfiguration {
 
     @Bean
-    ChatMemoryProvider chatMemoryProvider(com.brnsmrt.africanet.ai.RedisChatMemoryStore redisChatMemoryStore) {
+    ChatMemoryProvider chatMemoryProvider(RedisChatMemoryStore redisChatMemoryStore) {
         return memoryId -> MessageWindowChatMemory.builder()
                 .id(memoryId)
                 .maxMessages(10)
