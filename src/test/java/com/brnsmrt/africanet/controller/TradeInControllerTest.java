@@ -2,18 +2,25 @@ package com.brnsmrt.africanet.controller;
 
 import com.brnsmrt.africanet.ai.TradeInEvaluationService;
 import com.brnsmrt.africanet.ai.dto.EvaluationResult;
-import com.brnsmrt.africanet.domain.TradeIn;
+import com.brnsmrt.africanet.domain.User;
 import com.brnsmrt.africanet.dto.request.TradeInEvaluationRequest;
-import com.brnsmrt.africanet.repository.TradeInRepository;
+import com.brnsmrt.africanet.dto.response.TradeInResponse;
+import com.brnsmrt.africanet.repository.UserRepository;
+import com.brnsmrt.africanet.service.TradeInService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -26,7 +33,13 @@ public class TradeInControllerTest {
     private TradeInEvaluationService tradeInEvaluationService;
 
     @Mock
-    private TradeInRepository tradeInRepository;
+    private TradeInService tradeInService;
+
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private Authentication authentication;
 
     @InjectMocks
     private TradeInController tradeInController;
@@ -51,13 +64,18 @@ public class TradeInControllerTest {
                 .brand("Lenovo")
                 .conditionScore(0.86)
                 .estimatedValue(1800.0)
-                .conditionSummary("Estimated Value: 1800 TND")
+                .conditionSummary("Valeur estimée : 1800 TND")
                 .status("EVALUATING")
                 .build();
 
+        User mockUser = new User();
+        mockUser.setId(1L);
+
+        when(authentication.getName()).thenReturn("test@example.com");
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(mockUser));
         when(tradeInEvaluationService.evaluate(any())).thenReturn(expectedResult);
 
-        ResponseEntity<EvaluationResult> response = tradeInController.evaluateTradeIn(request, null);
+        ResponseEntity<EvaluationResult> response = tradeInController.evaluateTradeIn(request, authentication);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
@@ -65,4 +83,36 @@ public class TradeInControllerTest {
         verify(tradeInEvaluationService).evaluate(request);
     }
 
+    @Test
+    void testGetMyTradeIns_success() {
+        TradeInResponse tradeInResponse = new TradeInResponse();
+        tradeInResponse.setId(1L);
+        Page<TradeInResponse> page = new PageImpl<>(List.of(tradeInResponse));
+
+        when(tradeInService.getMyTradeIns(any(), any(Pageable.class))).thenReturn(page);
+
+        ResponseEntity<Page<TradeInResponse>> response =
+                tradeInController.getMyTradeIns(Pageable.unpaged(), authentication);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(1, response.getBody().getTotalElements());
+        verify(tradeInService).getMyTradeIns(authentication, Pageable.unpaged());
+    }
+
+    @Test
+    void testGetMyTradeInById_success() {
+        TradeInResponse tradeInResponse = new TradeInResponse();
+        tradeInResponse.setId(42L);
+
+        when(tradeInService.getMyTradeInById(42L, authentication)).thenReturn(tradeInResponse);
+
+        ResponseEntity<TradeInResponse> response =
+                tradeInController.getMyTradeInById(42L, authentication);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(42L, response.getBody().getId());
+        verify(tradeInService).getMyTradeInById(42L, authentication);
+    }
 }

@@ -62,7 +62,7 @@ public class RecommendationService {
         userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Customer not found with ID: " + userId));
 
-        List<Order> userOrders = orderRepository.findByUser_Id(userId);
+        List<Order> userOrders = orderRepository.findByUserId(userId);
 
         Map<Long, Double> contentScores;
         Set<Long> purchasedProductIds = new HashSet<>();

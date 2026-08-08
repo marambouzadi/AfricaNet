@@ -2,20 +2,25 @@ package com.brnsmrt.africanet.domain;
 
 import com.brnsmrt.africanet.domain.enums.TradeInImageType;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "trade_in_images")
-@Getter @Setter
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class TradeInImage {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "trade_in_id", nullable = false)
     private TradeInRequest tradeInRequest;
 
@@ -26,6 +31,11 @@ public class TradeInImage {
     @Column(name = "image_type", length = 30)
     private TradeInImageType imageType;
 
-    @Column(name = "uploaded_at", nullable = false, updatable = false)
-    private LocalDateTime uploadedAt = LocalDateTime.now();
+    @Column(name = "uploaded_at", nullable = false)
+    private LocalDateTime uploadedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        if (uploadedAt == null) uploadedAt = LocalDateTime.now();
+    }
 }

@@ -25,9 +25,4 @@ public class UpdateProfileRequest {
 
     @Size(max = 255, message = "L'avatar ne doit pas dépasser 255 caractères")
     private String avatarUrl;
-
-    @Size(min = 8, message = "Le mot de passe doit faire au moins 8 caractères")
-    private String newPassword;
-
-    private String currentPassword;
 }

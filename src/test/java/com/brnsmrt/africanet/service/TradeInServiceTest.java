@@ -76,7 +76,7 @@ class TradeInServiceTest {
     void getMyTradeInById_NotFound() {
         when(authentication.getName()).thenReturn("user@example.com");
         when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
-        when(tradeInRequestRepository.findByIdAndUser_Id(999L, 1L)).thenReturn(Optional.empty());
+        when(tradeInRequestRepository.findByIdAndUserId(999L, 1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> tradeInService.getMyTradeInById(999L, authentication))
                 .isInstanceOf(ResourceNotFoundException.class);

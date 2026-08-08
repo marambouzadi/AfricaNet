@@ -6,11 +6,11 @@ import com.brnsmrt.africanet.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/admin/users")
@@ -24,16 +24,6 @@ public class AdminUserController {
     public ResponseEntity<Page<UserResponse>> getAllUsers(Pageable pageable) {
         Page<UserResponse> users = userRepository.findAll(pageable).map(this::toResponse);
         return ResponseEntity.ok(users);
-    }
-
-    @PutMapping("/{id}/toggle-active")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UserResponse> toggleActive(@PathVariable Long id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Utilisateur introuvable"));
-        user.setActive(!user.isActive());
-        userRepository.save(user);
-        return ResponseEntity.ok(toResponse(user));
     }
 
     private UserResponse toResponse(User user) {

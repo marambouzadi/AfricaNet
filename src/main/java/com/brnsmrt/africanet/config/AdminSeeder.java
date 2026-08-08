@@ -25,21 +25,20 @@ public class AdminSeeder implements CommandLineRunner {
     @Transactional
     public void run(String... args) throws Exception {
         String adminEmail = "admin@africanet.tn";
-        String defaultPassword = "Admin@AfricaNet2026";
         Optional<User> adminOpt = userRepository.findByEmail(adminEmail);
 
         if (adminOpt.isPresent()) {
             User admin = adminOpt.get();
+            // Force the correct password hash
+            admin.setPasswordHash(passwordEncoder.encode("Admin@AfricaNet2026"));
             admin.setRole(UserRole.ADMIN);
             admin.setIsActive(true);
-            // Always reset password to default on startup to prevent lockout
-            admin.setPasswordHash(passwordEncoder.encode(defaultPassword));
             userRepository.save(admin);
-            log.info("Admin account verified and password reset to default.");
+            log.info("Admin account password has been reset to the correct hash.");
         } else {
             User newAdmin = User.builder()
                     .email(adminEmail)
-                    .passwordHash(passwordEncoder.encode(defaultPassword))
+                    .passwordHash(passwordEncoder.encode("Admin@AfricaNet2026"))
                     .firstName("Admin")
                     .lastName("System")
                     .role(UserRole.ADMIN)
@@ -51,6 +50,5 @@ public class AdminSeeder implements CommandLineRunner {
             userRepository.save(newAdmin);
             log.info("Admin account has been created successfully.");
         }
-        log.info("Admin credentials: email={}, password={}", adminEmail, defaultPassword);
     }
 }

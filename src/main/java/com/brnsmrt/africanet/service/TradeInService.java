@@ -1,6 +1,8 @@
 package com.brnsmrt.africanet.service;
 
 import com.brnsmrt.africanet.domain.*;
+import com.brnsmrt.africanet.domain.enums.ConditionOverall;
+import com.brnsmrt.africanet.domain.enums.ProductCondition;
 import com.brnsmrt.africanet.domain.enums.TradeInStatus;
 import com.brnsmrt.africanet.dto.request.ConditionScoreDto;
 import com.brnsmrt.africanet.dto.request.TradeInImageRequest;
@@ -9,10 +11,10 @@ import com.brnsmrt.africanet.dto.request.TradeInSubmitRequest;
 import com.brnsmrt.africanet.dto.response.TradeInImageResponse;
 import com.brnsmrt.africanet.dto.response.TradeInResponse;
 import com.brnsmrt.africanet.exception.ResourceNotFoundException;
-import com.brnsmrt.africanet.repository.BrandRepository;
-import com.brnsmrt.africanet.repository.TradeInRequestRepository;
-import com.brnsmrt.africanet.repository.UserRepository;
+import com.brnsmrt.africanet.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.event.EventListener;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
@@ -34,6 +36,9 @@ public class TradeInService {
     private final TradeInRequestRepository tradeInRepository;
     private final BrandRepository brandRepository;
     private final UserRepository userRepository;
+    private final ProductRepository productRepository;
+    private final CategoryRepository categoryRepository;
+    private final InventoryRepository inventoryRepository;
 
     @Transactional
     public TradeInResponse submit(TradeInSubmitRequest req, Authentication authentication) {
@@ -92,20 +97,47 @@ public class TradeInService {
     public Page<TradeInResponse> getMyTradeIns(Authentication authentication, Pageable pageable) {
         User user = userRepository.findByEmail(authentication.getName())
                 .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable"));
-        return tradeInRepository.findByUser_IdOrderByCreatedAtDesc(user.getId(), pageable)
+        return tradeInRepository.findByUserIdOrderByCreatedAtDesc(user.getId(), pageable)
                 .map(this::toResponse);
     }
 
     public TradeInResponse getMyTradeInById(Long id, Authentication authentication) {
         User user = userRepository.findByEmail(authentication.getName())
                 .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable"));
-        TradeInRequest tradeIn = tradeInRepository.findByIdAndUser_Id(id, user.getId())
+        TradeInRequest tradeIn = tradeInRepository.findByIdAndUserId(id, user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Demande de reprise introuvable: " + id));
         return toResponse(tradeIn);
     }
 
     public Page<TradeInResponse> getAllForAdmin(Pageable pageable) {
         return tradeInRepository.findAll(pageable).map(this::toResponse);
+    }
+
+    @Transactional
+    public TradeInResponse acceptOffer(Long id, Authentication authentication) {
+        TradeInRequest tradeIn = tradeInRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Demande de reprise introuvable: " + id));
+
+        tradeIn.setStatus(TradeInStatus.SUBMITTED);
+        if (tradeIn.getEstimatedValueAi() != null) {
+            tradeIn.setFinalValue(tradeIn.getEstimatedValueAi());
+        }
+        tradeIn.setUpdatedAt(LocalDateTime.now());
+
+        TradeInRequest saved = tradeInRepository.save(tradeIn);
+        return toResponse(saved);
+    }
+
+    @Transactional
+    public TradeInResponse proposeCounterOffer(Long id, BigDecimal proposedPrice, Authentication authentication) {
+        TradeInRequest tradeIn = tradeInRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Demande de reprise introuvable: " + id));
+
+        tradeIn.setCounterOffer(proposedPrice);
+        tradeIn.setStatus(TradeInStatus.SUBMITTED);
+        tradeIn.setUpdatedAt(LocalDateTime.now());
+
+        return toResponse(tradeInRepository.save(tradeIn));
     }
 
     @Transactional
@@ -125,7 +157,103 @@ public class TradeInService {
         tradeIn.setReviewedBy(reviewer);
         tradeIn.setUpdatedAt(LocalDateTime.now());
 
-        return toResponse(tradeInRepository.save(tradeIn));
+        TradeInRequest saved = tradeInRepository.save(tradeIn);
+
+        // Publish to catalog if status is APPROVED or COMPLETED
+        if (saved.getStatus() == TradeInStatus.APPROVED || saved.getStatus() == TradeInStatus.COMPLETED) {
+            publishApprovedTradeInAsProduct(saved);
+        }
+
+        return toResponse(saved);
+    }
+
+    /**
+     * Synchronizes existing APPROVED trade-ins to the catalog on application startup.
+     */
+    @EventListener(ApplicationReadyEvent.class)
+    @Transactional
+    public void syncApprovedTradeInsToCatalog() {
+        try {
+            tradeInRepository.findAll().stream()
+                    .filter(t -> t.getStatus() == TradeInStatus.APPROVED || t.getStatus() == TradeInStatus.COMPLETED)
+                    .forEach(this::publishApprovedTradeInAsProduct);
+        } catch (Exception e) {
+            // Log error silently if database is not fully ready
+        }
+    }
+
+    /**
+     * Creates a Product & Inventory entry from an approved TradeInRequest so it appears in the catalog.
+     */
+    @Transactional
+    public void publishApprovedTradeInAsProduct(TradeInRequest tradeIn) {
+        String sku = tradeIn.getReferenceNumber();
+        if (productRepository.existsBySku(sku)) {
+            return; // Already published to catalog
+        }
+
+        Category category = categoryRepository.findAll().stream().findFirst().orElse(null);
+        if (category == null) {
+            return;
+        }
+
+        String brandName = tradeIn.getBrand() != null ? tradeIn.getBrand().getName() : "";
+        String productName = (brandName + " " + tradeIn.getModel()).trim();
+        if (productName.isEmpty()) {
+            productName = "Appareil Repris #" + tradeIn.getId();
+        }
+
+        String slugCandidate = productName.toLowerCase()
+                .replaceAll("[^a-z0-9]", "-")
+                .replaceAll("-+", "-")
+                .replaceAll("^-|-$", "") + "-" + sku.toLowerCase();
+
+        BigDecimal price = tradeIn.getFinalValue() != null ? tradeIn.getFinalValue()
+                : (tradeIn.getEstimatedValueAi() != null ? tradeIn.getEstimatedValueAi() : new BigDecimal("990.000"));
+
+        ProductCondition condition = (tradeIn.getConditionOverall() == ConditionOverall.EXCELLENT)
+                ? ProductCondition.REFURBISHED : ProductCondition.USED;
+
+        Product product = Product.builder()
+                .name(productName)
+                .slug(slugCandidate)
+                .brand(tradeIn.getBrand())
+                .category(category)
+                .condition(condition)
+                .basePrice(price)
+                .salePrice(price)
+                .sku(sku)
+                .isActive(true)
+                .isFeatured(false)
+                .viewCount(0)
+                .description("Appareil reconditionné issu du programme de reprise AfricaNet. Référence: " + sku + ". Année: " + (tradeIn.getManufactureYear() != null ? tradeIn.getManufactureYear() : "N/A"))
+                .shortDesc("Reprise AfricaNet - Appareil " + (tradeIn.getConditionOverall() != null ? tradeIn.getConditionOverall() : "Vérifié"))
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+
+        Product savedProduct = productRepository.save(product);
+
+        // Add 1 image if available
+        if (tradeIn.getImages() != null && !tradeIn.getImages().isEmpty()) {
+            ProductImage img = new ProductImage();
+            img.setProduct(savedProduct);
+            img.setUrl(tradeIn.getImages().get(0).getUrl());
+            img.setIsPrimary(true);
+            img.setSortOrder(1);
+            savedProduct.getImages().add(img);
+            productRepository.save(savedProduct);
+        }
+
+        // Add Inventory entry
+        Inventory inventory = new Inventory();
+        inventory.setProduct(savedProduct);
+        inventory.setQuantity(1);
+        inventory.setReservedQuantity(0);
+        inventory.setMinThreshold(1);
+        inventory.setWarehouseLocation("Tunis Entrepôt Principal");
+        inventory.setLastUpdated(LocalDateTime.now());
+        inventoryRepository.save(inventory);
     }
 
     /**

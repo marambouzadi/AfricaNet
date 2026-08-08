@@ -5,27 +5,30 @@ import com.brnsmrt.africanet.domain.enums.OrderStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
+@Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
     Optional<Order> findByOrderNumber(String orderNumber);
-    java.util.List<Order> findByUser_Id(Long userId);
-
-    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"orderItems"})
-    Page<Order> findByUser_IdOrderByCreatedAtDesc(Long userId, Pageable pageable);
-
-    Page<Order> findByStatusOrderByCreatedAtDesc(OrderStatus status, Pageable pageable);
-
     Optional<Order> findByIdAndUser_Id(Long id, Long userId);
+    Page<Order> findByUser_IdOrderByCreatedAtDesc(Long userId, Pageable pageable);
+    Page<Order> findByStatusOrderByCreatedAtDesc(OrderStatus status, Pageable pageable);
+    List<Order> findByUser_Id(Long userId);
 
-    @Query("SELECT COUNT(o) FROM Order o WHERE o.createdAt >= :startOfDay")
-    long countOrdersToday(@Param("startOfDay") LocalDateTime startOfDay);
+    // Aliases for compatibility
+    default Optional<Order> findByIdAndUserId(Long id, Long userId) {
+        return findByIdAndUser_Id(id, userId);
+    }
 
-    @Query("SELECT o FROM Order o LEFT JOIN FETCH o.orderItems WHERE o.id = :id")
-    Optional<Order> findByIdWithItems(@Param("id") Long id);
+    default Page<Order> findByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable) {
+        return findByUser_IdOrderByCreatedAtDesc(userId, pageable);
+    }
+
+    default List<Order> findByUserId(Long userId) {
+        return findByUser_Id(userId);
+    }
 }

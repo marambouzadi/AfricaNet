@@ -6,8 +6,8 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "products")
@@ -38,7 +38,7 @@ public class Product {
     @JoinColumn(name = "brand_id")
     private Brand brand;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
@@ -79,21 +79,19 @@ public class Product {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    // ── Relations — Using Set to prevent Hibernate MultipleBagFetchException ────
-
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
-    @OrderBy("sortOrder ASC")
-    @Builder.Default
-    private Set<ProductImage> images = new LinkedHashSet<>();
-
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
-    @OrderBy("sortOrder ASC")
-    @Builder.Default
-    private Set<ProductSpecification> specifications = new LinkedHashSet<>();
+    // ── Relations ────────────────────────────────────────────────
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private Set<ProductTag> productTags = new LinkedHashSet<>();
+    private List<ProductImage> images = new ArrayList<>();
+
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<ProductSpecification> specifications = new ArrayList<>();
+
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<ProductTag> productTags = new ArrayList<>();
 
     // ── Lombok helpers for boolean fields ────────────────────────
 
@@ -102,6 +100,10 @@ public class Product {
     }
 
     public boolean getIsActive() {
+        return this.isActive;
+    }
+
+    public boolean isActive() {
         return this.isActive;
     }
 

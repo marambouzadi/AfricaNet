@@ -28,7 +28,7 @@ public class AddressService {
     @Transactional(readOnly = true)
     public List<AddressResponse> getMyAddresses(Authentication authentication) {
         User user = getUserByAuth(authentication);
-        return addressRepository.findByUser_IdOrderByCreatedAtDesc(user.getId())
+        return addressRepository.findByUserIdOrderByCreatedAtDesc(user.getId())
                 .stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());

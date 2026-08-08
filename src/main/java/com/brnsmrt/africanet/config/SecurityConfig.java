@@ -5,7 +5,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -62,13 +61,6 @@ public class SecurityConfig {
             .sessionManagement(session ->
                     session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-            // 3.5 Gestion des exceptions (401 au lieu de 403 pour unauthenticated)
-            .exceptionHandling(exceptions ->
-                    exceptions.authenticationEntryPoint((request, response, authException) -> {
-                        response.sendError(HttpServletResponse.SC_UNAUTHORIZED, authException.getMessage());
-                    })
-            )
-
             // 4. Règles d'autorisation des routes
             .authorizeHttpRequests(auth -> auth
 
@@ -77,14 +69,16 @@ public class SecurityConfig {
                             "/api/auth/register",
                             "/api/auth/login",
                             "/api/auth/refresh",
+                            "/api/trade-in/evaluate",
+                            "/api/trade-in/*/accept",
+                            "/api/trade-in/*/counter-offer",
                             "/swagger-ui/**",
                             "/swagger-ui.html",
                             "/api-docs/**",
                             "/v3/api-docs/**",
                             "/error",
                             "/mock-flouci/**",
-                            "/ws/**",
-                            "/api/contact"
+                            "/ws/**"
                     ).permitAll()
 
                 // Catalogue public (lecture seule)
@@ -94,12 +88,14 @@ public class SecurityConfig {
                         "/api/categories",
                         "/api/categories/**",
                         "/api/brands",
-                        "/api/brands/**"
+                        "/api/brands/**",
+                        "/uploads/**"
                 ).permitAll()
 
                 // ── Routes Admin uniquement ───────────────────────────────
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/stock/**").hasAnyRole("ADMIN", "MANAGER")
+                .requestMatchers(HttpMethod.POST, "/api/upload/**").hasAnyRole("ADMIN", "MANAGER")
 
                 // ── Tout le reste nécessite d'être connecté ───────────────
                 .anyRequest().authenticated()

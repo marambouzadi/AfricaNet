@@ -6,9 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * DTO pour l'évaluation AI d'un appareil.
+ * DTO pour l'évaluation AI d'un appareil (module Mohamed).
  * Scores de 1 à 10 pour chaque composant.
- * Renamed from TradeInRequest to TradeInEvaluationRequest (aligned with Dev branch).
  */
 @Data
 @Builder

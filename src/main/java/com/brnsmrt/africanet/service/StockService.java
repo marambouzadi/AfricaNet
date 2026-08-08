@@ -147,8 +147,7 @@ public class StockService {
                     throw new InsufficientStockException("Quantité réservée invalide (négative).");
                 }
                 if (newReserved > inventory.getQuantity()) {
-                    // Auto-increase stock for mock products that have 0 stock
-                    inventory.setQuantity(newReserved);
+                    throw new InsufficientStockException("Impossible de réserver plus que le stock total.");
                 }
                 inventory.setReservedQuantity(newReserved);
             }

@@ -25,7 +25,6 @@ public class TradeInController {
     private final TradeInService tradeInService;
     private final com.brnsmrt.africanet.ai.TradeInEvaluationService tradeInEvaluationService;
     private final com.brnsmrt.africanet.repository.UserRepository userRepository;
-
     @PostMapping("/evaluate")
     public ResponseEntity<com.brnsmrt.africanet.ai.dto.EvaluationResult> evaluateTradeIn(
             @Valid @RequestBody com.brnsmrt.africanet.dto.request.TradeInEvaluationRequest request,
@@ -58,5 +57,21 @@ public class TradeInController {
     public ResponseEntity<TradeInResponse> getMyTradeInById(
             @PathVariable Long id, Authentication authentication) {
         return ResponseEntity.ok(tradeInService.getMyTradeInById(id, authentication));
+    }
+
+    @PostMapping("/{id}/accept")
+    public ResponseEntity<TradeInResponse> acceptOffer(
+            @PathVariable Long id,
+            Authentication authentication) {
+        return ResponseEntity.ok(tradeInService.acceptOffer(id, authentication));
+    }
+
+    @PostMapping("/{id}/counter-offer")
+    public ResponseEntity<TradeInResponse> proposeCounterOffer(
+            @PathVariable Long id,
+            @RequestBody java.util.Map<String, java.math.BigDecimal> body,
+            Authentication authentication) {
+        java.math.BigDecimal proposedPrice = body.get("proposedPrice");
+        return ResponseEntity.ok(tradeInService.proposeCounterOffer(id, proposedPrice, authentication));
     }
 }

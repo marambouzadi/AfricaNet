@@ -36,7 +36,6 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         String userMessage = chatMessage.getMessage();
         String clientSessionId = chatMessage.getSessionId();
 
-        // Log user message to DB
         chatHistoryService.logMessage(clientSessionId, "USER", userMessage);
 
         StringBuilder aiResponseBuilder = new StringBuilder();
@@ -47,42 +46,21 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                     sendResponse(session, clientSessionId, token);
                 })
                 .onCompleteResponse(response -> {
-                    // Log complete AI response to DB
                     chatHistoryService.logMessage(clientSessionId, "ASSISTANT", aiResponseBuilder.toString());
                 })
-                .onError(error -> {
-                    log.error("Ollama Chatbot error (fallback to simulation): ", error);
-                    // Fallback to simulated response if AI fails
-                    new Thread(() -> {
-                        String response = "Bonjour ! Je suis l'assistant virtuel AfricaNet (Mode Simulé). Je peux vous aider à choisir un ordinateur ou estimer la reprise de votre ancien matériel. Que souhaitez-vous savoir ?";
-                        String[] words = response.split(" ");
-                        for (String word : words) {
-                            try { Thread.sleep(50); } catch (InterruptedException e) {}
-                            sendResponse(session, clientSessionId, word + " ");
-                            aiResponseBuilder.append(word).append(" ");
-                        }
-                        chatHistoryService.logMessage(clientSessionId, "ASSISTANT", aiResponseBuilder.toString());
-                    }).start();
-                })
+                .onError(error -> sendResponse(session, clientSessionId, "Error: " + error.getMessage()))
                 .start();
     }
 
     private void sendResponse(WebSocketSession session, String clientSessionId, String token) {
-        if (session == null || !session.isOpen()) {
-            return;
-        }
         try {
             ChatResponse chatResponse = ChatResponse.builder()
                     .sessionId(clientSessionId)
                     .response(token)
                     .build();
-            
+
             String jsonPayload = objectMapper.writeValueAsString(chatResponse);
-            synchronized (session) {
-                if (session.isOpen()) {
-                    session.sendMessage(new TextMessage(jsonPayload));
-                }
-            }
+            session.sendMessage(new TextMessage(jsonPayload));
         } catch (Exception e) {
             log.error("Error sending WebSocket response", e);
         }

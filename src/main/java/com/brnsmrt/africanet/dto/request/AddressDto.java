@@ -9,6 +9,7 @@ import lombok.*;
 @NoArgsConstructor @AllArgsConstructor
 @Builder
 public class AddressDto {
+
     @NotBlank(message = "Le nom du destinataire est obligatoire")
     @Size(min = 2, max = 100, message = "Le nom doit contenir entre 2 et 100 caractères")
     private String fullName;

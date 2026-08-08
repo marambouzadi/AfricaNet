@@ -11,7 +11,7 @@ import java.util.List;
 @Repository
 public interface UserAddressRepository extends JpaRepository<UserAddress, Long> {
     
-    List<UserAddress> findByUser_IdOrderByCreatedAtDesc(Long userId);
+    List<UserAddress> findByUserIdOrderByCreatedAtDesc(Long userId);
 
     @Modifying
     @Query("UPDATE UserAddress ua SET ua.isDefault = false WHERE ua.user.id = :userId")

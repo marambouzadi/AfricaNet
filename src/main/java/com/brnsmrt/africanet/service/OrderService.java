@@ -59,25 +59,19 @@ public class OrderService {
         }
 
         // 2. Créer la commande
-        User userRef = new User();
-        userRef.setId(userId);
-
         Order order = Order.builder()
                 .orderNumber(orderNumberGenerator.generate())
-                .user(userRef)
+                .user(User.builder().id(userId).build())
                 .status(OrderStatus.PENDING)
                 .paymentStatus(PaymentStatus.PENDING)
                 .paymentMethod(request.getPaymentMethod())
                 .couponCode(request.getCouponCode())
                 .customerNotes(request.getCustomerNotes())
+                .shippingAddress(toJson(addressToMap(request.getShippingAddress())))
+                .billingAddress(request.getBillingAddress() != null
+                        ? toJson(addressToMap(request.getBillingAddress()))
+                        : toJson(addressToMap(request.getShippingAddress())))
                 .build();
-        
-        order.setShippingAddress(addressToMap(request.getShippingAddress()));
-        if (request.getBillingAddress() != null) {
-            order.setBillingAddress(addressToMap(request.getBillingAddress()));
-        } else {
-            order.setBillingAddress(addressToMap(request.getShippingAddress()));
-        }
 
         BigDecimal subtotal = BigDecimal.ZERO;
 
@@ -85,7 +79,7 @@ public class OrderService {
         for (OrderItemRequest itemReq : request.getItems()) {
             Product product = productMap.get(itemReq.getProductId());
 
-            if (!product.getIsActive()) {
+            if (!product.isActive()) {
                 throw new BusinessException("Le produit " + product.getName() + " n'est plus disponible");
             }
 
@@ -100,16 +94,13 @@ public class OrderService {
                     : product.getBasePrice();
             BigDecimal totalPrice = unitPrice.multiply(BigDecimal.valueOf(itemReq.getQuantity()));
 
-            Product productRef = new Product();
-            productRef.setId(product.getId());
-
             OrderItem item = OrderItem.builder()
-                    .product(productRef)
+                    .product(product)
                     .quantity(itemReq.getQuantity())
                     .unitPrice(unitPrice)
                     .totalPrice(totalPrice)
+                    .productSnapshot(toJson(buildProductSnapshot(product)))
                     .build();
-            item.setProductSnapshot(buildProductSnapshot(product));
 
             order.addItem(item);
             subtotal = subtotal.add(totalPrice);
@@ -170,7 +161,7 @@ public class OrderService {
      */
     @Transactional(readOnly = true)
     public Page<OrderResponse> getUserOrders(Long userId, Pageable pageable) {
-        return orderRepository.findByUser_IdOrderByCreatedAtDesc(userId, pageable)
+        return orderRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable)
                 .map(orderMapper::toResponse);
     }
 
@@ -223,38 +214,30 @@ public class OrderService {
 
         validateStatusTransition(order.getStatus(), request.getStatus());
 
-        // Si annulation par admin : libérer le stock (best-effort)
+        // Si annulation par admin : libérer le stock
         if (request.getStatus() == OrderStatus.CANCELLED && canBeCancelled(order.getStatus())) {
             for (OrderItem item : order.getItems()) {
-                try {
-                    AdjustStockRequest releaseReq = new AdjustStockRequest();
-                    releaseReq.setMovementType(MovementType.RELEASE);
-                    releaseReq.setQuantity(item.getQuantity());
-                    stockService.adjustStock(item.getProductId(), releaseReq, null);
-                } catch (Exception e) {
-                    log.warn("Could not release stock for product {}: {}", item.getProductId(), e.getMessage());
-                }
+                AdjustStockRequest releaseReq = new AdjustStockRequest();
+                releaseReq.setMovementType(MovementType.RELEASE);
+                releaseReq.setQuantity(item.getQuantity());
+                stockService.adjustStock(item.getProductId(), releaseReq, null);
             }
         }
 
-        // Si passage à SHIPPED : décrémenter effectivement le stock (best-effort)
+        // Si passage à SHIPPED : décrémenter effectivement le stock
         if (request.getStatus() == OrderStatus.SHIPPED) {
             for (OrderItem item : order.getItems()) {
-                try {
-                    AdjustStockRequest releaseReq = new AdjustStockRequest();
-                    releaseReq.setMovementType(MovementType.RELEASE);
-                    releaseReq.setQuantity(item.getQuantity());
-                    stockService.adjustStock(item.getProductId(), releaseReq, null);
+                AdjustStockRequest releaseReq = new AdjustStockRequest();
+                releaseReq.setMovementType(MovementType.RELEASE);
+                releaseReq.setQuantity(item.getQuantity());
+                stockService.adjustStock(item.getProductId(), releaseReq, null);
 
-                    AdjustStockRequest outReq = new AdjustStockRequest();
-                    outReq.setMovementType(MovementType.OUT);
-                    outReq.setQuantity(item.getQuantity());
-                    outReq.setReferenceType(ReferenceType.ORDER);
-                    outReq.setReferenceId(order.getId());
-                    stockService.adjustStock(item.getProductId(), outReq, null);
-                } catch (Exception e) {
-                    log.warn("Could not adjust stock for product {}: {}", item.getProductId(), e.getMessage());
-                }
+                AdjustStockRequest outReq = new AdjustStockRequest();
+                outReq.setMovementType(MovementType.OUT);
+                outReq.setQuantity(item.getQuantity());
+                outReq.setReferenceType(ReferenceType.ORDER);
+                outReq.setReferenceId(order.getId());
+                stockService.adjustStock(item.getProductId(), outReq, null);
             }
         }
 
@@ -324,7 +307,7 @@ public class OrderService {
     // ================== HELPERS ==================
 
     private Order findOrderOrThrow(Long orderId, Long userId) {
-        return orderRepository.findByIdAndUser_Id(orderId, userId)
+        return orderRepository.findByIdAndUserId(orderId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Commande introuvable"));
     }
 
@@ -375,8 +358,17 @@ public class OrderService {
         snap.put("salePrice", product.getSalePrice());
         // Ajoute l'image primaire si dispo
         if (product.getImages() != null && !product.getImages().isEmpty()) {
-            snap.put("image", product.getImages().iterator().next().getUrl());
+            snap.put("image", product.getImages().get(0).getUrl());
         }
         return snap;
+    }
+
+    private String toJson(Object obj) {
+        if (obj == null) return null;
+        try {
+            return new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(obj);
+        } catch (Exception e) {
+            return null;
+        }
     }
 }
