@@ -132,79 +132,81 @@ export default function AdminClientsPage() {
           {loading ? (
             <div className="admin-empty-state"><Loader2 size={24} className="spin" style={{ color: '#1A3FA0' }} /></div>
           ) : (
-            <table className="admin-table admin-table-full">
-              <thead>
-                <tr>
-                  <th>CLIENT</th>
-                  <th>EMAIL</th>
-                  <th>RÔLE</th>
-                  <th>STATUT</th>
-                  <th>INSCRIPTION</th>
-                  <th>ACTION</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(client => (
-                  <tr key={client.id}>
-                    <td>
-                      <div className="admin-product-row">
-                        <div style={{
-                          width: 36, height: 36, borderRadius: '50%',
-                          background: 'linear-gradient(135deg, #1A3FA0, #3B82F6)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          color: '#fff', fontWeight: 700, fontSize: 14, flexShrink: 0
-                        }}>
-                          {(client.firstName?.[0] || '?').toUpperCase()}
-                        </div>
-                        <div>
-                          <div className="admin-product-name">{client.firstName} {client.lastName}</div>
-                          <div style={{ fontSize: 12, color: '#64748B' }}>#{client.id}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td style={{ fontSize: 13, color: '#475569' }}>{client.email}</td>
-                    <td>
-                      <span className="admin-status-badge" style={{
-                        background: client.role === 'ADMIN' ? '#FFFBEB' : '#EFF6FF',
-                        color: client.role === 'ADMIN' ? '#D97706' : '#1A3FA0',
-                      }}>
-                        {client.role === 'ADMIN' ? '★ Admin' : 'Client'}
-                      </span>
-                    </td>
-                    <td>
-                      <span className="admin-status-badge" style={{
-                        background: client.active ? '#F0FDF4' : '#FEF2F2',
-                        color: client.active ? '#16A34A' : '#DC2626',
-                      }}>
-                        {client.active ? 'Actif' : 'Désactivé'}
-                      </span>
-                    </td>
-                    <td className="admin-table-date">
-                      {client.createdAt ? new Date(client.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
-                    </td>
-                    <td>
-                      <div className="admin-actions" style={{ gap: 6 }}>
-                        <button className="admin-action-btn" title="Voir profil" onClick={() => setViewClient(client)}>
-                          <Eye size={15} />
-                        </button>
-                        {client.role !== 'ADMIN' && (
-                          <button
-                            className="admin-btn-outline"
-                            style={{ fontSize: 11, padding: '3px 8px', color: client.active ? '#DC2626' : '#16A34A', borderColor: client.active ? '#DC2626' : '#16A34A' }}
-                            disabled={togglingId === client.id}
-                            title={client.active ? 'Bloquer' : 'Débloquer'}
-                            onClick={() => handleToggleActive(client.id)}
-                          >
-                            {togglingId === client.id ? <Loader2 size={12} className="spin" /> : (client.active ? <Ban size={12} /> : <Check size={12} />)}
-                            {' '}{client.active ? 'Bloquer' : 'Débloquer'}
-                          </button>
-                        )}
-                      </div>
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="admin-table admin-table-full">
+                <thead>
+                  <tr>
+                    <th>CLIENT</th>
+                    <th>EMAIL</th>
+                    <th>RÔLE</th>
+                    <th>STATUT</th>
+                    <th>INSCRIPTION</th>
+                    <th>ACTION</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {filtered.map(client => (
+                    <tr key={client.id}>
+                      <td>
+                        <div className="admin-product-row">
+                          <div style={{
+                            width: 36, height: 36, borderRadius: '50%',
+                            background: 'linear-gradient(135deg, #1A3FA0, #3B82F6)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            color: '#fff', fontWeight: 700, fontSize: 14, flexShrink: 0
+                          }}>
+                            {(client.firstName?.[0] || '?').toUpperCase()}
+                          </div>
+                          <div>
+                            <div className="admin-product-name">{client.firstName} {client.lastName}</div>
+                            <div style={{ fontSize: 12, color: '#64748B' }}>#{client.id}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ fontSize: 13, color: '#475569' }}>{client.email}</td>
+                      <td>
+                        <span className="admin-status-badge" style={{
+                          background: client.role === 'ADMIN' ? '#FFFBEB' : '#EFF6FF',
+                          color: client.role === 'ADMIN' ? '#D97706' : '#1A3FA0',
+                        }}>
+                          {client.role === 'ADMIN' ? '★ Admin' : 'Client'}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="admin-status-badge" style={{
+                          background: client.active ? '#F0FDF4' : '#FEF2F2',
+                          color: client.active ? '#16A34A' : '#DC2626',
+                        }}>
+                          {client.active ? 'Actif' : 'Désactivé'}
+                        </span>
+                      </td>
+                      <td className="admin-table-date">
+                        {client.createdAt ? new Date(client.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
+                      </td>
+                      <td>
+                        <div className="admin-actions" style={{ gap: 6 }}>
+                          <button className="admin-action-btn" title="Voir profil" onClick={() => setViewClient(client)}>
+                            <Eye size={15} />
+                          </button>
+                          {client.role !== 'ADMIN' && (
+                            <button
+                              className="admin-btn-outline"
+                              style={{ fontSize: 11, padding: '3px 8px', color: client.active ? '#DC2626' : '#16A34A', borderColor: client.active ? '#DC2626' : '#16A34A' }}
+                              disabled={togglingId === client.id}
+                              title={client.active ? 'Bloquer' : 'Débloquer'}
+                              onClick={() => handleToggleActive(client.id)}
+                            >
+                              {togglingId === client.id ? <Loader2 size={12} className="spin" /> : (client.active ? <Ban size={12} /> : <Check size={12} />)}
+                              {' '}{client.active ? 'Bloquer' : 'Débloquer'}
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
 
           {!loading && filtered.length === 0 && (

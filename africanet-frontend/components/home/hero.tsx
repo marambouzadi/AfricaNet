@@ -21,7 +21,7 @@ export function Hero({ featuredProduct }: HeroProps) {
 
   return (
     <section className="bg-white">
-      <div className="mx-auto flex min-h-[520px] max-w-7xl flex-col items-center gap-12 px-4 py-14 lg:flex-row lg:gap-16 lg:py-20">
+      <div className="mx-auto flex min-h-[400px] lg:min-h-[520px] max-w-7xl flex-col items-center gap-8 px-4 py-10 lg:flex-row lg:gap-16 lg:py-20">
         <div className="w-full lg:w-1/2">
           <h1 className="mt-5 text-balance font-serif text-4xl font-bold leading-tight text-[#1A1A1A] sm:text-5xl">
             Trouvez votre PC idéal — neuf, reconditionné ou d&apos;occasion.

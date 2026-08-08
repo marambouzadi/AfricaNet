@@ -142,79 +142,81 @@ export default function AdminEchangesPage() {
           {loading ? (
             <div className="admin-empty-state"><Loader2 size={24} className="spin" style={{ color: '#1A3FA0' }} /></div>
           ) : (
-            <table className="admin-table admin-table-full">
-              <thead>
-                <tr>
-                  <th>RÉFÉRENCE</th>
-                  <th>APPAREIL</th>
-                  <th>MODÈLE</th>
-                  <th>VALEUR ESTIMÉE</th>
-                  <th>STATUT</th>
-                  <th>DATE</th>
-                  <th>ACTIONS</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(item => {
-                  const cfg = STATUS_CONFIG[item.status] || { label: item.status, bg: '#F3F4F6', color: '#374151' };
-                  return (
-                    <tr key={item.id}>
-                      <td className="admin-product-ref">{item.referenceNumber || `TRD-${item.id}`}</td>
-                      <td style={{ fontSize: 13 }}>{DEVICE_LABELS[item.deviceType] || item.deviceType}</td>
-                      <td style={{ fontSize: 13 }}>{item.model || '—'}</td>
-                      <td style={{ fontWeight: 600, color: '#1A3FA0' }}>
-                        {item.finalValue
-                          ? `${Number(item.finalValue).toLocaleString('fr-FR')} TND`
-                          : item.estimatedValueAi
-                            ? `~${Number(item.estimatedValueAi).toLocaleString('fr-FR')} TND`
-                            : '—'}
-                      </td>
-                      <td>
-                        <span className="admin-status-badge" style={{ background: cfg.bg, color: cfg.color }}>{cfg.label}</span>
-                      </td>
-                      <td className="admin-table-date">
-                        {item.createdAt ? new Date(item.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
-                      </td>
-                      <td>
-                        <div className="admin-actions" style={{ gap: 6 }}>
-                          <button className="admin-action-btn" onClick={() => setViewItem(item)} title="Voir détails"><Eye size={15} /></button>
-                          {item.status === 'SUBMITTED' && (
-                            <>
+            <div className="overflow-x-auto">
+              <table className="admin-table admin-table-full">
+                <thead>
+                  <tr>
+                    <th>RÉFÉRENCE</th>
+                    <th>APPAREIL</th>
+                    <th>MODÈLE</th>
+                    <th>VALEUR ESTIMÉE</th>
+                    <th>STATUT</th>
+                    <th>DATE</th>
+                    <th>ACTIONS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map(item => {
+                    const cfg = STATUS_CONFIG[item.status] || { label: item.status, bg: '#F3F4F6', color: '#374151' };
+                    return (
+                      <tr key={item.id}>
+                        <td className="admin-product-ref">{item.referenceNumber || `TRD-${item.id}`}</td>
+                        <td style={{ fontSize: 13 }}>{DEVICE_LABELS[item.deviceType] || item.deviceType}</td>
+                        <td style={{ fontSize: 13 }}>{item.model || '—'}</td>
+                        <td style={{ fontWeight: 600, color: '#1A3FA0' }}>
+                          {item.finalValue
+                            ? `${Number(item.finalValue).toLocaleString('fr-FR')} TND`
+                            : item.estimatedValueAi
+                              ? `~${Number(item.estimatedValueAi).toLocaleString('fr-FR')} TND`
+                              : '—'}
+                        </td>
+                        <td>
+                          <span className="admin-status-badge" style={{ background: cfg.bg, color: cfg.color }}>{cfg.label}</span>
+                        </td>
+                        <td className="admin-table-date">
+                          {item.createdAt ? new Date(item.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
+                        </td>
+                        <td>
+                          <div className="admin-actions" style={{ gap: 6 }}>
+                            <button className="admin-action-btn" onClick={() => setViewItem(item)} title="Voir détails"><Eye size={15} /></button>
+                            {item.status === 'SUBMITTED' && (
+                              <>
+                                <button
+                                  className="admin-btn-outline"
+                                  style={{ fontSize: 11, padding: '3px 8px', color: '#16A34A', borderColor: '#16A34A' }}
+                                  disabled={updatingId === item.id}
+                                  onClick={() => updateStatus(item.id, 'APPROVED', item.estimatedValueAi, 'Demande approuvée')}
+                                >
+                                  {updatingId === item.id ? <Loader2 size={12} className="spin" /> : '✓ Approuver'}
+                                </button>
+                                <button
+                                  className="admin-btn-outline"
+                                  style={{ fontSize: 11, padding: '3px 8px', color: '#DC2626', borderColor: '#DC2626' }}
+                                  disabled={updatingId === item.id}
+                                  onClick={() => updateStatus(item.id, 'REJECTED', undefined, 'Ne répond pas aux critères')}
+                                >
+                                  ✗ Refuser
+                                </button>
+                              </>
+                            )}
+                            {item.status === 'EVALUATING' && (
                               <button
                                 className="admin-btn-outline"
                                 style={{ fontSize: 11, padding: '3px 8px', color: '#16A34A', borderColor: '#16A34A' }}
                                 disabled={updatingId === item.id}
-                                onClick={() => updateStatus(item.id, 'APPROVED', item.estimatedValueAi, 'Demande approuvée')}
+                                onClick={() => updateStatus(item.id, 'APPROVED', item.estimatedValueAi)}
                               >
-                                {updatingId === item.id ? <Loader2 size={12} className="spin" /> : '✓ Approuver'}
+                                ✓ Valider
                               </button>
-                              <button
-                                className="admin-btn-outline"
-                                style={{ fontSize: 11, padding: '3px 8px', color: '#DC2626', borderColor: '#DC2626' }}
-                                disabled={updatingId === item.id}
-                                onClick={() => updateStatus(item.id, 'REJECTED', undefined, 'Ne répond pas aux critères')}
-                              >
-                                ✗ Refuser
-                              </button>
-                            </>
-                          )}
-                          {item.status === 'EVALUATING' && (
-                            <button
-                              className="admin-btn-outline"
-                              style={{ fontSize: 11, padding: '3px 8px', color: '#16A34A', borderColor: '#16A34A' }}
-                              disabled={updatingId === item.id}
-                              onClick={() => updateStatus(item.id, 'APPROVED', item.estimatedValueAi)}
-                            >
-                              ✓ Valider
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           )}
 
           {!loading && filtered.length === 0 && (
