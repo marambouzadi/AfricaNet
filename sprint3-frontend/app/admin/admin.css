@@ -1,4 +1,4 @@
-﻿/* ================================================
+/* ================================================
    ADMIN LAYOUT
    ================================================ */
 
@@ -905,5 +905,18 @@
 
 /* Spinner */
 .spin { animation: spin 0.8s linear infinite; }
+
+/* Responsive KPI Grid */
+@media (max-width: 1024px) {
+  .admin-kpi-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-kpi-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
 
 

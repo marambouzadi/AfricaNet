@@ -171,10 +171,7 @@ export default function AdminStockPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-serif font-bold text-[#1A1A1A]">Stock & Inventaire</h1>
-          <p className="text-[#6B7280]">Suivez le stock en temps réel, ajustez les quantités et gérez les réapprovisionnements.</p>
-        </div>
+        <p className="text-sm text-[#6B7280]">Suivez le stock en temps réel, ajustez les quantités et gérez les réapprovisionnements.</p>
         {loading && (
           <div className="flex items-center gap-2 text-sm text-[#1A3FA0]">
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -249,7 +246,7 @@ export default function AdminStockPage() {
                   <th className="px-6 py-4">Stock Réservé</th>
                   <th className="px-6 py-4">Emplacement</th>
                   <th className="px-6 py-4">Dernière MàJ</th>
-                  <th className="px-6 py-4 text-right">Ajustement</th>
+                  <th className="px-6 py-4 text-center">Ajustement</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#E2E2DF]">
@@ -273,7 +270,7 @@ export default function AdminStockPage() {
                     <td className="px-6 py-4">{s.reserved} unités</td>
                     <td className="px-6 py-4">{s.warehouse}</td>
                     <td className="px-6 py-4 text-xs text-[#6B7280]">{s.lastUpdated}</td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-6 py-4 text-center">
                       <button
                         onClick={() => {
                           setSelectedStock(s)

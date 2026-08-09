@@ -1,10 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import AdminHeader from '@/components/admin/AdminHeader';
 import {
-  Search, ChevronDown, Eye, CheckCircle, XCircle,
-  Loader2, Download, Package, Clock, Truck, RefreshCw
+  Search, Eye, Loader2, Download, Package, Clock, Truck, RefreshCw
 } from 'lucide-react';
 import { exportToCSV } from '@/lib/export';
 
@@ -32,6 +30,14 @@ const STATUS_TRANSITIONS: Record<string, string[]> = {
   DELIVERED:  [],
   CANCELLED:  [],
   REFUNDED:   [],
+};
+
+const TRANSITION_BTN_CONFIG: Record<string, { label: string; style: string }> = {
+  CONFIRMED:  { label: 'Confirmer', style: 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100' },
+  PROCESSING: { label: 'En cours',  style: 'border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-100' },
+  SHIPPED:    { label: 'Expédier',  style: 'border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100' },
+  DELIVERED:  { label: 'Livrer',    style: 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100' },
+  CANCELLED:  { label: 'Annuler',   style: 'border-red-300 bg-red-50 text-red-700 hover:bg-red-100' },
 };
 
 export default function AdminCommandesPage() {
@@ -105,96 +111,141 @@ export default function AdminCommandesPage() {
   ];
 
   return (
-    <div className="admin-page">
-      <AdminHeader title="Gestion des Commandes" breadcrumb="Gestion · Commandes" />
-      <div className="admin-content">
-
-        {/* KPI Cards */}
-        <div className="admin-kpi-grid">
-          {kpis.map(kpi => {
-            const Icon = kpi.icon;
-            return (
-              <div key={kpi.label} className="admin-kpi-card">
-                <div className="admin-kpi-top">
-                  <div className="admin-kpi-icon" style={{ background: kpi.bg, color: kpi.color }}><Icon size={20} /></div>
-                </div>
-                <div className="admin-kpi-value">{kpi.value}</div>
-                <div className="admin-kpi-label">{kpi.label}</div>
+    <div className="space-y-6">
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {kpis.map((kpi) => {
+          const Icon = kpi.icon;
+          return (
+            <div key={kpi.label} className="bg-white p-6 rounded-xl border border-[#E2E2DF] shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
+              <div className="w-12 h-12 bg-[#E8EDF8] text-[#1A3FA0] rounded-xl flex items-center justify-center shrink-0">
+                <Icon className="h-6 w-6" />
               </div>
-            );
-          })}
+              <div>
+                <p className="text-sm font-medium text-[#6B7280]">{kpi.label}</p>
+                <p className="text-2xl font-bold text-[#1A1A1A]">{loading ? '...' : kpi.value}</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Filters Bar */}
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-[#E2E2DF] flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="relative flex-1 w-full">
+          <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-[#6B7280]" />
+          <input
+            type="text"
+            placeholder="Rechercher par N° commande ou client..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-[#F5F5F3] border border-[#E2E2DF] rounded-lg pl-10 pr-4 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30"
+          />
         </div>
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="bg-[#F5F5F3] border border-[#E2E2DF] rounded-lg px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30 cursor-pointer"
+          >
+            <option>Tous statuts</option>
+            {Object.keys(STATUS_CONFIG).map((s) => (
+              <option key={s} value={s}>{STATUS_CONFIG[s].label}</option>
+            ))}
+          </select>
+          <button
+            onClick={handleExport}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-[#E2E2DF] hover:bg-[#F5F5F3] text-[#1A1A1A] rounded-lg text-sm font-medium transition-colors shrink-0"
+          >
+            <Download className="h-4 w-4" /> Exporter
+          </button>
+        </div>
+      </div>
 
-        <div className="admin-card">
-          {/* Filters */}
-          <div className="admin-filters-bar">
-            <div className="admin-search-field">
-              <Search size={16} className="admin-search-icon-sm" />
-              <input type="text" placeholder="Rechercher une commande..." value={search}
-                onChange={e => setSearch(e.target.value)} className="admin-input" />
-            </div>
-            <div className="admin-filters-right">
-              <div className="admin-select-wrapper">
-                <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="admin-select">
-                  <option>Tous statuts</option>
-                  {Object.keys(STATUS_CONFIG).map(s => (
-                    <option key={s} value={s}>{STATUS_CONFIG[s].label}</option>
-                  ))}
-                </select>
-                <ChevronDown size={14} className="admin-select-icon" />
-              </div>
-              <button className="admin-btn-outline" onClick={handleExport}><Download size={16} /> Exporter</button>
-            </div>
-          </div>
-
-          {/* Table */}
+      {/* Orders Table */}
+      <div className="bg-white rounded-xl shadow-sm border border-[#E2E2DF] overflow-hidden">
+        <div className="overflow-x-auto">
           {loading ? (
-            <div className="admin-empty-state"><Loader2 size={24} className="spin" style={{ color: '#1A3FA0' }} /></div>
+            <div className="py-16 flex justify-center text-[#1A3FA0]">
+              <Loader2 className="h-7 w-7 animate-spin" />
+            </div>
+          ) : filteredOrders.length === 0 ? (
+            <div className="py-16 text-center text-[#6B7280] flex flex-col items-center justify-center">
+              <div className="w-14 h-14 bg-[#F5F5F3] text-[#6B7280] rounded-full flex items-center justify-center mb-3">
+                <Package className="h-7 w-7" />
+              </div>
+              <p className="font-bold text-[#1A1A1A] text-base">Aucune commande trouvée</p>
+              <p className="text-xs text-[#6B7280] mt-1">Aucune commande ne correspond à vos filtres.</p>
+            </div>
           ) : (
-            <table className="admin-table admin-table-full">
-              <thead>
+            <table className="w-full text-left text-sm text-[#6B7280]">
+              <thead className="bg-[#F5F5F3] text-[#1A1A1A] uppercase text-xs font-semibold border-b border-[#E2E2DF]">
                 <tr>
-                  <th>N° COMMANDE</th>
-                  <th>CLIENT</th>
-                  <th>MONTANT</th>
-                  <th>STATUT</th>
-                  <th>DATE</th>
-                  <th>ACTIONS</th>
+                  <th className="px-6 py-4">N° Commande</th>
+                  <th className="px-6 py-4">Client</th>
+                  <th className="px-6 py-4">Montant</th>
+                  <th className="px-6 py-4">Statut</th>
+                  <th className="px-6 py-4">Date</th>
+                  <th className="px-6 py-4 text-center">Actions</th>
                 </tr>
               </thead>
-              <tbody>
-                {filteredOrders.map(order => {
-                  const cfg = STATUS_CONFIG[order.status] || { label: order.status, bg: '#F3F4F6', color: '#374151' };
+              <tbody className="divide-y divide-[#E2E2DF]">
+                {filteredOrders.map((order) => {
+                  const cfg = STATUS_CONFIG[order.status] || { label: order.status, bg: 'bg-gray-100', text: 'text-gray-700' };
                   const transitions = STATUS_TRANSITIONS[order.status] || [];
+                  const badgeClass =
+                    order.status === 'DELIVERED' ? 'bg-[#DCFCE7] text-[#166534]' :
+                    order.status === 'SHIPPED' ? 'bg-[#DBEAFE] text-[#1E40AF]' :
+                    order.status === 'CONFIRMED' ? 'bg-[#DBEAFE] text-[#1E40AF]' :
+                    order.status === 'PROCESSING' ? 'bg-[#F3E8FF] text-[#6B21A8]' :
+                    order.status === 'PENDING' ? 'bg-[#FEF9C3] text-[#A16207]' :
+                    order.status === 'CANCELLED' ? 'bg-[#FEE2E2] text-[#991B1B]' :
+                    'bg-[#F5F5F3] text-[#6B7280]';
+
                   return (
-                    <tr key={order.id}>
-                      <td className="admin-product-ref">{order.orderNumber || `CMD-${order.id}`}</td>
-                      <td>{order.shippingAddress?.fullName || `Client #${order.userId}`}</td>
-                      <td className="admin-table-price">{(order.totalAmount || 0).toLocaleString('fr-FR')} TND</td>
-                      <td>
-                        <span className="admin-status-badge" style={{ background: cfg.bg, color: cfg.color }}>
+                    <tr key={order.id} className="hover:bg-[#F9FAFB] transition-colors">
+                      <td className="px-6 py-4 font-semibold text-[#1A3FA0]">
+                        {order.orderNumber || `CMD-${order.id}`}
+                      </td>
+                      <td className="px-6 py-4 text-[#1A1A1A] font-medium">
+                        {order.shippingAddress?.fullName || `Client #${order.userId}`}
+                      </td>
+                      <td className="px-6 py-4 font-bold text-[#1A1A1A]">
+                        {(order.totalAmount || 0).toLocaleString('fr-FR')} TND
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${badgeClass}`}>
                           {cfg.label}
                         </span>
                       </td>
-                      <td className="admin-table-date">
+                      <td className="px-6 py-4 text-[#6B7280]">
                         {order.createdAt ? new Date(order.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
                       </td>
-                      <td>
-                        <div className="admin-actions" style={{ gap: 6 }}>
-                          <button className="admin-action-btn" title="Voir détails" onClick={() => setViewOrder(order)}>
-                            <Eye size={15} />
+                      <td className="px-6 py-4 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            title="Voir détails"
+                            onClick={() => setViewOrder(order)}
+                            className="p-2 text-[#6B7280] hover:text-[#1A3FA0] hover:bg-[#EFF6FF] rounded-lg transition-colors"
+                          >
+                            <Eye className="h-4 w-4" />
                           </button>
-                          {transitions.map(next => (
-                            <button
-                              key={next}
-                              disabled={updatingId === order.id}
-                              onClick={() => updateStatus(order.id, next)}
-                              className="admin-btn-outline"
-                              style={{ fontSize: 11, padding: '3px 8px' }}
-                            >
-                              {updatingId === order.id ? <Loader2 size={12} className="spin" /> : STATUS_CONFIG[next]?.label || next}
-                            </button>
-                          ))}
+                          {transitions.map((next) => {
+                            const btnConfig = TRANSITION_BTN_CONFIG[next] || {
+                              label: STATUS_CONFIG[next]?.label || next,
+                              style: 'border-[#E2E2DF] bg-white text-[#1A1A1A] hover:bg-[#F5F5F3]',
+                            };
+                            return (
+                              <button
+                                key={next}
+                                disabled={updatingId === order.id}
+                                onClick={() => updateStatus(order.id, next)}
+                                className={`px-2.5 py-1 text-xs font-semibold border rounded-lg transition-colors disabled:opacity-50 ${btnConfig.style}`}
+                              >
+                                {updatingId === order.id ? <Loader2 className="h-3 w-3 animate-spin inline" /> : btnConfig.label}
+                              </button>
+                            );
+                          })}
                         </div>
                       </td>
                     </tr>
@@ -203,47 +254,70 @@ export default function AdminCommandesPage() {
               </tbody>
             </table>
           )}
-
-          {!loading && filteredOrders.length === 0 && (
-            <div className="admin-empty-state" style={{ padding: '60px 20px', flexDirection: 'column', display: 'flex', alignItems: 'center' }}>
-              <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12, color: '#64748B', fontSize: 24 }}>📦</div>
-              <h4 style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 700 }}>Aucune commande</h4>
-              <p style={{ margin: 0, fontSize: 13, color: '#64748B' }}>Aucune commande ne correspond à vos filtres.</p>
-            </div>
-          )}
         </div>
+      </div>
 
-        {/* Modal Détail Commande */}
-        {viewOrder && (
-          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
-            onClick={() => setViewOrder(null)}>
-            <div style={{ background: '#fff', borderRadius: 16, padding: 28, maxWidth: 520, width: '100%', maxHeight: '80vh', overflowY: 'auto' }}
-              onClick={e => e.stopPropagation()}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>Commande {viewOrder.orderNumber}</h3>
-                <button onClick={() => setViewOrder(null)} style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: 20 }}>×</button>
+      {/* Modal Détail Commande */}
+      {viewOrder && (
+        <div
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={() => setViewOrder(null)}
+        >
+          <div
+            className="bg-white rounded-2xl p-6 max-w-lg w-full max-h-[85vh] overflow-y-auto shadow-2xl space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-[#E2E2DF] pb-4">
+              <h3 className="text-lg font-bold text-[#1A1A1A]">
+                Commande {viewOrder.orderNumber || `#${viewOrder.id}`}
+              </h3>
+              <button
+                onClick={() => setViewOrder(null)}
+                className="p-1 text-[#6B7280] hover:text-[#1A1A1A] hover:bg-[#F5F5F3] rounded-lg transition-colors text-xl font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3 text-sm text-[#1A1A1A]">
+              <div className="flex justify-between py-1 border-b border-[#F5F5F3]">
+                <span className="text-[#6B7280]">Statut</span>
+                <span className="font-semibold">{STATUS_CONFIG[viewOrder.status]?.label || viewOrder.status}</span>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 14 }}>
-                <div><strong>Statut :</strong> <span style={{ color: STATUS_CONFIG[viewOrder.status]?.color }}>{STATUS_CONFIG[viewOrder.status]?.label}</span></div>
-                <div><strong>Client :</strong> {viewOrder.shippingAddress?.fullName || `Client #${viewOrder.userId}`}</div>
-                <div><strong>Adresse :</strong> {viewOrder.shippingAddress?.city}, {viewOrder.shippingAddress?.country}</div>
-                <div><strong>Montant total :</strong> {(viewOrder.totalAmount || 0).toLocaleString('fr-FR')} TND</div>
-                <div><strong>Date :</strong> {viewOrder.createdAt ? new Date(viewOrder.createdAt).toLocaleString('fr-FR') : 'N/A'}</div>
-                {viewOrder.orderItems?.length > 0 && (
-                  <div>
-                    <strong>Produits :</strong>
-                    <ul style={{ marginTop: 8, paddingLeft: 16 }}>
-                      {viewOrder.orderItems.map((item: any, idx: number) => (
-                        <li key={idx}>{item.productName || `Produit #${item.productId}`} × {item.quantity} — {(item.unitPrice || 0).toLocaleString('fr-FR')} TND</li>
-                      ))}
-                    </ul>
+              <div className="flex justify-between py-1 border-b border-[#F5F5F3]">
+                <span className="text-[#6B7280]">Client</span>
+                <span className="font-semibold">{viewOrder.shippingAddress?.fullName || `Client #${viewOrder.userId}`}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-[#F5F5F3]">
+                <span className="text-[#6B7280]">Adresse</span>
+                <span className="font-semibold">{viewOrder.shippingAddress?.city}, {viewOrder.shippingAddress?.country}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-[#F5F5F3]">
+                <span className="text-[#6B7280]">Montant total</span>
+                <span className="font-bold text-[#1A3FA0]">{(viewOrder.totalAmount || 0).toLocaleString('fr-FR')} TND</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-[#F5F5F3]">
+                <span className="text-[#6B7280]">Date</span>
+                <span className="font-semibold">{viewOrder.createdAt ? new Date(viewOrder.createdAt).toLocaleString('fr-FR') : 'N/A'}</span>
+              </div>
+
+              {viewOrder.orderItems?.length > 0 && (
+                <div className="pt-2">
+                  <span className="text-[#6B7280] font-medium block mb-2">Produits commandés :</span>
+                  <div className="space-y-2 bg-[#F5F5F3] p-3 rounded-xl border border-[#E2E2DF]">
+                    {viewOrder.orderItems.map((item: any, idx: number) => (
+                      <div key={idx} className="flex items-center justify-between text-xs">
+                        <span className="font-medium">{item.productName || `Produit #${item.productId}`} × {item.quantity}</span>
+                        <span className="font-bold">{(item.unitPrice || 0).toLocaleString('fr-FR')} TND</span>
+                      </div>
+                    ))}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

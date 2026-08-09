@@ -294,8 +294,7 @@ export default function AdminProduitsPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-serif font-bold text-[#1A1A1A]">Gestion des Produits</h1>
-          <p className="text-[#6B7280]">Ajoutez, modifiez et gérez les images de votre catalogue en direct.</p>
+          <p className="text-sm text-[#6B7280]">Ajoutez, modifiez et gérez les images de votre catalogue en direct.</p>
         </div>
         <button
           onClick={() => {
@@ -354,7 +353,7 @@ export default function AdminProduitsPage() {
                   <th className="px-6 py-4 font-bold">Prix</th>
                   <th className="px-6 py-4 font-bold">Stock</th>
                   <th className="px-6 py-4 font-bold">Statut</th>
-                  <th className="px-6 py-4 font-bold text-right">Actions</th>
+                  <th className="px-6 py-4 font-bold text-center">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#E2E2DF]">
