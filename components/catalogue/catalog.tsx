@@ -29,7 +29,7 @@ export function Catalog() {
   const [mobileSort, setMobileSort] = useState(false)
 
   // API State
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [paginatedProducts, setPaginatedProducts] = useState<Product[]>([])
   const [totalPages, setTotalPages] = useState(1)
   const [totalElements, setTotalElements] = useState(0)
@@ -230,7 +230,7 @@ export function Catalog() {
     filters.conditions.forEach((c) => chips.push({ label: c, key: `cond-${c}` }))
     filters.ramValues.forEach((r) => chips.push({ label: `${r} Go`, key: `ram-${r}` }))
     filters.screenSizes.forEach((s) => chips.push({ label: `${s}"`, key: `screen-${s}` }))
-    if (filters.priceMin > 0 || filters.priceMax < 5000) {
+    if (filters.priceMin > 0 || filters.priceMax < 10000) {
       chips.push({ label: `${filters.priceMin}–${filters.priceMax} TND`, key: 'price' })
     }
     if (searchQuery) {
@@ -254,7 +254,7 @@ export function Catalog() {
         const screen = Number(key.replace('screen-', ''))
         setFilters((f) => ({ ...f, screenSizes: f.screenSizes.filter((s) => s !== screen) }))
       } else if (key === 'price') {
-        setFilters((f) => ({ ...f, priceMin: 0, priceMax: 5000 }))
+        setFilters((f) => ({ ...f, priceMin: 0, priceMax: 10000 }))
       }
     },
     []
@@ -275,7 +275,7 @@ export function Catalog() {
     filters.conditions.length +
     filters.ramValues.length +
     filters.screenSizes.length +
-    (filters.priceMin > 0 || filters.priceMax < 5000 ? 1 : 0)
+    (filters.priceMin > 0 || filters.priceMax < 10000 ? 1 : 0)
 
   // Page numbers to display
   const pageNumbers = useMemo(() => {
@@ -454,7 +454,7 @@ export function Catalog() {
               <button
                 type="button"
                 aria-label="Page précédente"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                onClick={() => { setPage((p) => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                 disabled={page === 1}
                 className="w-9 h-9 flex items-center justify-center rounded-lg text-[#6B7280] disabled:opacity-40 hover:bg-[#F5F5F3] transition-colors"
               >
@@ -467,7 +467,7 @@ export function Catalog() {
                   <button
                     key={p}
                     type="button"
-                    onClick={() => setPage(p)}
+                    onClick={() => { setPage(p as number); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                     className={`w-9 h-9 rounded-lg text-sm transition-colors ${
                       p === page
                         ? 'bg-[#1A3FA0] text-white'
@@ -481,7 +481,7 @@ export function Catalog() {
               <button
                 type="button"
                 aria-label="Page suivante"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                onClick={() => { setPage((p) => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                 disabled={page === totalPages}
                 className="w-9 h-9 flex items-center justify-center rounded-lg bg-white border border-[#E2E2DF] text-[#1A1A1A] disabled:opacity-40 hover:border-[#1A3FA0] transition-colors"
               >

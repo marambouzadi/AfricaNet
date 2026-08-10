@@ -51,7 +51,7 @@ export function CartSidebar() {
                 <div key={item.id} className="flex gap-4 border-b border-[#E2E2DF] pb-4">
                   <div className="h-20 w-20 shrink-0 bg-[#F5F5F3] rounded-lg overflow-hidden relative">
                     {item.image ? (
-                      <Image src={item.image} alt={item.name} fill className="object-cover" />
+                      <Image src={item.image} alt={item.name} fill className="object-cover" sizes="80px" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-xs text-[#6B7280]">Pas d'image</div>
                     )}

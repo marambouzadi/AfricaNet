@@ -367,7 +367,7 @@ export default function CheckoutPage() {
                           {item.quantity}
                         </span>
                         {item.image && item.image !== '/products/laptop-gray.png' ? (
-                          <Image src={item.image} alt={item.name} fill className="object-contain p-1" />
+                          <Image src={item.image} alt={item.name} fill className="object-contain p-1" sizes="64px" />
                         ) : (
                           <LaptopSilhouette className="h-8 w-auto text-[#1A3FA0]/25" />
                         )}

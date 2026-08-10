@@ -280,8 +280,8 @@ export function Navbar() {
 
       {/* Mobile navigation — full-screen overlay */}
       <div
-        className={`fixed inset-0 z-40 md:hidden transition-all duration-300 ${
-          menuOpen ? 'visible' : 'invisible'
+        className={`fixed inset-0 z-40 md:hidden ${
+          menuOpen ? 'pointer-events-auto' : 'pointer-events-none'
         }`}
       >
         {/* Backdrop */}
@@ -295,7 +295,7 @@ export function Navbar() {
 
         {/* Menu panel */}
         <div
-          className={`absolute left-0 right-0 top-16 bg-white border-b border-[#E2E2DF] shadow-lg transition-all duration-300 ${
+          className={`absolute left-0 right-0 top-16 bg-white border-b border-[#E2E2DF] shadow-lg transition-all duration-300 ease-in-out ${
             menuOpen
               ? 'translate-y-0 opacity-100'
               : '-translate-y-4 opacity-0'

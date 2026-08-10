@@ -189,11 +189,8 @@ export default function AdminDashboardPage() {
 
   return (
     <div>
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-serif font-bold text-[#1A1A1A]">Tableau de bord</h1>
-          <p className="text-[#6B7280]">Vue d'ensemble des performances réelles en direct de votre boutique AfricaNet.</p>
-        </div>
+      <div className="mb-6 flex items-center justify-between">
+        <p className="text-sm text-[#6B7280]">Vue d'ensemble des performances réelles en direct de votre boutique AfricaNet.</p>
         {loading && (
           <div className="flex items-center gap-2 text-sm text-[#1A3FA0]">
             <Loader2 className="h-4 w-4 animate-spin" />

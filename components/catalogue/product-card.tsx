@@ -74,7 +74,7 @@ export function CatalogProductCard({ product, initialFavorited = false }: Produc
                 src={images[currentImageIndex]}
                 alt={product.name}
                 fill
-                className="object-contain p-6 mix-blend-multiply transition-transform duration-200 group-hover:scale-105"
+                className="object-cover transition-transform duration-200 group-hover:scale-105"
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
               />
             ) : (

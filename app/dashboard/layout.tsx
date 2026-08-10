@@ -143,27 +143,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     </div>
 
                     {/* Mobile drawer overlay */}
-                    {mobileMenuOpen && (
-                        <div className="fixed inset-0 z-50 md:hidden">
-                            <div
-                                className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-                                onClick={() => setMobileMenuOpen(false)}
-                            />
-                            <div className="absolute left-0 top-0 bottom-0 w-80 bg-[#F5F5F3] p-4 overflow-y-auto shadow-2xl animate-in slide-in-from-left duration-300">
-                                <div className="flex justify-between items-center mb-6">
-                                    <h2 className="font-serif font-bold text-lg text-[#1A1A1A]">Mon Espace</h2>
-                                    <button
-                                        type="button"
-                                        onClick={() => setMobileMenuOpen(false)}
-                                        className="p-2 text-[#6B7280] hover:bg-white rounded-lg transition-colors"
-                                    >
-                                        <X className="h-5 w-5" />
-                                    </button>
-                                </div>
-                                <SidebarContent pathname={pathname} onClose={() => setMobileMenuOpen(false)} user={user} logout={handleLogout} />
+                    <div className={`fixed inset-0 z-50 md:hidden ${mobileMenuOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}>
+                        <div
+                            className={`absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${mobileMenuOpen ? 'opacity-100' : 'opacity-0'}`}
+                            onClick={() => setMobileMenuOpen(false)}
+                        />
+                        <div className={`absolute left-0 top-0 bottom-0 w-80 bg-[#F5F5F3] p-4 overflow-y-auto shadow-2xl transition-transform duration-300 ease-in-out ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+                            <div className="flex justify-between items-center mb-6">
+                                <h2 className="font-serif font-bold text-lg text-[#1A1A1A]">Mon Espace</h2>
+                                <button
+                                    type="button"
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    className="p-2 text-[#6B7280] hover:bg-white rounded-lg transition-colors"
+                                >
+                                    <X className="h-5 w-5" />
+                                </button>
                             </div>
+                            <SidebarContent pathname={pathname} onClose={() => setMobileMenuOpen(false)} user={user} logout={handleLogout} />
                         </div>
-                    )}
+                    </div>
 
                     {/* Desktop layout */}
                     <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-6">

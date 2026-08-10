@@ -17,7 +17,7 @@ export function ProductGallery({ product }: { product: ProductDetail }) {
             src={product.thumbnails[active]}
             alt={`${product.name} - Image ${active + 1}`}
             fill
-            className="object-contain p-8 mix-blend-multiply transition-transform duration-300 group-hover:scale-105"
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
             sizes="(max-width: 768px) 100vw, 50vw"
           />
         ) : (
@@ -35,7 +35,7 @@ export function ProductGallery({ product }: { product: ProductDetail }) {
                 e.preventDefault()
                 setActive((prev) => (prev === 0 ? product.thumbnails.length - 1 : prev - 1))
               }}
-              className="absolute left-4 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-white/80 hover:bg-white text-gray-700 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity z-20"
+              className="absolute left-4 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-white/80 hover:bg-white text-gray-700 shadow-sm opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity z-20"
             >
               <ChevronLeft className="h-6 w-6" />
             </button>
@@ -45,7 +45,7 @@ export function ProductGallery({ product }: { product: ProductDetail }) {
                 e.preventDefault()
                 setActive((prev) => (prev === product.thumbnails.length - 1 ? 0 : prev + 1))
               }}
-              className="absolute right-4 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-white/80 hover:bg-white text-gray-700 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity z-20"
+              className="absolute right-4 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-white/80 hover:bg-white text-gray-700 shadow-sm opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity z-20"
             >
               <ChevronRight className="h-6 w-6" />
             </button>
@@ -71,7 +71,7 @@ export function ProductGallery({ product }: { product: ProductDetail }) {
                   src={url}
                   alt={`Thumbnail ${i + 1}`}
                   fill
-                  className="object-contain p-2 mix-blend-multiply"
+                  className="object-cover"
                   sizes="(max-width: 768px) 25vw, 12vw"
                 />
               ) : (

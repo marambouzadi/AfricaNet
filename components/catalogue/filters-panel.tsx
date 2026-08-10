@@ -15,7 +15,7 @@ export const defaultFilters: FilterState = {
   brands: [],
   conditions: [],
   priceMin: 0,
-  priceMax: 5000,
+  priceMax: 10000,
   ramValues: [],
   screenSizes: [],
 }
@@ -78,7 +78,8 @@ export function FiltersPanel({
         <GroupLabel>Marque</GroupLabel>
         <div className="grid grid-cols-1">
           {BRANDS.map((brand) => {
-            const count = brandCounts.find((b) => b.brand === brand)?.count ?? 0
+            const count = brandCounts.find((b) => b.brand.toLowerCase() === brand.toLowerCase())?.count ?? 0
+            if (count === 0) return null
             return (
               <label key={brand} className="flex items-center gap-2 py-1 cursor-pointer text-sm text-[#1A1A1A]">
                 <input
@@ -129,14 +130,14 @@ export function FiltersPanel({
           <div
             className="absolute h-1.5 rounded-full bg-[#1A3FA0]"
             style={{
-              left: `${(filters.priceMin / 5000) * 100}%`,
-              right: `${100 - (filters.priceMax / 5000) * 100}%`,
+              left: `${(filters.priceMin / 10000) * 100}%`,
+              right: `${100 - (filters.priceMax / 10000) * 100}%`,
             }}
           />
           <input
             type="range"
             min={0}
-            max={5000}
+            max={10000}
             value={filters.priceMin}
             onChange={(e) => onChange({ ...filters, priceMin: Math.min(Number(e.target.value), filters.priceMax) })}
             className="absolute -top-1.5 w-full appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#1A3FA0]"
@@ -144,7 +145,7 @@ export function FiltersPanel({
           <input
             type="range"
             min={0}
-            max={5000}
+            max={10000}
             value={filters.priceMax}
             onChange={(e) => onChange({ ...filters, priceMax: Math.max(Number(e.target.value), filters.priceMin) })}
             className="absolute -top-1.5 w-full appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#1A3FA0]"

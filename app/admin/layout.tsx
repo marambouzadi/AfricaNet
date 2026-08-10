@@ -1,8 +1,10 @@
 'use client'
-import './admin.css'
+
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useUser } from '@/lib/user-context'
+import AdminHeader from '@/components/admin/AdminHeader'
+import './admin.css'
 import {
   LayoutDashboard,
   Package,
@@ -16,7 +18,7 @@ import {
   Box,
   Store,
   ChevronRight,
-  Mail
+  Mail,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
@@ -65,9 +67,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const initials = `${user.firstName?.charAt(0) ?? ''}${user.lastName?.charAt(0) ?? ''}`.toUpperCase()
 
     return (
-        <div className="min-h-screen bg-[#F5F5F3] flex flex-col md:flex-row font-sans">
+        <div className="h-screen flex flex-col md:flex-row font-sans overflow-hidden bg-[#F5F5F3]">
             {/* Mobile Header */}
-            <div className="md:hidden bg-white border-b border-[#E2E2DF] p-4 flex items-center justify-between sticky top-0 z-50">
+            <div className="md:hidden bg-white border-b border-[#E2E2DF] p-4 flex items-center justify-between z-50 flex-shrink-0">
                 <Link href="/admin/dashboard" className="text-xl font-serif font-bold text-[#1A3FA0] flex items-center gap-2">
                     <ShieldCheck className="h-6 w-6" />
                     Admin
@@ -83,11 +85,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
             {/* Sidebar */}
             <aside className={`
-                fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-[#E2E2DF] transform transition-transform duration-300 ease-in-out flex flex-col
+                fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-[#E2E2DF] transform transition-transform duration-300 ease-in-out flex flex-col flex-shrink-0 h-full
                 md:relative md:translate-x-0
                 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
             `}>
-                <div className="p-6 border-b border-[#E2E2DF] hidden md:flex items-center gap-3">
+                <div className="p-6 border-b border-[#E2E2DF] hidden md:flex items-center gap-3 flex-shrink-0">
                     <ShieldCheck className="h-8 w-8 text-[#1A3FA0]" />
                     <div>
                         <h1 className="text-xl font-serif font-bold text-[#1A3FA0] leading-none">AfricaNet</h1>
@@ -95,7 +97,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     </div>
                 </div>
 
-                <div className="p-4 pt-20 md:pt-4 flex-1 overflow-y-auto">
+                <div className="p-4 flex-1 overflow-y-auto">
                     <div className="space-y-1">
                         {adminNavItems.map((item) => {
                             const isActive = pathname.startsWith(item.href)
@@ -118,9 +120,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     </div>
                 </div>
 
-                <div className="p-4 border-t border-[#E2E2DF]">
+                <div className="p-4 border-t border-[#E2E2DF] flex-shrink-0">
                     <div className="flex items-center gap-3 px-4 py-3 mb-2">
-                        <div className="w-10 h-10 rounded-full bg-[#1A3FA0] text-white flex items-center justify-center font-bold text-sm">
+                        <div className="w-10 h-10 rounded-full bg-[#1A3FA0] text-white flex items-center justify-center font-bold text-sm flex-shrink-0">
                             {initials || 'AD'}
                         </div>
                         <div className="min-w-0">
@@ -155,9 +157,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 />
             )}
 
-            {/* Main Content Area */}
-            <main className="flex-1 p-4 md:p-8 overflow-auto">
-                {children}
+            <main className="flex-1 overflow-y-auto h-full flex flex-col min-w-0">
+                <AdminHeader />
+                <div className="p-4 md:p-8 flex-1">
+                    {children}
+                </div>
             </main>
         </div>
     )

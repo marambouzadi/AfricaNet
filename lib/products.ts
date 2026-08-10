@@ -521,6 +521,8 @@ export type SimilarProduct = {
   spec: string
   price: string
   condition: Condition
+  image: string
+  images?: string[]
 }
 
 export function getSimilarProducts(currentId: number): SimilarProduct[] {
@@ -533,5 +535,7 @@ export function getSimilarProducts(currentId: number): SimilarProduct[] {
       spec: `${p.cpu} · ${p.ram} · ${p.storage} · ${p.screenSize}"`,
       price: formatPrice(p.price),
       condition: p.condition,
+      image: p.image || p.images?.[0] || '/products/laptop-gray.png',
+      images: p.images || [p.image || '/products/laptop-gray.png'],
     }))
 }

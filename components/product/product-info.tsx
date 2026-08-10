@@ -36,9 +36,6 @@ export function ProductInfo({ product }: { product: ProductDetail }) {
 
       <h1 className="mt-2 font-serif text-2xl font-bold leading-snug text-[#1A1A1A] text-balance">
         {product.name}
-        <span className="block text-lg font-semibold text-[#6B7280]">
-          {product.quickSpecs.map((s) => s.label).join(' / ')}
-        </span>
       </h1>
 
       <div className="mt-4 flex items-baseline gap-3">
@@ -46,20 +43,22 @@ export function ProductInfo({ product }: { product: ProductDetail }) {
       </div>
 
       <div className="mt-2 flex items-center gap-2">
-        <span className="size-2.5 rounded-full bg-[#1A8A4A]" aria-hidden="true" />
-        <span className="text-sm font-medium text-[#1A8A4A]">
-          En stock — {product.stock} unité{product.stock > 1 ? 's' : ''} disponible{product.stock > 1 ? 's' : ''}
+        <span className={`size-2.5 rounded-full ${product.stock > 0 ? 'bg-[#1A8A4A]' : 'bg-red-500'}`} aria-hidden="true" />
+        <span className={`text-sm font-medium ${product.stock > 0 ? 'text-[#1A8A4A]' : 'text-red-500'}`}>
+          {product.stock > 0 
+            ? `En stock — ${product.stock} unité${product.stock > 1 ? 's' : ''} disponible${product.stock > 1 ? 's' : ''}`
+            : 'Rupture de stock'}
         </span>
       </div>
 
       <div className="my-5 border-t border-[#E2E2DF]" />
 
       <div className="grid grid-cols-2 gap-3">
-        {product.quickSpecs.map((spec) => {
+        {product.quickSpecs.map((spec, idx) => {
           const Icon = specIcons[spec.icon]
           return (
             <div
-              key={spec.label}
+              key={idx}
               className="flex items-center gap-2 rounded-lg bg-[#F5F5F3] px-3 py-2"
             >
               {Icon && <Icon className="size-4 shrink-0 text-[#1A3FA0]" />}

@@ -55,13 +55,16 @@ export function Hero({ featuredProduct }: HeroProps) {
         <div className="w-full lg:w-1/2">
           <div className="relative flex aspect-[4/3] w-full items-center justify-center rounded-2xl bg-[#E8EDF8] overflow-hidden group">
             {images.length > 0 ? (
-              <Image
-                src={images[currentImageIndex]}
-                alt={featuredProduct!.name}
-                fill
-                className="object-contain p-8 mix-blend-multiply"
-                priority
-              />
+              <Link href={featuredProduct ? `/produit/${featuredProduct.id}` : '/catalogue'} className="absolute inset-0 block">
+                <Image
+                  src={images[currentImageIndex]}
+                  alt={featuredProduct!.name}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  priority
+                />
+              </Link>
             ) : (
               <LaptopSilhouette className="h-40 w-auto text-[#1A3FA0]/40" />
             )}
@@ -92,9 +95,9 @@ export function Hero({ featuredProduct }: HeroProps) {
                 </button>
                 
                 {/* Dots */}
-                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-1.5 z-20">
+                <div className="absolute bottom-5 right-5 flex gap-2 z-20">
                   {images.map((_, idx) => (
-                    <div key={idx} className={`w-2 h-2 rounded-full transition-colors ${idx === currentImageIndex ? 'bg-[#1A3FA0]' : 'bg-gray-300'}`} />
+                    <div key={idx} className={`w-2 h-2 rounded-full transition-colors shadow-sm ${idx === currentImageIndex ? 'bg-[#1A3FA0]' : 'bg-white'}`} />
                   ))}
                 </div>
               </>

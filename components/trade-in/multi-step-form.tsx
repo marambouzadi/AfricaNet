@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useUser } from '@/lib/user-context'
-import { UploadCloud, CheckCircle2, Laptop, HardDrive, Smartphone, ChevronRight, ChevronLeft, AlertCircle } from 'lucide-react'
+import { UploadCloud, CheckCircle2, Laptop, HardDrive, Smartphone, ChevronRight, ChevronLeft, AlertCircle, X } from 'lucide-react'
 import Link from 'next/link'
 
 type Step = 1 | 2 | 3 | 4
@@ -27,6 +27,8 @@ export function MultiStepForm() {
     const [error, setError] = useState('')
     const [images, setImages] = useState<File[]>([])
     const [evaluationResult, setEvaluationResult] = useState<any>(null)
+    const [offerAccepted, setOfferAccepted] = useState(false)
+    const [isAccepting, setIsAccepting] = useState(false)
     const [formData, setFormData] = useState({
         deviceType: '',
         brand: '',
@@ -83,12 +85,39 @@ export function MultiStepForm() {
             
             const data = await res.json()
             setEvaluationResult(data)
+            setOfferAccepted(false)
             setStep(4)
         } catch (err) {
             const message = err instanceof Error ? err.message : 'Une erreur est survenue'
             setError(message)
         } finally {
             setIsSubmitting(false)
+        }
+    }
+
+    const handleAcceptOffer = async () => {
+        if (!evaluationResult?.id) return
+        setIsAccepting(true)
+        try {
+            const token = localStorage.getItem('accessToken')
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8090/api'
+            const res = await fetch(`${API_URL}/trade-in/${evaluationResult.id}/accept`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+            })
+            if (res.ok) {
+                setOfferAccepted(true)
+            } else {
+                const errData = await res.json().catch(() => ({}))
+                setError(errData.message || 'Erreur lors de l\'acceptation de l\'offre')
+            }
+        } catch (err) {
+            setError('Une erreur est survenue. Veuillez réessayer.')
+        } finally {
+            setIsAccepting(false)
         }
     }
 
@@ -206,13 +235,25 @@ export function MultiStepForm() {
                                 <p className="text-sm text-[#6B7280] mt-1">Formats acceptés : JPG, PNG (Max 5MB)</p>
                             </label>
                             {images.length > 0 && (
-                                <div className="mt-4 space-y-2">
-                                    <p className="text-sm font-medium text-[#1A1A1A]">{images.length} fichier(s) sélectionné(s) :</p>
-                                    <ul className="text-sm text-[#6B7280] list-disc list-inside">
+                                <div className="mt-4">
+                                    <p className="text-sm font-medium text-[#1A1A1A] mb-3">{images.length} fichier(s) sélectionné(s) :</p>
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                         {images.map((img, idx) => (
-                                            <li key={idx}>{img.name}</li>
+                                            <div key={idx} className="relative aspect-square rounded-lg border border-[#E2E2DF] bg-[#F5F5F3] flex items-center justify-center p-3 group overflow-hidden">
+                                                <span className="text-xs font-medium text-[#6B7280] text-center line-clamp-3 break-all">{img.name}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        setImages(images.filter((_, i) => i !== idx));
+                                                    }}
+                                                    className="absolute top-1.5 right-1.5 bg-white shadow-sm text-red-500 rounded-full p-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-red-50 hover:text-red-600"
+                                                >
+                                                    <X className="h-3.5 w-3.5" />
+                                                </button>
+                                            </div>
                                         ))}
-                                    </ul>
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -257,10 +298,6 @@ export function MultiStepForm() {
                                         <span className="text-[#6B7280]">Valeur estimée</span>
                                         <span className="text-2xl font-bold text-[#1A3FA0]">{evaluationResult.estimatedValue?.toFixed(2)} TND</span>
                                     </div>
-                                    <div className="pt-2">
-                                        <span className="text-[#6B7280] block mb-2">Analyse de l'IA :</span>
-                                        <p className="text-[#1A1A1A] font-medium leading-relaxed">{evaluationResult.conditionSummary}</p>
-                                    </div>
                                 </div>
                             </div>
                         ) : (
@@ -269,14 +306,47 @@ export function MultiStepForm() {
                             </p>
                         )}
 
-                        <div className="flex justify-center gap-4">
-                            <Link href="/" className="bg-[#1A3FA0] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#0D2660] transition-colors">
-                                Accepter l'offre (bientôt)
-                            </Link>
-                            <Link href="/" className="bg-[#F5F5F3] text-[#1A1A1A] px-6 py-3 rounded-lg font-medium hover:bg-[#E2E2DF] transition-colors">
-                                Retour à l'accueil
-                            </Link>
-                        </div>
+                        {offerAccepted ? (
+                            <div className="bg-green-50 border border-green-200 rounded-xl p-6 mb-6 max-w-md mx-auto">
+                                <div className="flex items-center gap-3 text-green-700 font-semibold mb-1">
+                                    <CheckCircle2 className="h-5 w-5" />
+                                    Offre acceptée avec succès !
+                                </div>
+                                <p className="text-sm text-green-600">Notre équipe vous contactera sous 24h pour organiser la remise de votre appareil.</p>
+                            </div>
+                        ) : (
+                            evaluationResult && (
+                                <div className="flex flex-col sm:flex-row justify-center gap-3 mt-6">
+                                    <button
+                                        type="button"
+                                        onClick={handleAcceptOffer}
+                                        disabled={isAccepting}
+                                        className="bg-[#D1F232] hover:bg-[#bce600] text-[#1A1A1A] px-8 py-3 rounded-lg font-bold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                                    >
+                                        {isAccepting ? 'Traitement...' : 'Accepter l\'offre'}
+                                    </button>
+                                    <Link href="/" className="bg-[#F5F5F3] text-[#1A1A1A] px-8 py-3 rounded-lg font-medium hover:bg-[#E2E2DF] transition-colors text-center">
+                                        Refuser et retourner
+                                    </Link>
+                                </div>
+                            )
+                        )}
+
+                        {!evaluationResult && (
+                            <div className="flex justify-center mt-6">
+                                <Link href="/" className="bg-[#1A3FA0] text-white px-8 py-3 rounded-lg font-medium hover:bg-[#0D2660] transition-colors">
+                                    Retourner à l'accueil
+                                </Link>
+                            </div>
+                        )}
+
+                        {offerAccepted && (
+                            <div className="flex justify-center mt-4">
+                                <Link href="/" className="bg-[#1A3FA0] text-white px-8 py-3 rounded-lg font-medium hover:bg-[#0D2660] transition-colors">
+                                    Retourner à l'accueil
+                                </Link>
+                            </div>
+                        )}
                     </div>
                 )}
 

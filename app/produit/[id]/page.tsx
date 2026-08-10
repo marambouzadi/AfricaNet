@@ -74,7 +74,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
     thumbnails: res.images?.length > 0 
       ? res.images.map((img: any) => img.url || img.imageUrl) 
       : ['/products/laptop-gray.png'],
-    quickSpecs: res.specifications?.slice(0, 4).map((s: any) => ({
+    quickSpecs: res.specifications?.filter((s: any) => !['écran', 'ecran', 'batterie', 'performances', 'performance', 'esthétique', 'esthetique'].includes(s.specKey.toLowerCase())).slice(0, 4).map((s: any) => ({
       icon: s.specKey.toLowerCase().includes('ram') ? 'ram' : 
             s.specKey.toLowerCase().includes('processeur') ? 'cpu' : 
             s.specKey.toLowerCase().includes('stockage') ? 'ssd' : 'screen',
@@ -103,6 +103,8 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
         spec: p.shortDesc ?? '',
         price: `${p.salePrice || p.basePrice} TND`,
         condition: (condMap[p.condition] ?? 'Neuf') as any,
+        image: p.images?.length > 0 ? p.images[0].url : '/products/laptop-gray.png',
+        images: p.images?.map((img: any) => img.url) || ['/products/laptop-gray.png'],
       }))
   } catch { similar = [] }
 

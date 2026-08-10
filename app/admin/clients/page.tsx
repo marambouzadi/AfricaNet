@@ -1,17 +1,23 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import AdminHeader from '@/components/admin/AdminHeader';
 import {
-  Search, ChevronDown, Eye, Loader2, Download,
-  Users, ShoppingBag, Star, Ban, Check
+  Search, Eye, Loader2, Download,
+  Users, ShoppingBag, Star, Ban
 } from 'lucide-react';
 import { exportToCSV } from '@/lib/export';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8090/api';
+const API_BASE = 'http://localhost:8090/api';
 
 function getToken() {
   return typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+}
+
+function getIsActive(client: any): boolean {
+  if (client.isActive !== undefined) return Boolean(client.isActive);
+  if (client.active !== undefined) return Boolean(client.active);
+  if (client.enabled !== undefined) return Boolean(client.enabled);
+  return true;
 }
 
 export default function AdminClientsPage() {
@@ -20,42 +26,22 @@ export default function AdminClientsPage() {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('Tous les rôles');
   const [viewClient, setViewClient] = useState<any>(null);
-  const [togglingId, setTogglingId] = useState<number | null>(null);
 
-  const loadClients = async () => {
-    try {
-      const token = getToken();
-      const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
-      const res = await fetch(`${API_BASE}/admin/users?size=100`, { headers, cache: 'no-store' });
-      if (res.ok) {
-        const data = await res.json();
-        setClients(data.content || data || []);
-      }
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
-  };
-
-  useEffect(() => { loadClients(); }, []);
-
-  const handleToggleActive = async (clientId: number) => {
-    setTogglingId(clientId);
-    try {
-      const token = getToken();
-      const res = await fetch(`${API_BASE}/admin/users/${clientId}/toggle-active`, {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        await loadClients();
-        // Refresh modal data
-        if (viewClient?.id === clientId) {
-          const updated = await res.json().catch(() => null);
-          if (updated) setViewClient(updated);
+  useEffect(() => {
+    async function load() {
+      try {
+        const token = getToken();
+        const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
+        const res = await fetch(`${API_BASE}/admin/users?size=100`, { headers, cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          setClients(data.content || (Array.isArray(data) ? data : []));
         }
-      }
-    } catch (e) { console.error(e); }
-    finally { setTogglingId(null); }
-  };
+      } catch (e) { console.error(e); }
+      finally { setLoading(false); }
+    }
+    load();
+  }, []);
 
   const filtered = clients.filter(c => {
     const name = `${c.firstName || ''} ${c.lastName || ''}`.toLowerCase();
@@ -72,198 +58,212 @@ export default function AdminClientsPage() {
       c.lastName || '',
       c.email || '',
       c.role || '',
-      c.active ? 'Oui' : 'Non',
+      getIsActive(c) ? 'Oui' : 'Non',
       c.createdAt ? new Date(c.createdAt).toLocaleDateString('fr-FR') : 'N/A',
     ]);
     exportToCSV('export_clients', headers, rows);
   };
 
   const kpis = [
-    { label: 'Total clients',   value: clients.length,                                       icon: Users,      color: '#1A3FA0', bg: '#EFF6FF' },
-    { label: 'Clients actifs',  value: clients.filter(c => c.active).length,               icon: ShoppingBag,color: '#16A34A', bg: '#F0FDF4' },
-    { label: 'Administrateurs', value: clients.filter(c => c.role === 'ADMIN').length,        icon: Star,       color: '#F59E0B', bg: '#FFFBEB' },
-    { label: 'Désactivés',      value: clients.filter(c => !c.active).length,              icon: Ban,        color: '#EF4444', bg: '#FEF2F2' },
+    { label: 'Total clients',   value: clients.length,                                       icon: Users,      color: 'text-[#1A3FA0]', bg: 'bg-[#E8EDF8]' },
+    { label: 'Clients actifs',  value: clients.filter(c => getIsActive(c)).length,           icon: ShoppingBag,color: 'text-emerald-700', bg: 'bg-emerald-100' },
+    { label: 'Administrateurs', value: clients.filter(c => c.role === 'ADMIN').length,        icon: Star,       color: 'text-amber-700', bg: 'bg-amber-100' },
+    { label: 'Désactivés',      value: clients.filter(c => !getIsActive(c)).length,          icon: Ban,        color: 'text-red-600', bg: 'bg-red-100' },
   ];
 
   return (
-    <div className="admin-page">
-      <div className="mb-8">
-        <h1 className="text-3xl font-serif font-bold text-[#1A1A1A]">Gestion des Clients</h1>
-        <p className="text-[#6B7280]">Gérez les comptes clients et administrateurs de la boutique.</p>
+    <div className="space-y-6">
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {kpis.map((kpi) => {
+          const Icon = kpi.icon;
+          return (
+            <div key={kpi.label} className="bg-white p-6 rounded-xl border border-[#E2E2DF] shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
+              <div className={`w-12 h-12 ${kpi.bg} ${kpi.color} rounded-xl flex items-center justify-center shrink-0`}>
+                <Icon className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-[#6B7280]">{kpi.label}</p>
+                <p className="text-2xl font-bold text-[#1A1A1A]">{loading ? '...' : kpi.value}</p>
+              </div>
+            </div>
+          );
+        })}
       </div>
-      <div className="admin-content">
 
-        {/* KPI Cards */}
-        <div className="admin-kpi-grid">
-          {kpis.map(kpi => {
-            const Icon = kpi.icon;
-            return (
-              <div key={kpi.label} className="admin-kpi-card">
-                <div className="admin-kpi-top">
-                  <div className="admin-kpi-icon" style={{ background: kpi.bg, color: kpi.color }}><Icon size={20} /></div>
-                </div>
-                <div className="admin-kpi-value">{kpi.value}</div>
-                <div className="admin-kpi-label">{kpi.label}</div>
-              </div>
-            );
-          })}
+      {/* Filters Bar */}
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-[#E2E2DF] flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="relative flex-1 w-full">
+          <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-[#6B7280]" />
+          <input
+            type="text"
+            placeholder="Rechercher par nom ou email..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-[#F5F5F3] border border-[#E2E2DF] rounded-lg pl-10 pr-4 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30"
+          />
         </div>
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <select
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
+            className="bg-[#F5F5F3] border border-[#E2E2DF] rounded-lg px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30 cursor-pointer"
+          >
+            <option>Tous les rôles</option>
+            <option value="CUSTOMER">Client</option>
+            <option value="ADMIN">Administrateur</option>
+          </select>
+          <button
+            onClick={handleExport}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-[#E2E2DF] hover:bg-[#F5F5F3] text-[#1A1A1A] rounded-lg text-sm font-medium transition-colors shrink-0"
+          >
+            <Download className="h-4 w-4" /> Exporter
+          </button>
+        </div>
+      </div>
 
-        <div className="admin-card">
-          <div className="admin-filters-bar">
-            <div className="admin-search-field">
-              <Search size={16} className="admin-search-icon-sm" />
-              <input type="text" placeholder="Rechercher un client..." value={search}
-                onChange={e => setSearch(e.target.value)} className="admin-input" />
-            </div>
-            <div className="admin-filters-right">
-              <div className="admin-select-wrapper">
-                <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)} className="admin-select">
-                  <option>Tous les rôles</option>
-                  <option value="CUSTOMER">Client</option>
-                  <option value="ADMIN">Administrateur</option>
-                </select>
-                <ChevronDown size={14} className="admin-select-icon" />
-              </div>
-              <button className="admin-btn-outline" onClick={handleExport}><Download size={16} /> Exporter</button>
-            </div>
-          </div>
-
+      {/* Clients Table */}
+      <div className="bg-white rounded-xl shadow-sm border border-[#E2E2DF] overflow-hidden">
+        <div className="overflow-x-auto">
           {loading ? (
-            <div className="admin-empty-state"><Loader2 size={24} className="spin" style={{ color: '#1A3FA0' }} /></div>
+            <div className="py-16 flex justify-center text-[#1A3FA0]">
+              <Loader2 className="h-7 w-7 animate-spin" />
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="py-16 text-center text-[#6B7280] flex flex-col items-center justify-center">
+              <div className="w-14 h-14 bg-[#F5F5F3] text-[#6B7280] rounded-full flex items-center justify-center mb-3">
+                <Users className="h-7 w-7" />
+              </div>
+              <p className="font-bold text-[#1A1A1A] text-base">Aucun client trouvé</p>
+              <p className="text-xs text-[#6B7280] mt-1">Aucun client ne correspond à vos critères de recherche.</p>
+            </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="admin-table admin-table-full">
-                <thead>
-                  <tr>
-                    <th>CLIENT</th>
-                    <th>EMAIL</th>
-                    <th>RÔLE</th>
-                    <th>STATUT</th>
-                    <th>INSCRIPTION</th>
-                    <th>ACTION</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map(client => (
-                    <tr key={client.id}>
-                      <td>
-                        <div className="admin-product-row">
-                          <div style={{
-                            width: 36, height: 36, borderRadius: '50%',
-                            background: 'linear-gradient(135deg, #1A3FA0, #3B82F6)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            color: '#fff', fontWeight: 700, fontSize: 14, flexShrink: 0
-                          }}>
-                            {(client.firstName?.[0] || '?').toUpperCase()}
+            <table className="w-full text-left text-sm text-[#6B7280]">
+              <thead className="bg-[#F5F5F3] text-[#1A1A1A] uppercase text-xs font-semibold border-b border-[#E2E2DF]">
+                <tr>
+                  <th className="px-6 py-4">Client</th>
+                  <th className="px-6 py-4">Email</th>
+                  <th className="px-6 py-4">Rôle</th>
+                  <th className="px-6 py-4">Statut</th>
+                  <th className="px-6 py-4">Date Inscription</th>
+                  <th className="px-6 py-4 text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#E2E2DF]">
+                {filtered.map((client) => {
+                  const active = getIsActive(client);
+                  const initials = `${client.firstName?.[0] ?? '?'}${client.lastName?.[0] ?? ''}`.toUpperCase();
+
+                  return (
+                    <tr key={client.id} className="hover:bg-[#F9FAFB] transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-[#1A3FA0] text-white font-bold text-xs flex items-center justify-center shrink-0">
+                            {initials}
                           </div>
                           <div>
-                            <div className="admin-product-name">{client.firstName} {client.lastName}</div>
-                            <div style={{ fontSize: 12, color: '#64748B' }}>#{client.id}</div>
+                            <p className="font-semibold text-[#1A1A1A] text-sm">
+                              {client.firstName} {client.lastName}
+                            </p>
+                            <p className="text-xs text-[#6B7280]">#{client.id}</p>
                           </div>
                         </div>
                       </td>
-                      <td style={{ fontSize: 13, color: '#475569' }}>{client.email}</td>
-                      <td>
-                        <span className="admin-status-badge" style={{
-                          background: client.role === 'ADMIN' ? '#FFFBEB' : '#EFF6FF',
-                          color: client.role === 'ADMIN' ? '#D97706' : '#1A3FA0',
-                        }}>
-                          {client.role === 'ADMIN' ? '★ Admin' : 'Client'}
+                      <td className="px-6 py-4 text-[#1A1A1A]">
+                        {client.email}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
+                          client.role === 'ADMIN' ? 'bg-[#FFFBEB] text-[#D97706] border border-[#FDE68A]' : 'bg-[#EFF6FF] text-[#1A3FA0] border border-[#BFDBFE]'
+                        }`}>
+                          {client.role === 'ADMIN' ? '★ Administrateur' : 'Client'}
                         </span>
                       </td>
-                      <td>
-                        <span className="admin-status-badge" style={{
-                          background: client.active ? '#F0FDF4' : '#FEF2F2',
-                          color: client.active ? '#16A34A' : '#DC2626',
-                        }}>
-                          {client.active ? 'Actif' : 'Désactivé'}
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
+                          active ? 'bg-[#DCFCE7] text-[#166534]' : 'bg-[#FEE2E2] text-[#991B1B]'
+                        }`}>
+                          {active ? 'Actif' : 'Désactivé'}
                         </span>
                       </td>
-                      <td className="admin-table-date">
+                      <td className="px-6 py-4 text-[#6B7280]">
                         {client.createdAt ? new Date(client.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
                       </td>
-                      <td>
-                        <div className="admin-actions" style={{ gap: 6 }}>
-                          <button className="admin-action-btn" title="Voir profil" onClick={() => setViewClient(client)}>
-                            <Eye size={15} />
-                          </button>
-                          {client.role !== 'ADMIN' && (
-                            <button
-                              className="admin-btn-outline"
-                              style={{ fontSize: 11, padding: '3px 8px', color: client.active ? '#DC2626' : '#16A34A', borderColor: client.active ? '#DC2626' : '#16A34A' }}
-                              disabled={togglingId === client.id}
-                              title={client.active ? 'Bloquer' : 'Débloquer'}
-                              onClick={() => handleToggleActive(client.id)}
-                            >
-                              {togglingId === client.id ? <Loader2 size={12} className="spin" /> : (client.active ? <Ban size={12} /> : <Check size={12} />)}
-                              {' '}{client.active ? 'Bloquer' : 'Débloquer'}
-                            </button>
-                          )}
-                        </div>
+                      <td className="px-6 py-4 text-center">
+                        <button
+                          title="Voir profil"
+                          onClick={() => setViewClient(client)}
+                          className="p-2 text-[#6B7280] hover:text-[#1A3FA0] hover:bg-[#EFF6FF] rounded-lg transition-colors"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {!loading && filtered.length === 0 && (
-            <div className="admin-empty-state" style={{ padding: '60px 20px', flexDirection: 'column', display: 'flex', alignItems: 'center' }}>
-              <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12, fontSize: 24 }}>👤</div>
-              <h4 style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 700 }}>Aucun client trouvé</h4>
-              <p style={{ margin: 0, fontSize: 13, color: '#64748B' }}>Aucun client ne correspond à vos critères.</p>
-            </div>
+                  );
+                })}
+              </tbody>
+            </table>
           )}
         </div>
+      </div>
 
-        {/* Modal détail client */}
-        {viewClient && (
-          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
-            onClick={() => setViewClient(null)}>
-            <div style={{ background: '#fff', borderRadius: 16, padding: 28, maxWidth: 420, width: '100%' }}
-              onClick={e => e.stopPropagation()}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>Profil Client</h3>
-                <button onClick={() => setViewClient(null)} style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: 20 }}>×</button>
+      {/* Modal Détail Client */}
+      {viewClient && (
+        <div
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={() => setViewClient(null)}
+        >
+          <div
+            className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-[#E2E2DF] pb-4">
+              <h3 className="text-lg font-bold text-[#1A1A1A]">Profil Client</h3>
+              <button
+                onClick={() => setViewClient(null)}
+                className="p-1 text-[#6B7280] hover:text-[#1A1A1A] hover:bg-[#F5F5F3] rounded-lg transition-colors text-xl font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="flex items-center gap-4 bg-[#F5F5F3] p-4 rounded-xl border border-[#E2E2DF]">
+              <div className="w-12 h-12 rounded-full bg-[#1A3FA0] text-white font-bold text-lg flex items-center justify-center shrink-0 shadow-sm">
+                {`${viewClient.firstName?.[0] ?? '?'}${viewClient.lastName?.[0] ?? ''}`.toUpperCase()}
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 14 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
-                  <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'linear-gradient(135deg, #1A3FA0, #3B82F6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 20 }}>
-                    {(viewClient.firstName?.[0] || '?').toUpperCase()}
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: 16 }}>{viewClient.firstName} {viewClient.lastName}</div>
-                    <div style={{ color: '#64748B', fontSize: 13 }}>{viewClient.email}</div>
-                  </div>
-                </div>
-                <div><strong>Rôle :</strong> {viewClient.role === 'ADMIN' ? 'Administrateur' : 'Client'}</div>
-                <div><strong>Statut :</strong> <span style={{ color: viewClient.active ? '#16A34A' : '#DC2626' }}>{viewClient.active ? 'Actif' : 'Désactivé'}</span></div>
-                <div><strong>Téléphone :</strong> {viewClient.phone || '—'}</div>
-                <div><strong>Inscription :</strong> {viewClient.createdAt ? new Date(viewClient.createdAt).toLocaleString('fr-FR') : 'N/A'}</div>
+              <div className="min-w-0">
+                <p className="font-bold text-[#1A1A1A] text-base truncate">{viewClient.firstName} {viewClient.lastName}</p>
+                <p className="text-xs text-[#6B7280] truncate">{viewClient.email}</p>
               </div>
-              {viewClient.role !== 'ADMIN' && (
-                <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid #E2E2DF' }}>
-                  <button
-                    onClick={() => handleToggleActive(viewClient.id)}
-                    disabled={togglingId === viewClient.id}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px',
-                      borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13,
-                      background: viewClient.active ? '#FEF2F2' : '#F0FDF4',
-                      color: viewClient.active ? '#DC2626' : '#16A34A',
-                    }}
-                  >
-                    {togglingId === viewClient.id ? <Loader2 size={14} className="spin" /> : (viewClient.active ? <Ban size={14} /> : <Check size={14} />)}
-                    {viewClient.active ? 'Bloquer cet utilisateur' : 'Débloquer cet utilisateur'}
-                  </button>
-                </div>
-              )}
+            </div>
+
+            <div className="space-y-3 text-sm text-[#1A1A1A]">
+              <div className="flex justify-between py-1 border-b border-[#F5F5F3]">
+                <span className="text-[#6B7280]">ID</span>
+                <span className="font-semibold">#{viewClient.id}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-[#F5F5F3]">
+                <span className="text-[#6B7280]">Rôle</span>
+                <span className="font-semibold">{viewClient.role === 'ADMIN' ? 'Administrateur' : 'Client'}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-[#F5F5F3]">
+                <span className="text-[#6B7280]">Statut</span>
+                <span className={`font-semibold ${getIsActive(viewClient) ? 'text-emerald-600' : 'text-red-600'}`}>
+                  {getIsActive(viewClient) ? 'Actif' : 'Désactivé'}
+                </span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-[#F5F5F3]">
+                <span className="text-[#6B7280]">Téléphone</span>
+                <span className="font-semibold">{viewClient.phone || '—'}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-[#F5F5F3]">
+                <span className="text-[#6B7280]">Date d'inscription</span>
+                <span className="font-semibold">{viewClient.createdAt ? new Date(viewClient.createdAt).toLocaleString('fr-FR') : 'N/A'}</span>
+              </div>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

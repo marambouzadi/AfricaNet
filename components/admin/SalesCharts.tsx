@@ -218,8 +218,9 @@ export default function SalesCharts({ orders = [], products = [], loading = fals
     return { ...item, dasharray, offset }
   })
 
+  const defaultSegment = [...statusSales].sort((a, b) => b.percentage - a.percentage)[0]
   const currentCenterPercentage =
-    hoveredStatusIndex !== null ? `${statusSales[hoveredStatusIndex].percentage}%` : `${statusSales[0]?.percentage || 0}%`
+    hoveredStatusIndex !== null ? `${statusSales[hoveredStatusIndex].percentage}%` : `${defaultSegment?.percentage || 0}%`
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">

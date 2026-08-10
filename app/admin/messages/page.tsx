@@ -125,10 +125,12 @@ function MessageModal({ msg, onClose, onMarkRead, markingId }: { msg: any; onClo
           ) : (
             <div className="flex justify-between items-center pt-2 flex-wrap gap-3">
               <a
-                href={`mailto:${msg.email}?subject=Re: ${encodeURIComponent(msg.subject)}`}
+                href={`https://mail.google.com/mail/?view=cm&fs=1&to=${msg.email}&su=${encodeURIComponent('Re: ' + msg.subject)}`}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="px-5 py-2.5 bg-[#1A3FA0] text-white rounded-lg font-medium hover:bg-[#0D2660] transition-colors text-sm flex items-center gap-2"
               >
-                <Mail className="h-4 w-4" /> Répondre par email
+                <Mail className="h-4 w-4" /> Répondre par Gmail
               </a>
               <button
                 onClick={!msg.isRead ? onMarkRead : undefined}

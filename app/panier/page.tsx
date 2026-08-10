@@ -65,6 +65,7 @@ export default function CartPage() {
                           alt={item.name}
                           fill
                           className="object-contain p-2"
+                          sizes="96px"
                         />
                       ) : (
                         <LaptopSilhouette className="h-12 w-auto text-[#1A3FA0]/25" />

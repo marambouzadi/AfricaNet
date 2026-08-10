@@ -1,25 +1,23 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import AdminHeader from '@/components/admin/AdminHeader';
 import {
-  Search, ChevronDown, Eye, CheckCircle, XCircle,
-  Loader2, Download, RefreshCw, Clock, Star, AlertCircle
+  Search, Eye, Loader2, Download, RefreshCw, Clock, CheckCircle, XCircle
 } from 'lucide-react';
 import { exportToCSV } from '@/lib/export';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8090/api';
+const API_BASE = 'http://localhost:8090/api';
 
 function getToken() {
   return typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; color: string }> = {
-  SUBMITTED:  { label: 'Soumise',     bg: '#EFF6FF', color: '#1A3FA0' },
-  EVALUATING: { label: 'En évaluation',bg: '#FFFBEB', color: '#D97706' },
-  APPROVED:   { label: 'Approuvée',   bg: '#F0FDF4', color: '#16A34A' },
-  REJECTED:   { label: 'Refusée',     bg: '#FEF2F2', color: '#DC2626' },
-  COMPLETED:  { label: 'Complétée',   bg: '#F3F4F6', color: '#6B7280' },
+  SUBMITTED:  { label: 'Soumise',     bg: 'bg-[#EFF6FF] text-[#1A3FA0]', color: '#1A3FA0' },
+  EVALUATING: { label: 'En évaluation',bg: 'bg-[#FFFBEB] text-[#D97706]', color: '#D97706' },
+  APPROVED:   { label: 'Approuvée',   bg: 'bg-[#DCFCE7] text-[#166534]', color: '#16A34A' },
+  REJECTED:   { label: 'Refusée',     bg: 'bg-[#FEF2F2] text-[#991B1B]', color: '#DC2626' },
+  COMPLETED:  { label: 'Complétée',   bg: 'bg-[#F5F5F3] text-[#6B7280]', color: '#6B7280' },
 };
 
 const DEVICE_LABELS: Record<string, string> = {
@@ -93,177 +91,255 @@ export default function AdminEchangesPage() {
   };
 
   const kpis = [
-    { label: 'Total demandes',    value: tradeIns.length,                                                icon: RefreshCw,    color: '#1A3FA0', bg: '#EFF6FF' },
-    { label: 'En attente',        value: tradeIns.filter(t => t.status === 'SUBMITTED').length,          icon: Clock,        color: '#D97706', bg: '#FFFBEB' },
-    { label: 'Approuvées',        value: tradeIns.filter(t => t.status === 'APPROVED').length,           icon: CheckCircle,  color: '#16A34A', bg: '#F0FDF4' },
-    { label: 'Refusées',          value: tradeIns.filter(t => t.status === 'REJECTED').length,           icon: XCircle,      color: '#DC2626', bg: '#FEF2F2' },
+    { label: 'Total demandes',    value: tradeIns.length,                                                icon: RefreshCw,    color: 'text-[#1A3FA0]', bg: 'bg-[#E8EDF8]' },
+    { label: 'En attente',        value: tradeIns.filter(t => t.status === 'SUBMITTED').length,          icon: Clock,        color: 'text-amber-700', bg: 'bg-amber-100' },
+    { label: 'Approuvées',        value: tradeIns.filter(t => t.status === 'APPROVED').length,           icon: CheckCircle,  color: 'text-emerald-700', bg: 'bg-emerald-100' },
+    { label: 'Refusées',          value: tradeIns.filter(t => t.status === 'REJECTED').length,           icon: XCircle,      color: 'text-red-600', bg: 'bg-red-100' },
   ];
 
   return (
-    <div className="admin-page">
-      <div><div className="mb-8"><h1 className="text-3xl font-serif font-bold text-[#1A1A1A]">Demandes de Reprise</h1><p className="text-[#6B7280]">Évaluez et gérez les demandes de reprise de matériel.</p></div></div>
-      <div className="admin-content">
-
-        {/* KPIs */}
-        <div className="admin-kpi-grid">
-          {kpis.map(kpi => {
-            const Icon = kpi.icon;
-            return (
-              <div key={kpi.label} className="admin-kpi-card">
-                <div className="admin-kpi-top">
-                  <div className="admin-kpi-icon" style={{ background: kpi.bg, color: kpi.color }}><Icon size={20} /></div>
-                </div>
-                <div className="admin-kpi-value">{kpi.value}</div>
-                <div className="admin-kpi-label">{kpi.label}</div>
+    <div className="space-y-6">
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {kpis.map((kpi) => {
+          const Icon = kpi.icon;
+          return (
+            <div key={kpi.label} className="bg-white p-6 rounded-xl border border-[#E2E2DF] shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
+              <div className={`w-12 h-12 ${kpi.bg} ${kpi.color} rounded-xl flex items-center justify-center shrink-0`}>
+                <Icon className="h-6 w-6" />
               </div>
-            );
-          })}
-        </div>
-
-        <div className="admin-card">
-          <div className="admin-filters-bar">
-            <div className="admin-search-field">
-              <Search size={16} className="admin-search-icon-sm" />
-              <input type="text" placeholder="Rechercher une demande..." value={search}
-                onChange={e => setSearch(e.target.value)} className="admin-input" />
-            </div>
-            <div className="admin-filters-right">
-              <div className="admin-select-wrapper">
-                <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="admin-select">
-                  <option>Tous statuts</option>
-                  {Object.entries(STATUS_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-                </select>
-                <ChevronDown size={14} className="admin-select-icon" />
-              </div>
-              <button className="admin-btn-outline" onClick={handleExport}><Download size={16} /> Exporter</button>
-            </div>
-          </div>
-
-          {loading ? (
-            <div className="admin-empty-state"><Loader2 size={24} className="spin" style={{ color: '#1A3FA0' }} /></div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="admin-table admin-table-full">
-                <thead>
-                  <tr>
-                    <th>RÉFÉRENCE</th>
-                    <th>APPAREIL</th>
-                    <th>MODÈLE</th>
-                    <th>VALEUR ESTIMÉE</th>
-                    <th>STATUT</th>
-                    <th>DATE</th>
-                    <th>ACTIONS</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map(item => {
-                    const cfg = STATUS_CONFIG[item.status] || { label: item.status, bg: '#F3F4F6', color: '#374151' };
-                    return (
-                      <tr key={item.id}>
-                        <td className="admin-product-ref">{item.referenceNumber || `TRD-${item.id}`}</td>
-                        <td style={{ fontSize: 13 }}>{DEVICE_LABELS[item.deviceType] || item.deviceType}</td>
-                        <td style={{ fontSize: 13 }}>{item.model || '—'}</td>
-                        <td style={{ fontWeight: 600, color: '#1A3FA0' }}>
-                          {item.finalValue
-                            ? `${Number(item.finalValue).toLocaleString('fr-FR')} TND`
-                            : item.estimatedValueAi
-                              ? `~${Number(item.estimatedValueAi).toLocaleString('fr-FR')} TND`
-                              : '—'}
-                        </td>
-                        <td>
-                          <span className="admin-status-badge" style={{ background: cfg.bg, color: cfg.color }}>{cfg.label}</span>
-                        </td>
-                        <td className="admin-table-date">
-                          {item.createdAt ? new Date(item.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
-                        </td>
-                        <td>
-                          <div className="admin-actions" style={{ gap: 6 }}>
-                            <button className="admin-action-btn" onClick={() => setViewItem(item)} title="Voir détails"><Eye size={15} /></button>
-                            {item.status === 'SUBMITTED' && (
-                              <>
-                                <button
-                                  className="admin-btn-outline"
-                                  style={{ fontSize: 11, padding: '3px 8px', color: '#16A34A', borderColor: '#16A34A' }}
-                                  disabled={updatingId === item.id}
-                                  onClick={() => updateStatus(item.id, 'APPROVED', item.estimatedValueAi, 'Demande approuvée')}
-                                >
-                                  {updatingId === item.id ? <Loader2 size={12} className="spin" /> : '✓ Approuver'}
-                                </button>
-                                <button
-                                  className="admin-btn-outline"
-                                  style={{ fontSize: 11, padding: '3px 8px', color: '#DC2626', borderColor: '#DC2626' }}
-                                  disabled={updatingId === item.id}
-                                  onClick={() => updateStatus(item.id, 'REJECTED', undefined, 'Ne répond pas aux critères')}
-                                >
-                                  ✗ Refuser
-                                </button>
-                              </>
-                            )}
-                            {item.status === 'EVALUATING' && (
-                              <button
-                                className="admin-btn-outline"
-                                style={{ fontSize: 11, padding: '3px 8px', color: '#16A34A', borderColor: '#16A34A' }}
-                                disabled={updatingId === item.id}
-                                onClick={() => updateStatus(item.id, 'APPROVED', item.estimatedValueAi)}
-                              >
-                                ✓ Valider
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {!loading && filtered.length === 0 && (
-            <div className="admin-empty-state" style={{ padding: '60px 20px', flexDirection: 'column', display: 'flex', alignItems: 'center' }}>
-              <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12, fontSize: 24 }}>♻️</div>
-              <h4 style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 700 }}>Aucune demande de reprise</h4>
-              <p style={{ margin: 0, fontSize: 13, color: '#64748B' }}>Aucune demande de Trade-In ne correspond à vos filtres.</p>
-            </div>
-          )}
-        </div>
-
-        {/* Modal détail demande */}
-        {viewItem && (
-          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
-            onClick={() => setViewItem(null)}>
-            <div style={{ background: '#fff', borderRadius: 16, padding: 28, maxWidth: 500, width: '100%', maxHeight: '80vh', overflowY: 'auto' }}
-              onClick={e => e.stopPropagation()}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>Demande {viewItem.referenceNumber}</h3>
-                <button onClick={() => setViewItem(null)} style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: 20 }}>×</button>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 14 }}>
-                <div><strong>Statut :</strong> <span style={{ color: STATUS_CONFIG[viewItem.status]?.color }}>{STATUS_CONFIG[viewItem.status]?.label}</span></div>
-                <div><strong>Appareil :</strong> {DEVICE_LABELS[viewItem.deviceType] || viewItem.deviceType}</div>
-                <div><strong>Modèle :</strong> {viewItem.model || '—'}</div>
-                <div><strong>Marque :</strong> {viewItem.brand?.name || '—'}</div>
-                <div><strong>Année de fabrication :</strong> {viewItem.manufactureYear || '—'}</div>
-                <div><strong>État général :</strong> {viewItem.conditionOverall || '—'}</div>
-                <div><strong>Valeur estimée :</strong> {viewItem.estimatedValueAi ? `${Number(viewItem.estimatedValueAi).toLocaleString('fr-FR')} TND` : '—'}</div>
-                <div><strong>Valeur finale :</strong> {viewItem.finalValue ? `${Number(viewItem.finalValue).toLocaleString('fr-FR')} TND` : '—'}</div>
-                {viewItem.reviewNotes && <div><strong>Notes :</strong> {viewItem.reviewNotes}</div>}
-                <div><strong>Date soumission :</strong> {viewItem.createdAt ? new Date(viewItem.createdAt).toLocaleString('fr-FR') : 'N/A'}</div>
-                {viewItem.images?.length > 0 && (
-                  <div>
-                    <strong>Photos :</strong>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
-                      {viewItem.images.map((img: any, i: number) => (
-                        <img key={i} src={img.imageUrl || img.url} alt="" style={{ width: 80, height: 60, objectFit: 'cover', borderRadius: 8, border: '1px solid #E2E8F0' }} />
-                      ))}
-                    </div>
-                  </div>
-                )}
+              <div>
+                <p className="text-sm font-medium text-[#6B7280]">{kpi.label}</p>
+                <p className="text-2xl font-bold text-[#1A1A1A]">{loading ? '...' : kpi.value}</p>
               </div>
             </div>
-          </div>
-        )}
+          );
+        })}
       </div>
+
+      {/* Filters Bar */}
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-[#E2E2DF] flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="relative flex-1 w-full">
+          <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-[#6B7280]" />
+          <input
+            type="text"
+            placeholder="Rechercher par référence ou modèle..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-[#F5F5F3] border border-[#E2E2DF] rounded-lg pl-10 pr-4 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30"
+          />
+        </div>
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="bg-[#F5F5F3] border border-[#E2E2DF] rounded-lg px-3 py-2 text-sm text-[#1A1A1A] focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30 cursor-pointer"
+          >
+            <option>Tous statuts</option>
+            {Object.entries(STATUS_CONFIG).map(([k, v]) => (
+              <option key={k} value={k}>{v.label}</option>
+            ))}
+          </select>
+          <button
+            onClick={handleExport}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-[#E2E2DF] hover:bg-[#F5F5F3] text-[#1A1A1A] rounded-lg text-sm font-medium transition-colors shrink-0"
+          >
+            <Download className="h-4 w-4" /> Exporter
+          </button>
+        </div>
+      </div>
+
+      {/* Trade-Ins Table */}
+      <div className="bg-white rounded-xl shadow-sm border border-[#E2E2DF] overflow-hidden">
+        <div className="overflow-x-auto">
+          {loading ? (
+            <div className="py-16 flex justify-center text-[#1A3FA0]">
+              <Loader2 className="h-7 w-7 animate-spin" />
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="py-16 text-center text-[#6B7280] flex flex-col items-center justify-center">
+              <div className="w-14 h-14 bg-[#F5F5F3] text-[#6B7280] rounded-full flex items-center justify-center mb-3">
+                <RefreshCw className="h-7 w-7" />
+              </div>
+              <p className="font-bold text-[#1A1A1A] text-base">Aucune demande de reprise</p>
+              <p className="text-xs text-[#6B7280] mt-1">Aucune demande de Trade-In ne correspond à vos filtres.</p>
+            </div>
+          ) : (
+            <table className="w-full text-left text-sm text-[#6B7280]">
+              <thead className="bg-[#F5F5F3] text-[#1A1A1A] uppercase text-xs font-semibold border-b border-[#E2E2DF]">
+                <tr>
+                  <th className="px-6 py-4">Référence</th>
+                  <th className="px-6 py-4">Appareil</th>
+                  <th className="px-6 py-4">Modèle</th>
+                  <th className="px-6 py-4">Valeur Estimée</th>
+                  <th className="px-6 py-4">Statut</th>
+                  <th className="px-6 py-4">Date</th>
+                  <th className="px-6 py-4 text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#E2E2DF]">
+                {filtered.map((item) => {
+                  const cfg = STATUS_CONFIG[item.status] || { label: item.status, bg: 'bg-gray-100 text-gray-700' };
+
+                  return (
+                    <tr key={item.id} className="hover:bg-[#F9FAFB] transition-colors">
+                      <td className="px-6 py-4 font-semibold text-[#1A3FA0]">
+                        {item.referenceNumber || `TRD-${item.id}`}
+                      </td>
+                      <td className="px-6 py-4 text-[#1A1A1A] font-medium">
+                        {DEVICE_LABELS[item.deviceType] || item.deviceType}
+                      </td>
+                      <td className="px-6 py-4 text-[#1A1A1A]">
+                        {item.model || '—'}
+                      </td>
+                      <td className="px-6 py-4 font-bold text-[#1A1A1A]">
+                        {item.finalValue
+                          ? `${Number(item.finalValue).toLocaleString('fr-FR')} TND`
+                          : item.estimatedValueAi
+                            ? `~${Number(item.estimatedValueAi).toLocaleString('fr-FR')} TND`
+                            : '—'}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${cfg.bg}`}>
+                          {cfg.label}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-[#6B7280]">
+                        {item.createdAt ? new Date(item.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            title="Voir détails"
+                            onClick={() => setViewItem(item)}
+                            className="p-2 text-[#6B7280] hover:text-[#1A3FA0] hover:bg-[#EFF6FF] rounded-lg transition-colors"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
+
+                          {item.status === 'SUBMITTED' && (
+                            <>
+                              <button
+                                disabled={updatingId === item.id}
+                                onClick={() => updateStatus(item.id, 'APPROVED', item.estimatedValueAi, 'Demande approuvée')}
+                                className="px-2.5 py-1 text-xs font-semibold border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg transition-colors disabled:opacity-50"
+                              >
+                                {updatingId === item.id ? <Loader2 className="h-3 w-3 animate-spin inline" /> : 'Approuver'}
+                              </button>
+                              <button
+                                disabled={updatingId === item.id}
+                                onClick={() => updateStatus(item.id, 'REJECTED', undefined, 'Ne répond pas aux critères')}
+                                className="px-2.5 py-1 text-xs font-semibold border border-red-300 bg-red-50 text-red-700 hover:bg-red-100 rounded-lg transition-colors disabled:opacity-50"
+                              >
+                                Refuser
+                              </button>
+                            </>
+                          )}
+                          {item.status === 'EVALUATING' && (
+                            <button
+                              disabled={updatingId === item.id}
+                              onClick={() => updateStatus(item.id, 'APPROVED', item.estimatedValueAi)}
+                              className="px-2.5 py-1 text-xs font-semibold border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg transition-colors disabled:opacity-50"
+                            >
+                              Valider
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+
+      {/* Modal Détail Demande */}
+      {viewItem && (
+        <div
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={() => setViewItem(null)}
+        >
+          <div
+            className="bg-white rounded-2xl p-6 max-w-lg w-full max-h-[85vh] overflow-y-auto shadow-2xl space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-[#E2E2DF] pb-4">
+              <h3 className="text-lg font-bold text-[#1A1A1A]">
+                Demande {viewItem.referenceNumber || `#${viewItem.id}`}
+              </h3>
+              <button
+                onClick={() => setViewItem(null)}
+                className="p-1 text-[#6B7280] hover:text-[#1A1A1A] hover:bg-[#F5F5F3] rounded-lg transition-colors text-xl font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3 text-sm text-[#1A1A1A]">
+              <div className="flex justify-between py-1 border-b border-[#F5F5F3]">
+                <span className="text-[#6B7280]">Statut</span>
+                <span className="font-semibold">{STATUS_CONFIG[viewItem.status]?.label || viewItem.status}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-[#F5F5F3]">
+                <span className="text-[#6B7280]">Appareil</span>
+                <span className="font-semibold">{DEVICE_LABELS[viewItem.deviceType] || viewItem.deviceType}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-[#F5F5F3]">
+                <span className="text-[#6B7280]">Modèle</span>
+                <span className="font-semibold">{viewItem.model || '—'}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-[#F5F5F3]">
+                <span className="text-[#6B7280]">Marque</span>
+                <span className="font-semibold">{viewItem.brand?.name || '—'}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-[#F5F5F3]">
+                <span className="text-[#6B7280]">Année de fabrication</span>
+                <span className="font-semibold">{viewItem.manufactureYear || '—'}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-[#F5F5F3]">
+                <span className="text-[#6B7280]">État général</span>
+                <span className="font-semibold">{viewItem.conditionOverall || '—'}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-[#F5F5F3]">
+                <span className="text-[#6B7280]">Valeur estimée (IA)</span>
+                <span className="font-bold text-[#1A3FA0]">{viewItem.estimatedValueAi ? `${Number(viewItem.estimatedValueAi).toLocaleString('fr-FR')} TND` : '—'}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-[#F5F5F3]">
+                <span className="text-[#6B7280]">Valeur finale retenue</span>
+                <span className="font-bold text-emerald-700">{viewItem.finalValue ? `${Number(viewItem.finalValue).toLocaleString('fr-FR')} TND` : '—'}</span>
+              </div>
+              {viewItem.reviewNotes && (
+                <div className="flex justify-between py-1 border-b border-[#F5F5F3]">
+                  <span className="text-[#6B7280]">Notes d'évaluation</span>
+                  <span className="font-semibold">{viewItem.reviewNotes}</span>
+                </div>
+              )}
+              <div className="flex justify-between py-1 border-b border-[#F5F5F3]">
+                <span className="text-[#6B7280]">Date de soumission</span>
+                <span className="font-semibold">{viewItem.createdAt ? new Date(viewItem.createdAt).toLocaleString('fr-FR') : 'N/A'}</span>
+              </div>
+
+              {viewItem.images?.length > 0 && (
+                <div className="pt-2">
+                  <span className="text-[#6B7280] font-medium block mb-2">Photos de l'appareil :</span>
+                  <div className="flex flex-wrap gap-2">
+                    {viewItem.images.map((img: any, i: number) => (
+                      <img
+                        key={i}
+                        src={img.imageUrl || img.url}
+                        alt="Trade-in preview"
+                        className="w-20 h-16 object-cover rounded-lg border border-[#E2E2DF]"
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
