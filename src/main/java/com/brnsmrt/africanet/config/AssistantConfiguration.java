@@ -2,6 +2,7 @@ package com.brnsmrt.africanet.config;
 
 import com.brnsmrt.africanet.ai.ChatbotService;
 import com.brnsmrt.africanet.ai.AssistantTools;
+import com.brnsmrt.africanet.ai.RedisChatMemoryStore;
 
 import dev.langchain4j.memory.chat.ChatMemoryProvider;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
@@ -9,7 +10,6 @@ import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.service.AiServices;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 
 @Configuration
 public class AssistantConfiguration {

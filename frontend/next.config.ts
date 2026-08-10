@@ -1,28 +1,23 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
-  allowedDevOrigins: ['192.168.1.16'],
+  turbopack: {
+    root: path.resolve(__dirname),
+  },
+  allowedDevOrigins: ['192.168.1.16', '192.168.75.1', 'localhost:3000', '127.0.0.1:3000'],
   typescript: {
     ignoreBuildErrors: true,
   },
   images: {
     remotePatterns: [
       {
-        protocol: 'http',
-        hostname: 'localhost',
-        port: '8090',
-        pathname: '/**',
-      },
-      {
-        protocol: 'http',
-        hostname: '192.168.1.16',
-        port: '8090',
-        pathname: '/**',
-      },
-      {
         protocol: 'https',
-        hostname: 'images.unsplash.com',
-        pathname: '/**',
+        hostname: '**',
+      },
+      {
+        protocol: 'http',
+        hostname: '**',
       },
     ],
   },
