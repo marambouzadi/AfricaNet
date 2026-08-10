@@ -11,7 +11,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react'
-import { products, type Product, type SortOption, type Condition, SORT_OPTIONS } from '@/lib/products'
+import { type Product, type SortOption, type Condition, SORT_OPTIONS } from '@/lib/products'
 import { CatalogProductCard } from '@/components/catalogue/product-card'
 import { FiltersPanel, defaultFilters, type FilterState } from '@/components/catalogue/filters-panel'
 
@@ -179,45 +179,14 @@ export function Catalog() {
 
         setPaginatedProducts(mapped)
       } catch (err: any) {
-        console.warn('Failed to load products from API, falling back to local data. Reason:', err.message)
-        // Fallback to local mock data
-        let mapped = products
-        
-        if (searchQuery) {
-          const q = searchQuery.toLowerCase()
-          mapped = mapped.filter((p) => 
-            p.name.toLowerCase().includes(q) || 
-            p.brand.toLowerCase().includes(q) || 
-            p.cpu.toLowerCase().includes(q)
-          )
-        }
-        
-        mapped = mapped.filter((p) => p.price >= filters.priceMin && p.price <= filters.priceMax)
-        if (filters.brands.length > 0) {
-          mapped = mapped.filter((p) => filters.brands.includes(p.brand))
-        }
-        if (filters.conditions.length > 0) {
-          mapped = mapped.filter((p) => filters.conditions.includes(p.condition))
-        }
-        if (filters.ramValues.length > 0) {
-          mapped = mapped.filter((p) => filters.ramValues.includes(p.ramValue))
-        }
-        if (filters.screenSizes.length > 0) {
-          mapped = mapped.filter((p) => filters.screenSizes.includes(p.screenSize) || filters.screenSizes.some(s => Math.abs(p.screenSize - s) < 0.5))
-        }
-
-        // Apply sorting to local mock data
-        if (sort === 'prix-asc') mapped = mapped.sort((a, b) => a.price - b.price)
-        else if (sort === 'prix-desc') mapped = mapped.sort((a, b) => b.price - a.price)
-        else if (sort === 'nouveautes') mapped = mapped.sort((a, b) => b.id - a.id)
-
-        
-        setPaginatedProducts(mapped.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE))
-        setTotalPages(Math.ceil(mapped.length / ITEMS_PER_PAGE))
-        setTotalElements(mapped.length)
+        console.error('Failed to load products from API:', err.message)
+        setPaginatedProducts([])
+        setTotalElements(0)
+        setTotalPages(0)
       } finally {
         setLoading(false)
       }
+
     }
     
     loadData()

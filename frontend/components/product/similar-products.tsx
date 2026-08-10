@@ -20,7 +20,7 @@ function SimilarProductCard({ id, name, spec, price, condition, image, images }:
     <article className="group flex flex-col rounded-xl bg-white shadow-sm transition-all duration-200 hover:shadow-md">
       <div className="relative aspect-[4/3] overflow-hidden rounded-t-xl bg-[#F5F5F3]">
         <Link href={`/produit/${id}`} className="absolute inset-0 z-0">
-          <div className="flex h-full w-full items-center justify-center p-6">
+          <div className="relative flex h-full w-full items-center justify-center p-6">
             {displayImages.length > 0 ? (
               <Image src={displayImages[activeImg]} alt={name} fill className="object-cover transition-transform duration-200 group-hover:scale-105" sizes="(max-width: 768px) 100vw, 25vw" />
             ) : (
