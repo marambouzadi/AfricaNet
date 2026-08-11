@@ -151,7 +151,8 @@ export default function AdminProduitsPage() {
       })
       if (!res.ok) throw new Error('Upload échoué')
       const data = await res.json()
-      return data.url as string
+      const url = data.url as string
+      return url.startsWith('/') ? `http://localhost:8090${url}` : url
     } catch (e) {
       console.warn('Upload server unavailable, using local preview.')
       return null
@@ -228,12 +229,26 @@ export default function AdminProduitsPage() {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       }
 
-      // Build images array from all uploaded previews - only send http URLs (not base64)
-      const httpImages = imagePreviews.filter(u => u.startsWith('http'))
-      const fallback = 'http://localhost:8090/uploads/default-laptop.png'
-      const images = httpImages.length > 0
-        ? httpImages.map((url, i) => ({ url, isPrimary: i === 0, sortOrder: i }))
-        : [{ url: fallback, isPrimary: true, sortOrder: 0 }]
+      // Build images array from previews (support relative URLs, http URLs, and base64 data URLs)
+      const validImageUrls: string[] = []
+      for (const img of imagePreviews) {
+        if (img.startsWith('data:')) {
+          try {
+            const res = await fetch(img)
+            const blob = await res.blob()
+            const file = new File([blob], `product_${Date.now()}.jpg`, { type: blob.type || 'image/jpeg' })
+            const serverUrl = await uploadFileToServer(file)
+            if (serverUrl) validImageUrls.push(serverUrl)
+          } catch (err) {
+            console.error('Failed to upload preview image:', err)
+          }
+        } else if (img.startsWith('http')) {
+          validImageUrls.push(img)
+        } else if (img.startsWith('/')) {
+          validImageUrls.push(`http://localhost:8090${img}`)
+        }
+      }
+      const images = validImageUrls.map((url, i) => ({ url, isPrimary: i === 0, sortOrder: i }))
 
       const specifications = [
         { specKey: 'Processeur', specValue: formData.specs.processeur, sortOrder: 1 },
@@ -342,8 +357,25 @@ export default function AdminProduitsPage() {
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       }
-      const httpImages = editImagePreviews.filter(u => u.startsWith('http'))
-      const images = httpImages.map((url, i) => ({ url, isPrimary: i === 0, sortOrder: i }))
+      const validImageUrls: string[] = []
+      for (const img of editImagePreviews) {
+        if (img.startsWith('data:')) {
+          try {
+            const res = await fetch(img)
+            const blob = await res.blob()
+            const file = new File([blob], `product_${Date.now()}.jpg`, { type: blob.type || 'image/jpeg' })
+            const serverUrl = await uploadFileToServer(file)
+            if (serverUrl) validImageUrls.push(serverUrl)
+          } catch (err) {
+            console.error('Failed to upload edit image:', err)
+          }
+        } else if (img.startsWith('http')) {
+          validImageUrls.push(img)
+        } else if (img.startsWith('/')) {
+          validImageUrls.push(`http://localhost:8090${img}`)
+        }
+      }
+      const images = validImageUrls.map((url, i) => ({ url, isPrimary: i === 0, sortOrder: i }))
 
       const specifications = [
         { specKey: 'Processeur', specValue: editingProduct.specs?.processeur || '', sortOrder: 1 },

@@ -149,7 +149,14 @@ public class TradeInEvaluationService {
         // Persistance via l'entité unifiée TradeInRequest
         TradeInRequest tradeIn = new TradeInRequest();
         tradeIn.setReferenceNumber(refNumber);
-        tradeIn.setDeviceType(DeviceType.LAPTOP); // Défaut laptop — sera précisé via submit() détaillé
+        // Résolution du type d'appareil depuis la requête
+        DeviceType resolvedDeviceType = DeviceType.LAPTOP;
+        if (request.getDeviceType() != null) {
+            try {
+                resolvedDeviceType = DeviceType.valueOf(request.getDeviceType().toUpperCase());
+            } catch (IllegalArgumentException ignored) {}
+        }
+        tradeIn.setDeviceType(resolvedDeviceType);
         tradeIn.setBrand(brand);
         tradeIn.setModel(request.getDeviceModel());
         tradeIn.setManufactureYear(request.getYearOfPurchase() != null
@@ -160,6 +167,17 @@ public class TradeInEvaluationService {
         tradeIn.setAiEvaluation(aiEvaluation);
         tradeIn.setUser(user);
         tradeIn.setStatus(TradeInStatus.EVALUATING);
+
+        if (request.getImageUrls() != null) {
+            for (String imgUrl : request.getImageUrls()) {
+                if (imgUrl != null && !imgUrl.isBlank()) {
+                    TradeInImage img = new TradeInImage();
+                    img.setTradeInRequest(tradeIn);
+                    img.setUrl(imgUrl.trim());
+                    tradeIn.getImages().add(img);
+                }
+            }
+        }
 
         TradeInRequest saved = tradeInRepository.save(tradeIn);
 
@@ -190,6 +208,19 @@ public class TradeInEvaluationService {
         details.put("battery",     Map.of("score", request.getBatteryScore()));
         details.put("chassis",     Map.of("score", request.getChassisScore()));
         details.put("performance", Map.of("score", request.getPerformanceScore()));
+        // Caractéristiques techniques
+        if (request.getCpu() != null && !request.getCpu().isBlank())
+            details.put("cpu", request.getCpu().trim());
+        if (request.getRam() != null && !request.getRam().isBlank())
+            details.put("ram", request.getRam().trim());
+        if (request.getStorage() != null && !request.getStorage().isBlank())
+            details.put("storage", request.getStorage().trim());
+        if (request.getScreenSize() != null)
+            details.put("screenSize", request.getScreenSize());
+        if (request.getDeviceType() != null && !request.getDeviceType().isBlank())
+            details.put("deviceType", request.getDeviceType().trim());
+        if (request.getNotes() != null && !request.getNotes().isBlank())
+            details.put("notes", request.getNotes().trim());
         return details;
     }
 
@@ -247,6 +278,15 @@ public class TradeInEvaluationService {
             sb.append(String.format(" (%d an%s)", age, age > 1 ? "s" : ""));
         }
         sb.append("\n");
+        // Caractéristiques techniques
+        if (request.getCpu() != null && !request.getCpu().isBlank())
+            sb.append(String.format("Processeur : %s\n", request.getCpu()));
+        if (request.getRam() != null && !request.getRam().isBlank())
+            sb.append(String.format("RAM : %s\n", request.getRam()));
+        if (request.getStorage() != null && !request.getStorage().isBlank())
+            sb.append(String.format("Stockage : %s\n", request.getStorage()));
+        if (request.getScreenSize() != null)
+            sb.append(String.format("Taille écran : %.1f\"\n", request.getScreenSize()));
         sb.append(String.format("Écran: %d/10 | Clavier: %d/10 | Batterie: %d/10 | Châssis: %d/10 | Perf: %d/10\n",
                 request.getScreenScore(), request.getKeyboardScore(), request.getBatteryScore(),
                 request.getChassisScore(), request.getPerformanceScore()));

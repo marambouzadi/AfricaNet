@@ -72,7 +72,8 @@ export default function AdminEchangesPage() {
 
   const filtered = tradeIns.filter(t => {
     const matchSearch = (t.referenceNumber || '').toLowerCase().includes(search.toLowerCase())
-      || (t.model || '').toLowerCase().includes(search.toLowerCase());
+      || (t.model || '').toLowerCase().includes(search.toLowerCase())
+      || (t.brandName || t.brand?.name || '').toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === 'Tous statuts' || t.status === statusFilter;
     return matchSearch && matchStatus;
   });
@@ -292,8 +293,32 @@ export default function AdminEchangesPage() {
               </div>
               <div className="flex justify-between py-1 border-b border-[#F5F5F3]">
                 <span className="text-[#6B7280]">Marque</span>
-                <span className="font-semibold">{viewItem.brand?.name || '—'}</span>
+                <span className="font-semibold">{viewItem.brandName || viewItem.brand?.name || '—'}</span>
               </div>
+              {viewItem.conditionDetails?.cpu && (
+                <div className="flex justify-between py-1 border-b border-[#F5F5F3]">
+                  <span className="text-[#6B7280]">Processeur (CPU)</span>
+                  <span className="font-semibold">{String(viewItem.conditionDetails.cpu)}</span>
+                </div>
+              )}
+              {viewItem.conditionDetails?.ram && (
+                <div className="flex justify-between py-1 border-b border-[#F5F5F3]">
+                  <span className="text-[#6B7280]">RAM</span>
+                  <span className="font-semibold">{String(viewItem.conditionDetails.ram)}</span>
+                </div>
+              )}
+              {viewItem.conditionDetails?.storage && (
+                <div className="flex justify-between py-1 border-b border-[#F5F5F3]">
+                  <span className="text-[#6B7280]">Stockage</span>
+                  <span className="font-semibold">{String(viewItem.conditionDetails.storage)}</span>
+                </div>
+              )}
+              {viewItem.conditionDetails?.screenSize && (
+                <div className="flex justify-between py-1 border-b border-[#F5F5F3]">
+                  <span className="text-[#6B7280]">Taille d'écran</span>
+                  <span className="font-semibold">{String(viewItem.conditionDetails.screenSize)}"</span>
+                </div>
+              )}
               <div className="flex justify-between py-1 border-b border-[#F5F5F3]">
                 <span className="text-[#6B7280]">Année de fabrication</span>
                 <span className="font-semibold">{viewItem.manufactureYear || '—'}</span>
@@ -310,10 +335,10 @@ export default function AdminEchangesPage() {
                 <span className="text-[#6B7280]">Valeur finale retenue</span>
                 <span className="font-bold text-emerald-700">{viewItem.finalValue ? `${Number(viewItem.finalValue).toLocaleString('fr-FR')} TND` : '—'}</span>
               </div>
-              {viewItem.reviewNotes && (
+              {(viewItem.reviewNotes || viewItem.conditionDetails?.notes) && (
                 <div className="flex justify-between py-1 border-b border-[#F5F5F3]">
-                  <span className="text-[#6B7280]">Notes d'évaluation</span>
-                  <span className="font-semibold">{viewItem.reviewNotes}</span>
+                  <span className="text-[#6B7280]">Notes</span>
+                  <span className="font-semibold">{viewItem.reviewNotes || String(viewItem.conditionDetails.notes)}</span>
                 </div>
               )}
               <div className="flex justify-between py-1 border-b border-[#F5F5F3]">

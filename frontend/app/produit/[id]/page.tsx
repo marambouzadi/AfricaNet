@@ -62,31 +62,52 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
     USED: 'Occasion',
   }
 
+  // Build specs: use API specifications if present, else build fallback from product fields
+  const apiSpecs: [string, string][] = (res.specifications ?? [])
+    .map((s: any) => [s.specKey, s.specValue] as [string, string])
+
+  const fallbackSpecs: [string, string][] = []
+  if (apiSpecs.length === 0) {
+    if (res.brandName)  fallbackSpecs.push(['Marque', res.brandName])
+    if (res.categoryName) fallbackSpecs.push(['Catégorie', res.categoryName])
+    const condLabel = condMap[res.condition] ?? res.condition
+    if (condLabel) fallbackSpecs.push(['État', condLabel])
+    const price = res.salePrice || res.basePrice
+    if (price) fallbackSpecs.push(['Prix', `${price} TND`])
+    if (res.sku) fallbackSpecs.push(['SKU', res.sku])
+    if (res.shortDesc) fallbackSpecs.push(['Description', res.shortDesc])
+  }
+
+  const specs: [string, string][] = apiSpecs.length > 0 ? apiSpecs : fallbackSpecs
+
   const product = {
     id: res.id,
     name: res.name,
     condition: (condMap[res.condition] ?? res.condition) as any,
     price: `${res.salePrice || res.basePrice} TND`,
     priceNum: res.salePrice || res.basePrice,
-    // Real stock from product stock field
     stock: res.stock ?? 0,
     warranty: 'Garantie 3 mois AfricaNet',
-    thumbnails: res.images?.length > 0 
-      ? res.images.map((img: any) => img.url || img.imageUrl) 
-      : ['/products/laptop-gray.png'],
-    quickSpecs: res.specifications?.filter((s: any) => !['écran', 'ecran', 'batterie', 'performances', 'performance', 'esthétique', 'esthetique'].includes(s.specKey.toLowerCase())).slice(0, 4).map((s: any) => ({
-      icon: s.specKey.toLowerCase().includes('ram') ? 'ram' : 
-            s.specKey.toLowerCase().includes('processeur') ? 'cpu' : 
-            s.specKey.toLowerCase().includes('stockage') ? 'ssd' : 'screen',
-      label: s.specValue
-    })) || [],
-    specs: res.specifications?.map((s: any) => [s.specKey, s.specValue] as [string, string]) || [],
-    conditionNote: '',
+    thumbnails: res.images?.length > 0
+      ? res.images.map((img: any) => img.url || img.imageUrl)
+      : [],
+    quickSpecs: (res.specifications ?? [])
+      .filter((s: any) => !['écran', 'ecran', 'batterie', 'performances', 'performance', 'esthétique', 'esthetique'].includes(s.specKey.toLowerCase()))
+      .slice(0, 4)
+      .map((s: any) => ({
+        icon: s.specKey.toLowerCase().includes('ram') ? 'ram'
+            : s.specKey.toLowerCase().includes('processeur') ? 'cpu'
+            : s.specKey.toLowerCase().includes('stockage') ? 'ssd'
+            : 'screen',
+        label: s.specValue,
+      })),
+    specs,
+    conditionNote: res.description ?? '',
     ratings: [
-      { label: 'Écran', score: parseInt(res.specifications?.find((s:any) => s.specKey.toLowerCase() === 'écran' || s.specKey.toLowerCase() === 'ecran')?.specValue) || 0 },
-      { label: 'Batterie', score: parseInt(res.specifications?.find((s:any) => s.specKey.toLowerCase() === 'batterie')?.specValue) || 0 },
-      { label: 'Performances', score: parseInt(res.specifications?.find((s:any) => s.specKey.toLowerCase() === 'performances' || s.specKey.toLowerCase() === 'performance')?.specValue) || 0 },
-      { label: 'Esthétique', score: parseInt(res.specifications?.find((s:any) => s.specKey.toLowerCase() === 'esthétique' || s.specKey.toLowerCase() === 'esthetique')?.specValue) || 0 },
+      { label: 'Écran',        score: parseInt((res.specifications ?? []).find((s: any) => ['écran','ecran'].includes(s.specKey.toLowerCase()))?.specValue) || 0 },
+      { label: 'Batterie',     score: parseInt((res.specifications ?? []).find((s: any) => s.specKey.toLowerCase() === 'batterie')?.specValue) || 0 },
+      { label: 'Performances', score: parseInt((res.specifications ?? []).find((s: any) => ['performances','performance'].includes(s.specKey.toLowerCase()))?.specValue) || 0 },
+      { label: 'Esthétique',   score: parseInt((res.specifications ?? []).find((s: any) => ['esthétique','esthetique'].includes(s.specKey.toLowerCase()))?.specValue) || 0 },
     ].filter(r => r.score > 0),
   }
 
@@ -103,8 +124,8 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
         spec: p.shortDesc ?? '',
         price: `${p.salePrice || p.basePrice} TND`,
         condition: (condMap[p.condition] ?? 'Neuf') as any,
-        image: p.images?.length > 0 ? p.images[0].url : '/products/laptop-gray.png',
-        images: p.images?.map((img: any) => img.url) || ['/products/laptop-gray.png'],
+        image: p.images?.length > 0 ? p.images[0].url : '',
+        images: p.images?.map((img: any) => img.url) || [],
       }))
   } catch { similar = [] }
 

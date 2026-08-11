@@ -24,4 +24,13 @@ public class TradeInEvaluationRequest {
     private Integer performanceScore; // 1-10
     private String notes;             // notes libres (optionnel)
     private Long userId;
+
+    // Caractéristiques techniques de l'appareil
+    private String cpu;         // Ex: Intel Core i5-1135G7
+    private String ram;         // Ex: 8 Go, 16 Go
+    private String storage;     // Ex: 256 Go SSD, 512 Go HDD
+    private Double screenSize;  // Ex: 14.0, 15.6
+    private String deviceType;  // laptop / desktop / phone
+    private java.util.List<String> imageUrls;
 }
+

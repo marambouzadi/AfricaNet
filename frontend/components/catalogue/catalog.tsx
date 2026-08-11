@@ -146,8 +146,8 @@ export function Catalog() {
             screenSize: parseFloat(screenSpec.replace(',', '.')) || 15.6,
             price: p.salePrice || p.basePrice || 0,
             condition: (condMap[p.condition as string] || p.condition) as Condition,
-            image: p.images?.find((img: any) => img.isPrimary)?.url || p.images?.[0]?.url || '/products/laptop-gray.png',
-            images: p.images?.length > 0 ? p.images.map((img: any) => img.url) : ['/products/laptop-gray.png']
+            image: p.images?.find((img: any) => img.isPrimary)?.url || p.images?.[0]?.url || '',
+            images: p.images?.length > 0 ? p.images.map((img: any) => img.url) : []
           }
         })
 

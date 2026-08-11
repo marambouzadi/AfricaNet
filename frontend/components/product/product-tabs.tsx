@@ -45,19 +45,25 @@ export function ProductTabs({ product }: { product: ProductDetail }) {
 
         {active === 0 && (
           <div className="overflow-hidden rounded-xl bg-white shadow-sm">
-            {product.specs
-              .filter(([name]) => !RATING_KEYS.includes(name.toLowerCase()))
-              .map(([name, value], i) => (
-              <div
-                key={name}
-                className={`grid grid-cols-1 gap-1 px-5 py-3 sm:grid-cols-3 ${
-                  i % 2 === 1 ? 'bg-[#F5F5F3]' : 'bg-white'
-                }`}
-              >
-                <span className="text-sm text-[#6B7280]">{name}</span>
-                <span className="text-sm font-medium text-[#1A1A1A] sm:col-span-2">{value}</span>
+            {product.specs.filter(([name]) => !RATING_KEYS.includes(name.toLowerCase())).length === 0 ? (
+              <div className="px-5 py-8 text-center text-sm text-[#6B7280]">
+                Aucune spécification technique disponible pour ce produit.
               </div>
-            ))}
+            ) : (
+              product.specs
+                .filter(([name]) => !RATING_KEYS.includes(name.toLowerCase()))
+                .map(([name, value], i) => (
+                <div
+                  key={name}
+                  className={`grid grid-cols-1 gap-1 px-5 py-3 sm:grid-cols-3 ${
+                    i % 2 === 1 ? 'bg-[#F5F5F3]' : 'bg-white'
+                  }`}
+                >
+                  <span className="text-sm text-[#6B7280]">{name}</span>
+                  <span className="text-sm font-medium text-[#1A1A1A] sm:col-span-2">{value}</span>
+                </div>
+              ))
+            )}
           </div>
         )}
 

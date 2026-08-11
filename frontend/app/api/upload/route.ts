@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     // Create unique filename
     const ext = file.name.split('.').pop() || 'jpg'
     const filename = `product_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'products')
+    const uploadDir = path.join(process.cwd(), 'public', 'products')
 
     // Ensure directory exists
     await mkdir(uploadDir, { recursive: true })
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     const filePath = path.join(uploadDir, filename)
     await writeFile(filePath, buffer)
 
-    const url = `/uploads/products/${filename}`
+    const url = `/products/${filename}`
     return NextResponse.json({ url })
   } catch (error) {
     console.error('Upload error:', error)

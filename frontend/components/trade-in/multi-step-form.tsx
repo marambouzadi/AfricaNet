@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useUser } from '@/lib/user-context'
-import { UploadCloud, CheckCircle2, Laptop, HardDrive, Smartphone, ChevronRight, ChevronLeft, AlertCircle, X } from 'lucide-react'
+import { UploadCloud, CheckCircle2, Laptop, HardDrive, Smartphone, ChevronRight, ChevronLeft, AlertCircle, X, Cpu, MemoryStick, HardDriveIcon, Monitor } from 'lucide-react'
 import Link from 'next/link'
 
 type Step = 1 | 2 | 3 | 4
@@ -19,6 +19,10 @@ const CONDITION_MAP: Record<string, { code: string; score: number }> = {
     'Bon état': { code: 'FAIR', score: 5 },
     'État correct': { code: 'POOR', score: 3 },
 }
+
+const RAM_OPTIONS = ['2 Go', '4 Go', '8 Go', '12 Go', '16 Go', '32 Go', '64 Go']
+const STORAGE_OPTIONS = ['128 Go SSD', '256 Go SSD', '512 Go SSD', '1 To SSD', '256 Go HDD', '512 Go HDD', '1 To HDD']
+const SCREEN_OPTIONS = ['11"', '12"', '13"', '13.3"', '14"', '15.6"', '16"', '17"', '17.3"']
 
 export function MultiStepForm() {
     const { user } = useUser()
@@ -39,6 +43,12 @@ export function MultiStepForm() {
         firstName: '',
         email: '',
         phone: '',
+        // Caractéristiques techniques
+        cpu: '',
+        ram: '',
+        storage: '',
+        screenSize: '',
+        notes: '',
     })
 
     const handleNext = () => setStep((s) => Math.min(s + 1, 4) as Step)
@@ -58,8 +68,38 @@ export function MultiStepForm() {
 
         const conditionInfo = CONDITION_MAP[formData.condition] || { code: 'FAIR', score: 5 }
 
+        // Extraire la valeur numérique de la taille d'écran (ex: "15.6\"" → 15.6)
+        const screenSizeNum = formData.screenSize
+            ? parseFloat(formData.screenSize.replace('"', ''))
+            : null
+
         try {
             const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8090/api'
+
+            // Upload selected images to server
+            const uploadedImageUrls: string[] = []
+            if (images.length > 0) {
+                for (const imgFile of images) {
+                    try {
+                        const fd = new FormData()
+                        fd.append('file', imgFile)
+                        const upRes = await fetch(`${API_URL}/upload/image`, {
+                            method: 'POST',
+                            headers: token ? { Authorization: `Bearer ${token}` } : {},
+                            body: fd,
+                        })
+                        if (upRes.ok) {
+                            const upData = await upRes.json()
+                            if (upData.url) {
+                                uploadedImageUrls.push(upData.url)
+                            }
+                        }
+                    } catch (uploadErr) {
+                        console.warn('Erreur lors de l\'upload de l\'image:', uploadErr)
+                    }
+                }
+            }
+
             const res = await fetch(`${API_URL}/trade-in/evaluate`, {
                 method: 'POST',
                 headers: {
@@ -74,7 +114,15 @@ export function MultiStepForm() {
                     keyboardScore: conditionInfo.score,
                     batteryScore: conditionInfo.score,
                     chassisScore: conditionInfo.score,
-                    performanceScore: conditionInfo.score
+                    performanceScore: conditionInfo.score,
+                    // Caractéristiques techniques
+                    cpu: formData.cpu || null,
+                    ram: formData.ram || null,
+                    storage: formData.storage || null,
+                    screenSize: screenSizeNum,
+                    deviceType: DEVICE_TYPE_MAP[formData.deviceType] || 'LAPTOP',
+                    notes: formData.notes || null,
+                    imageUrls: uploadedImageUrls.length > 0 ? uploadedImageUrls : null,
                 })
             })
 
@@ -96,12 +144,13 @@ export function MultiStepForm() {
     }
 
     const handleAcceptOffer = async () => {
-        if (!evaluationResult?.id) return
+        const id = evaluationResult?.tradeInId || evaluationResult?.id
+        if (!id) return
         setIsAccepting(true)
         try {
             const token = localStorage.getItem('accessToken')
             const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8090/api'
-            const res = await fetch(`${API_URL}/trade-in/${evaluationResult.id}/accept`, {
+            const res = await fetch(`${API_URL}/trade-in/${id}/accept`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -153,11 +202,12 @@ export function MultiStepForm() {
                     </div>
                 )}
 
-                {/* Step 1: Device Info */}
+                {/* ─── Step 1: Device Info + Specs ─── */}
                 {step === 1 && (
                     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <h2 className="text-2xl font-bold text-[#1A1A1A]">Que souhaitez-vous revendre ?</h2>
 
+                        {/* Type d'appareil */}
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             {[
                                 { id: 'laptop', icon: Laptop, label: 'PC Portable' },
@@ -172,30 +222,100 @@ export function MultiStepForm() {
                             ))}
                         </div>
 
-                            <div className="space-y-4 pt-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-medium text-[#1A1A1A]">Marque</label>
-                                        <input required type="text" placeholder="Ex: Dell, Apple, HP..." className="w-full border border-[#E2E2DF] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30" value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-medium text-[#1A1A1A]">Année d'achat</label>
-                                        <select required className="w-full border border-[#E2E2DF] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30" value={formData.yearOfPurchase} onChange={e => setFormData({...formData, yearOfPurchase: parseInt(e.target.value)})}>
-                                            {Array.from({ length: 15 }, (_, i) => new Date().getFullYear() - i).map(y => (
-                                                <option key={y} value={y}>{y}</option>
-                                            ))}
-                                        </select>
-                                    </div>
+                        {/* Marque / Modèle / Année */}
+                        <div className="space-y-4 pt-2">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-[#1A1A1A]">Marque</label>
+                                    <input required type="text" placeholder="Ex: Dell, Apple, HP..." className="w-full border border-[#E2E2DF] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30" value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium text-[#1A1A1A]">Modèle exact</label>
-                                    <input required type="text" placeholder="Ex: XPS 13 9310" className="w-full border border-[#E2E2DF] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30" value={formData.model} onChange={e => setFormData({...formData, model: e.target.value})} />
+                                    <label className="text-sm font-medium text-[#1A1A1A]">Année d'achat</label>
+                                    <select required className="w-full border border-[#E2E2DF] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30" value={formData.yearOfPurchase} onChange={e => setFormData({...formData, yearOfPurchase: parseInt(e.target.value)})}>
+                                        {Array.from({ length: 15 }, (_, i) => new Date().getFullYear() - i).map(y => (
+                                            <option key={y} value={y}>{y}</option>
+                                        ))}
+                                    </select>
                                 </div>
                             </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-[#1A1A1A]">Modèle exact</label>
+                                <input required type="text" placeholder="Ex: XPS 13 9310" className="w-full border border-[#E2E2DF] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30" value={formData.model} onChange={e => setFormData({...formData, model: e.target.value})} />
+                            </div>
+                        </div>
+
+                        {/* ── Caractéristiques techniques (optionnel) ── */}
+                        <div className="border border-[#E2E2DF] rounded-xl p-5 space-y-4 bg-[#F9F9F8]">
+                            <p className="text-sm font-semibold text-[#1A3FA0] flex items-center gap-2">
+                                <Cpu className="h-4 w-4" />
+                                Caractéristiques techniques <span className="text-[#6B7280] font-normal">(optionnel — améliore l'estimation)</span>
+                            </p>
+
+                            {/* CPU */}
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-[#1A1A1A] flex items-center gap-1.5">
+                                    <Cpu className="h-3.5 w-3.5 text-[#6B7280]" /> Processeur (CPU)
+                                </label>
+                                <input
+                                    type="text"
+                                    placeholder="Ex: Intel Core i5-1135G7, AMD Ryzen 5 5500U..."
+                                    className="w-full border border-[#E2E2DF] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30 bg-white"
+                                    value={formData.cpu}
+                                    onChange={e => setFormData({...formData, cpu: e.target.value})}
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                {/* RAM */}
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-[#1A1A1A]">RAM</label>
+                                    <select
+                                        className="w-full border border-[#E2E2DF] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30 bg-white"
+                                        value={formData.ram}
+                                        onChange={e => setFormData({...formData, ram: e.target.value})}
+                                    >
+                                        <option value="">-- Sélectionner --</option>
+                                        {RAM_OPTIONS.map(opt => (
+                                            <option key={opt} value={opt}>{opt}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* Stockage */}
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-[#1A1A1A]">Stockage</label>
+                                    <select
+                                        className="w-full border border-[#E2E2DF] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30 bg-white"
+                                        value={formData.storage}
+                                        onChange={e => setFormData({...formData, storage: e.target.value})}
+                                    >
+                                        <option value="">-- Sélectionner --</option>
+                                        {STORAGE_OPTIONS.map(opt => (
+                                            <option key={opt} value={opt}>{opt}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* Taille écran */}
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-[#1A1A1A]">Taille écran</label>
+                                    <select
+                                        className="w-full border border-[#E2E2DF] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30 bg-white"
+                                        value={formData.screenSize}
+                                        onChange={e => setFormData({...formData, screenSize: e.target.value})}
+                                    >
+                                        <option value="">-- Sélectionner --</option>
+                                        {SCREEN_OPTIONS.map(opt => (
+                                            <option key={opt} value={opt}>{opt}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 )}
 
-                {/* Step 2: Condition & Photos */}
+                {/* ─── Step 2: Condition & Photos & Notes ─── */}
                 {step === 2 && (
                     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <h2 className="text-2xl font-bold text-[#1A1A1A]">Dans quel état est-il ?</h2>
@@ -222,7 +342,8 @@ export function MultiStepForm() {
                             <span className="font-medium text-[#1A1A1A]">Le chargeur original est fourni</span>
                         </label>
 
-                        <div className="pt-4 space-y-3">
+                        {/* Photos */}
+                        <div className="pt-2 space-y-3">
                             <label className="text-sm font-medium text-[#1A1A1A]">Photos (optionnel mais recommandé)</label>
                             <label className="block border-2 border-dashed border-[#E2E2DF] rounded-xl p-8 text-center hover:bg-gray-50 transition-colors cursor-pointer">
                                 <input type="file" multiple accept="image/jpeg, image/png" className="hidden" onChange={(e) => {
@@ -257,13 +378,41 @@ export function MultiStepForm() {
                                 </div>
                             )}
                         </div>
+
+                        {/* Notes libres */}
+                        <div className="space-y-2 pt-2">
+                            <label className="text-sm font-medium text-[#1A1A1A]">Informations complémentaires <span className="text-[#6B7280] font-normal">(optionnel)</span></label>
+                            <textarea
+                                rows={3}
+                                placeholder="Ex: batterie remplacée récemment, écran légèrement rayé en haut à droite, acheté au Japon..."
+                                className="w-full border border-[#E2E2DF] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30 resize-none"
+                                value={formData.notes}
+                                onChange={e => setFormData({...formData, notes: e.target.value})}
+                            />
+                        </div>
                     </div>
                 )}
 
-                {/* Step 3: Contact */}
+                {/* ─── Step 3: Contact ─── */}
                 {step === 3 && (
                     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <h2 className="text-2xl font-bold text-[#1A1A1A]">Où vous envoyer l'estimation ?</h2>
+
+                        {/* Récapitulatif de l'appareil */}
+                        <div className="bg-[#F5F5F3] rounded-xl border border-[#E2E2DF] p-4 space-y-2 text-sm">
+                            <p className="font-semibold text-[#1A1A1A] mb-2">Récapitulatif de votre appareil :</p>
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[#6B7280]">
+                                <span>Type :</span><span className="text-[#1A1A1A] font-medium capitalize">{formData.deviceType === 'laptop' ? 'PC Portable' : formData.deviceType === 'desktop' ? 'PC Bureau' : formData.deviceType === 'phone' ? 'Smartphone/Tablette' : '-'}</span>
+                                <span>Marque :</span><span className="text-[#1A1A1A] font-medium">{formData.brand || '-'}</span>
+                                <span>Modèle :</span><span className="text-[#1A1A1A] font-medium">{formData.model || '-'}</span>
+                                <span>Année :</span><span className="text-[#1A1A1A] font-medium">{formData.yearOfPurchase}</span>
+                                {formData.cpu && <><span>CPU :</span><span className="text-[#1A1A1A] font-medium">{formData.cpu}</span></>}
+                                {formData.ram && <><span>RAM :</span><span className="text-[#1A1A1A] font-medium">{formData.ram}</span></>}
+                                {formData.storage && <><span>Stockage :</span><span className="text-[#1A1A1A] font-medium">{formData.storage}</span></>}
+                                {formData.screenSize && <><span>Écran :</span><span className="text-[#1A1A1A] font-medium">{formData.screenSize}</span></>}
+                                <span>État :</span><span className="text-[#1A1A1A] font-medium">{formData.condition || '-'}</span>
+                            </div>
+                        </div>
 
                         <div className="space-y-4">
                             <div className="space-y-2">
@@ -282,7 +431,7 @@ export function MultiStepForm() {
                     </div>
                 )}
 
-                {/* Step 4: Success / Evaluation Result */}
+                {/* ─── Step 4: Result ─── */}
                 {step === 4 && (
                     <div className="text-center py-8 animate-in zoom-in-95 duration-500">
                         <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -298,6 +447,15 @@ export function MultiStepForm() {
                                         <span className="text-[#6B7280]">Valeur estimée</span>
                                         <span className="text-2xl font-bold text-[#1A3FA0]">{evaluationResult.estimatedValue?.toFixed(2)} TND</span>
                                     </div>
+                                    {/* Specs affichées dans le résultat */}
+                                    {(formData.cpu || formData.ram || formData.storage || formData.screenSize) && (
+                                        <div className="pt-2 space-y-1 text-sm">
+                                            {formData.cpu && <div className="flex justify-between"><span className="text-[#6B7280]">Processeur</span><span className="font-medium text-[#1A1A1A]">{formData.cpu}</span></div>}
+                                            {formData.ram && <div className="flex justify-between"><span className="text-[#6B7280]">RAM</span><span className="font-medium text-[#1A1A1A]">{formData.ram}</span></div>}
+                                            {formData.storage && <div className="flex justify-between"><span className="text-[#6B7280]">Stockage</span><span className="font-medium text-[#1A1A1A]">{formData.storage}</span></div>}
+                                            {formData.screenSize && <div className="flex justify-between"><span className="text-[#6B7280]">Écran</span><span className="font-medium text-[#1A1A1A]">{formData.screenSize}</span></div>}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ) : (

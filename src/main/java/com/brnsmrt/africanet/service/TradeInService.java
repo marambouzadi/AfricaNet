@@ -234,14 +234,19 @@ public class TradeInService {
 
         Product savedProduct = productRepository.save(product);
 
-        // Add 1 image if available
+        // Add all trade-in images to catalog product if available
         if (tradeIn.getImages() != null && !tradeIn.getImages().isEmpty()) {
-            ProductImage img = new ProductImage();
-            img.setProduct(savedProduct);
-            img.setUrl(tradeIn.getImages().get(0).getUrl());
-            img.setIsPrimary(true);
-            img.setSortOrder(1);
-            savedProduct.getImages().add(img);
+            for (int i = 0; i < tradeIn.getImages().size(); i++) {
+                TradeInImage tradeImg = tradeIn.getImages().get(i);
+                if (tradeImg.getUrl() != null && !tradeImg.getUrl().isBlank()) {
+                    ProductImage img = new ProductImage();
+                    img.setProduct(savedProduct);
+                    img.setUrl(tradeImg.getUrl().trim());
+                    img.setIsPrimary(i == 0);
+                    img.setSortOrder(i + 1);
+                    savedProduct.getImages().add(img);
+                }
+            }
             productRepository.save(savedProduct);
         }
 

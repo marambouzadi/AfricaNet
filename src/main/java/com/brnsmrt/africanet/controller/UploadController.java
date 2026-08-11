@@ -14,7 +14,7 @@ import java.util.UUID;
 @RequestMapping("/api/upload")
 public class UploadController {
 
-    @Value("${app.upload.dir:uploads}")
+    @Value("${app.upload.dir:src/main/resources/products}")
     private String uploadDir;
 
     @Value("${app.base-url:http://localhost:8090}")
@@ -46,7 +46,7 @@ public class UploadController {
             Path filePath = uploadPath.resolve(fileName);
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-            String url = baseUrl + "/uploads/" + fileName;
+            String url = baseUrl + "/uploads/products/" + fileName;
             return ResponseEntity.ok(Map.of("url", url, "fileName", fileName));
 
         } catch (IOException e) {
