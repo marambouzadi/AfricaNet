@@ -29,6 +29,7 @@ public class ProductService {
     private final InventoryRepository inventoryRepository;
     private final ProductMapper productMapper;
 
+    @Transactional(readOnly = true)
     public PagedResponse<ProductResponse> getProducts(
             Long categoryId, Long brandId, ProductCondition condition,
             BigDecimal minPrice, BigDecimal maxPrice, Pageable pageable) {
@@ -37,6 +38,7 @@ public class ProductService {
         return new PagedResponse<>(products.map(this::enrichResponseWithStock));
     }
 
+    @Transactional(readOnly = true)
     public PagedResponse<ProductResponse> search(String query, Pageable pageable) {
         Page<Product> results = productRepository.fullTextSearch(query, pageable);
         return new PagedResponse<>(results.map(this::enrichResponseWithStock));
@@ -95,6 +97,7 @@ public class ProductService {
                     .orElseGet(() -> {
                         Brand newBrand = new Brand();
                         newBrand.setName(req.getBrandName().trim());
+                        newBrand.setSlug(generateSlugFromText(req.getBrandName().trim()));
                         return brandRepository.save(newBrand);
                     });
             product.setBrand(brand);
@@ -203,6 +206,7 @@ public class ProductService {
                 .replaceAll("[^a-z0-9\\s-]", "")
                 .replaceAll("\\s+", "-");
     }
+    @Transactional(readOnly = true)
     public ProductResponse getById(Long id) {
         Product product = productRepository.findByIdAndIsActiveTrue(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Produit introuvable: " + id));

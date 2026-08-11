@@ -149,6 +149,12 @@ public class TradeInService {
         if (req.getFinalValue() != null) {
             tradeIn.setFinalValue(req.getFinalValue());
         }
+        if (req.getSalePrice() != null) {
+            if (tradeIn.getConditionDetails() == null) {
+                tradeIn.setConditionDetails(new java.util.HashMap<>());
+            }
+            tradeIn.getConditionDetails().put("salePrice", req.getSalePrice());
+        }
         if (req.getReviewNotes() != null) {
             tradeIn.setReviewNotes(req.getReviewNotes());
         }
@@ -159,7 +165,7 @@ public class TradeInService {
 
         TradeInRequest saved = tradeInRepository.save(tradeIn);
 
-        // Publish to catalog if status is APPROVED or COMPLETED
+        // Publish to catalog if status is APPROVED or COMPLETED (or update existing product price)
         if (saved.getStatus() == TradeInStatus.APPROVED || saved.getStatus() == TradeInStatus.COMPLETED) {
             publishApprovedTradeInAsProduct(saved);
         }
@@ -193,8 +199,28 @@ public class TradeInService {
     @Transactional
     public void publishApprovedTradeInAsProduct(TradeInRequest tradeIn) {
         String sku = tradeIn.getReferenceNumber();
+        BigDecimal price = tradeIn.getFinalValue() != null ? tradeIn.getFinalValue()
+                : (tradeIn.getEstimatedValueAi() != null ? tradeIn.getEstimatedValueAi() : new BigDecimal("990.000"));
+
+        BigDecimal customSalePriceTemp = null;
+        if (tradeIn.getConditionDetails() != null && tradeIn.getConditionDetails().get("salePrice") != null) {
+            try {
+                customSalePriceTemp = new BigDecimal(String.valueOf(tradeIn.getConditionDetails().get("salePrice")));
+            } catch (Exception ignored) {}
+        }
+        final BigDecimal customSalePrice = customSalePriceTemp;
+
         if (productRepository.existsBySku(sku)) {
-            return; // Already published to catalog
+            // Update prices on existing catalog product
+            productRepository.findAll().stream()
+                    .filter(p -> sku.equals(p.getSku()))
+                    .findFirst()
+                    .ifPresent(p -> {
+                        p.setBasePrice(price);
+                        if (customSalePrice != null) p.setSalePrice(customSalePrice);
+                        productRepository.save(p);
+                    });
+            return;
         }
 
         Category category = categoryRepository.findAll().stream().findFirst().orElse(null);
@@ -225,9 +251,6 @@ public class TradeInService {
             slugCandidate = baseSlug + "-" + counter++;
         }
 
-        BigDecimal price = tradeIn.getFinalValue() != null ? tradeIn.getFinalValue()
-                : (tradeIn.getEstimatedValueAi() != null ? tradeIn.getEstimatedValueAi() : new BigDecimal("990.000"));
-
         ProductCondition condition = (tradeIn.getConditionOverall() == ConditionOverall.EXCELLENT)
                 ? ProductCondition.REFURBISHED : ProductCondition.USED;
 
@@ -238,7 +261,7 @@ public class TradeInService {
                 .category(category)
                 .condition(condition)
                 .basePrice(price)
-                .salePrice(price)
+                .salePrice(customSalePrice != null ? customSalePrice : price)
                 .sku(sku)
                 .isActive(true)
                 .isFeatured(false)

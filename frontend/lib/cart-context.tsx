@@ -60,9 +60,24 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const openCart = useCallback(() => setIsCartOpen(true), [])
   const closeCart = useCallback(() => setIsCartOpen(false), [])
 
-  const addItem = useCallback((item: Omit<CartItem, 'quantity'>, quantity = 1) => {
+  const addItem = useCallback((item: Omit<CartItem, 'quantity'> & { stock?: number }, quantity = 1) => {
+    if (item.condition === 'Épuisé' || (item.stock !== undefined && item.stock <= 0)) {
+      setNotification(`Produit épuisé — Impossible d'ajouter au panier`)
+      setTimeout(() => setNotification(null), 3000)
+      return
+    }
+
     setItems((prev) => {
       const existing = prev.find((i) => i.id === item.id)
+      const currentQty = existing ? existing.quantity : 0
+      const maxAvailable = item.stock !== undefined && item.stock > 0 ? item.stock : 999
+
+      if (currentQty + quantity > maxAvailable) {
+        setNotification(`Quantité maximale en stock atteinte (${maxAvailable})`)
+        setTimeout(() => setNotification(null), 3000)
+        return prev
+      }
+
       if (existing) {
         return prev.map((i) =>
           i.id === item.id ? { ...i, quantity: i.quantity + quantity } : i

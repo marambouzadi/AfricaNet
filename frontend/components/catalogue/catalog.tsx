@@ -37,6 +37,8 @@ export function Catalog() {
   // Filter counts state
   const [brandCounts, setBrandCounts] = useState<{ brand: string; count: number }[]>([])
   const [conditionCounts, setConditionCounts] = useState<{ condition: Condition; count: number }[]>([])
+  const [ramCounts, setRamCounts] = useState<{ ram: number; count: number }[]>([])
+  const [screenCounts, setScreenCounts] = useState<{ size: number; count: number }[]>([])
 
   // Fetch filter counts on mount
   useEffect(() => {
@@ -57,6 +59,8 @@ export function Catalog() {
         
         const bCounts: Record<string, number> = {}
         const cCounts: Record<string, number> = {}
+        const rCounts: Record<number, number> = {}
+        const sCounts: Record<number, number> = {}
         
         products.forEach((p: any) => {
           const brand = p.brandName || 'Unknown'
@@ -67,6 +71,28 @@ export function Catalog() {
           if (condition) {
             cCounts[condition] = (cCounts[condition] || 0) + 1
           }
+
+          const specs = p.specifications || []
+          const ramSpec = specs.find((s: any) => s.specKey?.toLowerCase().includes('ram'))?.specValue
+          if (ramSpec) {
+            const ramVal = parseInt(ramSpec, 10)
+            if (ramVal && !isNaN(ramVal)) {
+              rCounts[ramVal] = (rCounts[ramVal] || 0) + 1
+            }
+          }
+
+          const screenSpec = specs.find((s: any) => 
+            s.specKey?.toLowerCase().includes('écran') || 
+            s.specKey?.toLowerCase().includes('ecran') || 
+            s.specKey?.toLowerCase().includes('affichage')
+          )?.specValue
+          if (screenSpec) {
+            const screenVal = parseFloat(screenSpec.replace(',', '.'))
+            if (screenVal && !isNaN(screenVal)) {
+              const matched = [13, 14, 15.6, 17].find(s => Math.abs(s - screenVal) < 0.5) || screenVal
+              sCounts[matched] = (sCounts[matched] || 0) + 1
+            }
+          }
         })
         
         setBrandCounts(Object.entries(bCounts).map(([brand, count]) => ({ brand, count })))
@@ -74,16 +100,25 @@ export function Catalog() {
           condition: condition as Condition,
           count,
         })))
+        setRamCounts(Object.entries(rCounts).map(([ram, count]) => ({ ram: Number(ram), count })))
+        setScreenCounts(Object.entries(sCounts).map(([size, count]) => ({ size: Number(size), count })))
       } catch (e) {
         console.warn('Failed to load counts from API, falling back to local data', e)
         const bCounts: Record<string, number> = {}
         const cCounts: Record<string, number> = {}
+        const rCounts: Record<number, number> = {}
+        const sCounts: Record<number, number> = {}
         
         products.forEach((p) => {
           const brand = p.brand || 'Unknown'
           bCounts[brand] = (bCounts[brand] || 0) + 1
           const condition = p.condition as Condition
           if (condition) cCounts[condition] = (cCounts[condition] || 0) + 1
+          if (p.ramValue) rCounts[p.ramValue] = (rCounts[p.ramValue] || 0) + 1
+          if (p.screenSize) {
+            const matched = [13, 14, 15.6, 17].find(s => Math.abs(s - p.screenSize) < 0.5) || p.screenSize
+            sCounts[matched] = (sCounts[matched] || 0) + 1
+          }
         })
         
         setBrandCounts(Object.entries(bCounts).map(([brand, count]) => ({ brand, count })))
@@ -91,6 +126,8 @@ export function Catalog() {
           condition: condition as Condition,
           count,
         })))
+        setRamCounts(Object.entries(rCounts).map(([ram, count]) => ({ ram: Number(ram), count })))
+        setScreenCounts(Object.entries(sCounts).map(([size, count]) => ({ size: Number(size), count })))
       }
     }
     fetchCounts()
@@ -115,7 +152,7 @@ export function Catalog() {
           res = await fetchProducts({
             page: 0,
             size: 1000,
-            // Fetch everything and filter locally to support multi-filters properly
+            sort: backendSort || 'id,desc',
           })
         }
 
@@ -132,18 +169,22 @@ export function Catalog() {
         let mapped: Product[] = res.content.map((p: any) => {
           if (p.price !== undefined && !p.basePrice) return p
           
-          const ramSpec = p.specifications?.find((s: any) => s.specKey.toLowerCase().includes('ram'))?.specValue || '8 Go'
-          const screenSpec = p.specifications?.find((s: any) => s.specKey.toLowerCase().includes('écran') || s.specKey.toLowerCase().includes('ecran'))?.specValue || '15.6'
+          const ramSpec = p.specifications?.find((s: any) => s.specKey?.toLowerCase().includes('ram'))?.specValue || '8 Go'
+          const screenSpec = p.specifications?.find((s: any) => 
+            s.specKey?.toLowerCase().includes('écran') || 
+            s.specKey?.toLowerCase().includes('ecran') || 
+            s.specKey?.toLowerCase().includes('affichage')
+          )?.specValue || '15.6'
           
           return {
             id: p.id,
             name: p.name,
             brand: p.brandName || 'Unknown',
-            cpu: p.specifications?.find((s: any) => s.specKey.toLowerCase().includes('processeur'))?.specValue || 'N/A',
+            cpu: p.specifications?.find((s: any) => s.specKey?.toLowerCase().includes('processeur'))?.specValue || 'N/A',
             ram: ramSpec,
             ramValue: parseInt(ramSpec, 10) || 8,
-            storage: p.specifications?.find((s: any) => s.specKey.toLowerCase().includes('stockage'))?.specValue || '256 Go SSD',
-            screenSize: parseFloat(screenSpec.replace(',', '.')) || 15.6,
+            storage: p.specifications?.find((s: any) => s.specKey?.toLowerCase().includes('stockage'))?.specValue || '256 Go SSD',
+            screenSize: parseFloat(screenSpec.replace(',', '.').replace(/[^0-9.]/g, '')) || 15.6,
             price: p.salePrice || p.basePrice || 0,
             condition: (condMap[p.condition as string] || p.condition) as Condition,
             image: p.images?.find((img: any) => img.isPrimary)?.url || p.images?.[0]?.url || '',
@@ -154,7 +195,9 @@ export function Catalog() {
         // Apply frontend-only filters (Price, RAM, Screen, multiple brands, conditions)
         mapped = mapped.filter((p) => p.price >= filters.priceMin && p.price <= filters.priceMax)
         if (filters.brands.length > 0) {
-          mapped = mapped.filter((p) => filters.brands.includes(p.brand))
+          mapped = mapped.filter((p) => 
+            filters.brands.some((b) => b.toLowerCase().trim() === (p.brand || '').toLowerCase().trim())
+          )
         }
         if (filters.conditions.length > 0) {
           mapped = mapped.filter((p) => filters.conditions.includes(p.condition))
@@ -163,13 +206,15 @@ export function Catalog() {
           mapped = mapped.filter((p) => filters.ramValues.includes(p.ramValue))
         }
         if (filters.screenSizes.length > 0) {
-          mapped = mapped.filter((p) => filters.screenSizes.includes(p.screenSize) || filters.screenSizes.some(s => Math.abs(p.screenSize - s) < 0.5))
+          mapped = mapped.filter((p) => 
+            filters.screenSizes.some((s) => Math.abs(p.screenSize - s) < 1.0)
+          )
         }
 
-        // Apply local sorting
+        // Apply local sorting (by default, newest products first)
         if (sort === 'prix-asc') mapped = mapped.sort((a, b) => a.price - b.price)
         else if (sort === 'prix-desc') mapped = mapped.sort((a, b) => b.price - a.price)
-        else if (sort === 'nouveautes') mapped = mapped.sort((a, b) => b.id - a.id)
+        else mapped = mapped.sort((a, b) => b.id - a.id) // Default ('pertinence', 'nouveautes') -> newest first
 
         setTotalElements(mapped.length)
         setTotalPages(Math.ceil(mapped.length / ITEMS_PER_PAGE))
@@ -288,6 +333,8 @@ export function Catalog() {
             onChange={handleFilterChange}
             brandCounts={brandCounts}
             conditionCounts={conditionCounts}
+            ramCounts={ramCounts}
+            screenCounts={screenCounts}
           />
         </aside>
 
@@ -494,6 +541,8 @@ export function Catalog() {
               onChange={handleFilterChange}
               brandCounts={brandCounts}
               conditionCounts={conditionCounts}
+              ramCounts={ramCounts}
+              screenCounts={screenCounts}
             />
             <button
               type="button"

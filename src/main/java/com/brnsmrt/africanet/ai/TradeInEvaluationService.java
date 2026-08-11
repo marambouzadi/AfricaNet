@@ -90,8 +90,11 @@ public class TradeInEvaluationService {
                     newBrand.setIsActive(true);
                     return brandRepository.save(newBrand);
                 });
-        // 1. Prix de base marché depuis la DB
+        // 1. Prix de base marché depuis la DB (fallback par type d'appareil)
         double basePrice = computeBaseValue(request.getBrand(), request.getDeviceModel());
+        if (basePrice == DEFAULT_BASE_VALUE) {
+            basePrice = computeBaseValueByType(request.getDeviceType());
+        }
 
         // 2. Âge de l'appareil
         int age = computeAge(request.getYearOfPurchase());
@@ -245,14 +248,27 @@ public class TradeInEvaluationService {
     }
 
     public double computeBaseValue(String brand, String model) {
-        if (brand == null || model == null) return DEFAULT_BASE_VALUE;
-        String b = brand.trim();
-        String m = model.trim();
-        Optional<DeviceBaseValue> exact = deviceBaseValueRepository.findByBrandAndModel(b, m);
-        if (exact.isPresent()) return exact.get().getBaseValue();
-        Optional<DeviceBaseValue> partial = deviceBaseValueRepository.findByBrandAndModelStartingWith(b, m);
-        if (partial.isPresent()) return partial.get().getBaseValue();
+        if (brand != null && model != null) {
+            String b = brand.trim();
+            String m = model.trim();
+            Optional<DeviceBaseValue> exact = deviceBaseValueRepository.findByBrandAndModel(b, m);
+            if (exact.isPresent()) return exact.get().getBaseValue();
+            Optional<DeviceBaseValue> partial = deviceBaseValueRepository.findByBrandAndModelStartingWith(b, m);
+            if (partial.isPresent()) return partial.get().getBaseValue();
+        }
         return DEFAULT_BASE_VALUE;
+    }
+
+    /** Fallback price by device type when no DB entry exists */
+    public double computeBaseValueByType(String deviceType) {
+        if (deviceType == null) return DEFAULT_BASE_VALUE;
+        return switch (deviceType.toUpperCase()) {
+            case "LAPTOP"  -> 1500.0;
+            case "DESKTOP" -> 1200.0;
+            case "PHONE"   -> 800.0;
+            case "TABLET"  -> 600.0;
+            default        -> DEFAULT_BASE_VALUE;
+        };
     }
 
     private String generateReferenceNumber() {

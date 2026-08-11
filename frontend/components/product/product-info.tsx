@@ -17,9 +17,19 @@ export function ProductInfo({ product }: { product: ProductDetail }) {
   const [isWishlisted, setIsWishlisted] = useState(false)
   const { addItem, openCart } = useCart()
 
+  const isOut = product.stock <= 0 || product.condition === ('Épuisé' as any)
+
   const handleAddToCart = () => {
+    if (isOut) return
     addItem(
-      { id: product.id, name: product.name, price: product.priceNum, image: product.thumbnails?.[0] },
+      {
+        id: product.id,
+        name: product.name,
+        price: product.priceNum,
+        image: product.thumbnails?.[0],
+        condition: product.condition,
+        stock: product.stock,
+      },
       qty
     )
     openCart()
@@ -100,10 +110,11 @@ export function ProductInfo({ product }: { product: ProductDetail }) {
       <div className="mt-5 flex items-center gap-3">
         <button
           type="button"
+          disabled={isOut}
           onClick={handleAddToCart}
-          className="flex-1 rounded-lg bg-[#1A3FA0] py-3 font-medium text-white transition-colors duration-200 hover:bg-[#0D2660]"
+          className="flex-1 rounded-lg bg-[#1A3FA0] py-3 font-medium text-white transition-colors duration-200 hover:bg-[#0D2660] disabled:bg-[#9CA3AF] disabled:cursor-not-allowed"
         >
-          Ajouter au panier
+          {isOut ? 'Rupture de stock' : 'Ajouter au panier'}
         </button>
         <button
           type="button"

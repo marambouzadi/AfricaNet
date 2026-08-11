@@ -3,9 +3,10 @@ package com.brnsmrt.africanet.domain;
 import com.brnsmrt.africanet.domain.enums.OrderStatus;
 import com.brnsmrt.africanet.domain.enums.PaymentMethod;
 import com.brnsmrt.africanet.domain.enums.PaymentStatus;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Type;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -56,11 +57,13 @@ public class Order {
     @Column(name = "total_amount", nullable = false, precision = 10, scale = 3)
     private BigDecimal totalAmount;
 
+    @Type(JsonType.class)
     @Column(name = "shipping_address", nullable = false, columnDefinition = "jsonb")
-    private String shippingAddress;
+    private Map<String, Object> shippingAddress;
 
+    @Type(JsonType.class)
     @Column(name = "billing_address", columnDefinition = "jsonb")
-    private String billingAddress;
+    private Map<String, Object> billingAddress;
 
     @Column(name = "coupon_code", length = 50)
     private String couponCode;
@@ -135,22 +138,5 @@ public class Order {
     public void addStatusHistory(OrderStatusHistory history) {
         history.setOrder(this);
         this.statusHistory.add(history);
-    }
-
-    public void setShippingAddress(Map<String, Object> address) {
-        this.shippingAddress = toJson(address);
-    }
-
-    public void setBillingAddress(Map<String, Object> address) {
-        this.billingAddress = toJson(address);
-    }
-
-    private static String toJson(Object obj) {
-        if (obj == null) return null;
-        try {
-            return new ObjectMapper().writeValueAsString(obj);
-        } catch (Exception e) {
-            return null;
-        }
     }
 }

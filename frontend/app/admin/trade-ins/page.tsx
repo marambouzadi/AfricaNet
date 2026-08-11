@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import {
-  Search, Eye, Loader2, Download, RefreshCw, Clock, CheckCircle, XCircle
+  Search, Eye, Loader2, Download, RefreshCw, Clock, CheckCircle, XCircle, Pencil, Save, Tag
 } from 'lucide-react';
 import { exportToCSV } from '@/lib/export';
 
@@ -34,13 +34,16 @@ export default function AdminEchangesPage() {
   const [statusFilter, setStatusFilter] = useState('Tous statuts');
   const [viewItem, setViewItem] = useState<any>(null);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const [editPrice, setEditPrice] = useState('');
+  const [editSalePrice, setEditSalePrice] = useState('');
+  const [savingPrice, setSavingPrice] = useState(false);
 
   const load = async () => {
     setLoading(true);
     try {
       const token = getToken();
       const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
-      const res = await fetch(`${API_BASE}/admin/trade-in?size=50`, { headers, cache: 'no-store' });
+      const res = await fetch(`${API_BASE}/admin/trade-in?size=100&sort=createdAt,desc`, { headers, cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         setTradeIns(data.content || []);
@@ -68,6 +71,33 @@ export default function AdminEchangesPage() {
       if (res.ok) { await load(); }
     } catch (e) { console.error(e); }
     finally { setUpdatingId(null); }
+  };
+
+  const openModal = (item: any) => {
+    setViewItem(item);
+    setEditPrice(item.finalValue ? String(item.finalValue) : item.estimatedValueAi ? String(item.estimatedValueAi) : '');
+    setEditSalePrice('');
+  };
+
+  const savePrice = async () => {
+    if (!viewItem) return;
+    setSavingPrice(true);
+    try {
+      const token = getToken();
+      const payload: any = { status: viewItem.status, finalValue: parseFloat(editPrice) || undefined };
+      if (editSalePrice) payload.salePrice = parseFloat(editSalePrice);
+      const res = await fetch(`${API_BASE}/admin/trade-in/${viewItem.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setViewItem(updated);
+        await load();
+      }
+    } catch (e) { console.error(e); }
+    finally { setSavingPrice(false); }
   };
 
   const filtered = tradeIns.filter(t => {
@@ -212,7 +242,7 @@ export default function AdminEchangesPage() {
                         <div className="flex items-center justify-center gap-2">
                           <button
                             title="Voir détails"
-                            onClick={() => setViewItem(item)}
+                            onClick={() => openModal(item)}
                             className="p-2 text-[#6B7280] hover:text-[#1A3FA0] hover:bg-[#EFF6FF] rounded-lg transition-colors"
                           >
                             <Eye className="h-4 w-4" />
@@ -278,6 +308,45 @@ export default function AdminEchangesPage() {
               </button>
             </div>
 
+            {/* ── Prix éditables ────────────────────────────────── */}
+            <div className="bg-[#EFF6FF] rounded-xl p-4 space-y-3 border border-[#1A3FA0]/20">
+              <p className="text-xs font-bold text-[#1A3FA0] uppercase tracking-wider flex items-center gap-1.5">
+                <Tag className="h-3.5 w-3.5" /> Prix de reprise
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-[#1A1A1A]">Prix retenu (TND)</label>
+                  <input
+                    type="number"
+                    step="0.001"
+                    value={editPrice}
+                    onChange={e => setEditPrice(e.target.value)}
+                    placeholder={viewItem.estimatedValueAi ? `IA: ${Number(viewItem.estimatedValueAi).toFixed(0)}` : 'ex: 1200'}
+                    className="w-full border border-[#E2E2DF] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30 bg-white"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-[#1A1A1A]">Prix soldé (optionnel)</label>
+                  <input
+                    type="number"
+                    step="0.001"
+                    value={editSalePrice}
+                    onChange={e => setEditSalePrice(e.target.value)}
+                    placeholder="ex: 990"
+                    className="w-full border border-[#E2E2DF] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30 bg-white"
+                  />
+                </div>
+              </div>
+              <button
+                onClick={savePrice}
+                disabled={savingPrice || !editPrice}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#1A3FA0] text-white rounded-lg text-sm font-semibold hover:bg-[#0D2660] transition-colors disabled:opacity-50"
+              >
+                {savingPrice ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                Enregistrer le prix
+              </button>
+            </div>
+
             <div className="space-y-3 text-sm text-[#1A1A1A]">
               <div className="flex justify-between py-1 border-b border-[#F5F5F3]">
                 <span className="text-[#6B7280]">Statut</span>
@@ -333,7 +402,7 @@ export default function AdminEchangesPage() {
               </div>
               <div className="flex justify-between py-1 border-b border-[#F5F5F3]">
                 <span className="text-[#6B7280]">Valeur finale retenue</span>
-                <span className="font-bold text-emerald-700">{viewItem.finalValue ? `${Number(viewItem.finalValue).toLocaleString('fr-FR')} TND` : '—'}</span>
+                <span className="font-bold text-emerald-700">{viewItem.finalValue ? `${Number(viewItem.finalValue).toLocaleString('fr-FR')} TND` : editPrice ? `${Number(editPrice).toLocaleString('fr-FR')} TND` : '—'}</span>
               </div>
               {(viewItem.reviewNotes || viewItem.conditionDetails?.notes) && (
                 <div className="flex justify-between py-1 border-b border-[#F5F5F3]">

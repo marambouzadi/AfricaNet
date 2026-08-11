@@ -171,6 +171,7 @@ export default function AdminProduitsPage() {
         }
       })
 
+      mapped.sort((a, b) => b.id - a.id)
       setProductsList(mapped)
     } catch (e) {
       console.error('Failed to load products:', e)
@@ -308,13 +309,14 @@ export default function AdminProduitsPage() {
         { specKey: 'Batterie', specValue: formData.notes.batterie, sortOrder: 6 },
         { specKey: 'Performances', specValue: formData.notes.performances, sortOrder: 7 },
         { specKey: 'Esthétique', specValue: formData.notes.esthetique, sortOrder: 8 },
-      ].filter(s => s.specValue)
+      ].filter(s => s.specValue !== '' && s.specValue != null)
 
       const payload = {
         name: formData.name,
         description: '',
         shortDesc: `${formData.brand} · ${formData.condition}`,
         categoryId: 1,
+        brandName: formData.brand || undefined,
         condition: conditionToApi(formData.condition) || 'NEW',
         basePrice: parseFloat(formData.basePrice),
         salePrice: formData.salePrice ? parseFloat(formData.salePrice) : null,
@@ -435,13 +437,14 @@ export default function AdminProduitsPage() {
         { specKey: 'Batterie', specValue: editingProduct.notes?.batterie || '0', sortOrder: 6 },
         { specKey: 'Performances', specValue: editingProduct.notes?.performances || '0', sortOrder: 7 },
         { specKey: 'Esthétique', specValue: editingProduct.notes?.esthetique || '0', sortOrder: 8 },
-      ].filter(s => s.specValue)
+      ].filter(s => s.specValue !== '' && s.specValue != null)
 
       const payload = {
         name: editingProduct.name,
         description: '',
         shortDesc: `${editingProduct.brand} · ${editingProduct.condition}`,
         categoryId: 1,
+        brandName: editingProduct.brand || undefined,
         condition: conditionToApi(editingProduct.condition) || 'NEW',
         basePrice: editingProduct.basePrice,
         salePrice: editingProduct.salePrice || null,

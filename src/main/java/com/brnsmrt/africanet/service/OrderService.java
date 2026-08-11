@@ -67,10 +67,10 @@ public class OrderService {
                 .paymentMethod(request.getPaymentMethod())
                 .couponCode(request.getCouponCode())
                 .customerNotes(request.getCustomerNotes())
-                .shippingAddress(toJson(addressToMap(request.getShippingAddress())))
+                .shippingAddress(addressToMap(request.getShippingAddress()))
                 .billingAddress(request.getBillingAddress() != null
-                        ? toJson(addressToMap(request.getBillingAddress()))
-                        : toJson(addressToMap(request.getShippingAddress())))
+                        ? addressToMap(request.getBillingAddress())
+                        : addressToMap(request.getShippingAddress()))
                 .build();
 
         BigDecimal subtotal = BigDecimal.ZERO;
@@ -99,7 +99,7 @@ public class OrderService {
                     .quantity(itemReq.getQuantity())
                     .unitPrice(unitPrice)
                     .totalPrice(totalPrice)
-                    .productSnapshot(toJson(buildProductSnapshot(product)))
+                    .productSnapshot(buildProductSnapshot(product))
                     .build();
 
             order.addItem(item);

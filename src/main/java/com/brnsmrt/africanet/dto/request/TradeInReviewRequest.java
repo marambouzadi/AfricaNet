@@ -17,6 +17,9 @@ public class TradeInReviewRequest {
     @Positive(message = "La valeur finale doit être positive")
     private BigDecimal finalValue;
 
+    @Positive(message = "Le prix soldé doit être positif")
+    private BigDecimal salePrice;
+
     @Size(max = 1000, message = "Les notes de révision ne doivent pas dépasser 1000 caractères")
     private String reviewNotes;
 }

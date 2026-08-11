@@ -1,0 +1,226 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0011-seed-device-base-values
+      author: africanet
+      preConditions:
+        - onFail: MARK_RAN
+        - sqlCheck:
+            expectedResult: 0
+            sql: SELECT COUNT(*) FROM device_base_values
+      changes:
+        - insert:
+            tableName: device_base_values
+            columns:
+              - column: { name: brand, value: "Apple" }
+              - column: { name: model, value: "MacBook Pro 14" }
+              - column: { name: base_value, valueNumeric: 4500 }
+        - insert:
+            tableName: device_base_values
+            columns:
+              - column: { name: brand, value: "Apple" }
+              - column: { name: model, value: "MacBook Pro 13" }
+              - column: { name: base_value, valueNumeric: 3800 }
+        - insert:
+            tableName: device_base_values
+            columns:
+              - column: { name: brand, value: "Apple" }
+              - column: { name: model, value: "MacBook Air" }
+              - column: { name: base_value, valueNumeric: 2800 }
+        - insert:
+            tableName: device_base_values
+            columns:
+              - column: { name: brand, value: "Apple" }
+              - column: { name: model, value: "iMac 27" }
+              - column: { name: base_value, valueNumeric: 4200 }
+        - insert:
+            tableName: device_base_values
+            columns:
+              - column: { name: brand, value: "Apple" }
+              - column: { name: model, value: "iMac 24" }
+              - column: { name: base_value, valueNumeric: 3500 }
+        - insert:
+            tableName: device_base_values
+            columns:
+              - column: { name: brand, value: "Apple" }
+              - column: { name: model, value: "iPhone 15 Pro" }
+              - column: { name: base_value, valueNumeric: 3200 }
+        - insert:
+            tableName: device_base_values
+            columns:
+              - column: { name: brand, value: "Apple" }
+              - column: { name: model, value: "iPhone 15" }
+              - column: { name: base_value, valueNumeric: 2600 }
+        - insert:
+            tableName: device_base_values
+            columns:
+              - column: { name: brand, value: "Apple" }
+              - column: { name: model, value: "iPhone 14" }
+              - column: { name: base_value, valueNumeric: 2200 }
+        - insert:
+            tableName: device_base_values
+            columns:
+              - column: { name: brand, value: "Apple" }
+              - column: { name: model, value: "iPhone 13" }
+              - column: { name: base_value, valueNumeric: 1800 }
+        - insert:
+            tableName: device_base_values
+            columns:
+              - column: { name: brand, value: "Apple" }
+              - column: { name: model, value: "iPad Pro" }
+              - column: { name: base_value, valueNumeric: 2500 }
+        - insert:
+            tableName: device_base_values
+            columns:
+              - column: { name: brand, value: "Apple" }
+              - column: { name: model, value: "iPad Air" }
+              - column: { name: base_value, valueNumeric: 1600 }
+        # Dell
+        - insert:
+            tableName: device_base_values
+            columns:
+              - column: { name: brand, value: "Dell" }
+              - column: { name: model, value: "XPS 15" }
+              - column: { name: base_value, valueNumeric: 3500 }
+        - insert:
+            tableName: device_base_values
+            columns:
+              - column: { name: brand, value: "Dell" }
+              - column: { name: model, value: "XPS 13" }
+              - column: { name: base_value, valueNumeric: 2800 }
+        - insert:
+            tableName: device_base_values
+            columns:
+              - column: { name: brand, value: "Dell" }
+              - column: { name: model, value: "Inspiron 15" }
+              - column: { name: base_value, valueNumeric: 1400 }
+        - insert:
+            tableName: device_base_values
+            columns:
+              - column: { name: brand, value: "Dell" }
+              - column: { name: model, value: "Inspiron 14" }
+              - column: { name: base_value, valueNumeric: 1200 }
+        - insert:
+            tableName: device_base_values
+            columns:
+              - column: { name: brand, value: "Dell" }
+              - column: { name: model, value: "Latitude 5520" }
+              - column: { name: base_value, valueNumeric: 2200 }
+        - insert:
+            tableName: device_base_values
+            columns:
+              - column: { name: brand, value: "Dell" }
+              - column: { name: model, value: "OptiPlex" }
+              - column: { name: base_value, valueNumeric: 1800 }
+        # HP
+        - insert:
+            tableName: device_base_values
+            columns:
+              - column: { name: brand, value: "HP" }
+              - column: { name: model, value: "EliteBook 840" }
+              - column: { name: base_value, valueNumeric: 2400 }
+        - insert:
+            tableName: device_base_values
+            columns:
+              - column: { name: brand, value: "HP" }
+              - column: { name: model, value: "ProBook 450" }
+              - column: { name: base_value, valueNumeric: 1600 }
+        - insert:
+            tableName: device_base_values
+            columns:
+              - column: { name: brand, value: "HP" }
+              - column: { name: model, value: "Pavilion 15" }
+              - column: { name: base_value, valueNumeric: 1300 }
+        - insert:
+            tableName: device_base_values
+            columns:
+              - column: { name: brand, value: "HP" }
+              - column: { name: model, value: "Spectre x360" }
+              - column: { name: base_value, valueNumeric: 3200 }
+        - insert:
+            tableName: device_base_values
+            columns:
+              - column: { name: brand, value: "HP" }
+              - column: { name: model, value: "Envy 13" }
+              - column: { name: base_value, valueNumeric: 2000 }
+        # Lenovo
+        - insert:
+            tableName: device_base_values
+            columns:
+              - column: { name: brand, value: "Lenovo" }
+              - column: { name: model, value: "ThinkPad X1 Carbon" }
+              - column: { name: base_value, valueNumeric: 3000 }
+        - insert:
+            tableName: device_base_values
+            columns:
+              - column: { name: brand, value: "Lenovo" }
+              - column: { name: model, value: "ThinkPad T14" }
+              - column: { name: base_value, valueNumeric: 2200 }
+        - insert:
+            tableName: device_base_values
+            columns:
+              - column: { name: brand, value: "Lenovo" }
+              - column: { name: model, value: "IdeaPad 5" }
+              - column: { name: base_value, valueNumeric: 1500 }
+        - insert:
+            tableName: device_base_values
+            columns:
+              - column: { name: brand, value: "Lenovo" }
+              - column: { name: model, value: "Yoga 9i" }
+              - column: { name: base_value, valueNumeric: 2800 }
+        # Asus
+        - insert:
+            tableName: device_base_values
+            columns:
+              - column: { name: brand, value: "Asus" }
+              - column: { name: model, value: "ZenBook 14" }
+              - column: { name: base_value, valueNumeric: 2000 }
+        - insert:
+            tableName: device_base_values
+            columns:
+              - column: { name: brand, value: "Asus" }
+              - column: { name: model, value: "VivoBook 15" }
+              - column: { name: base_value, valueNumeric: 1300 }
+        - insert:
+            tableName: device_base_values
+            columns:
+              - column: { name: brand, value: "Asus" }
+              - column: { name: model, value: "ROG Zephyrus G14" }
+              - column: { name: base_value, valueNumeric: 3800 }
+        # Samsung
+        - insert:
+            tableName: device_base_values
+            columns:
+              - column: { name: brand, value: "Samsung" }
+              - column: { name: model, value: "Galaxy S24 Ultra" }
+              - column: { name: base_value, valueNumeric: 3500 }
+        - insert:
+            tableName: device_base_values
+            columns:
+              - column: { name: brand, value: "Samsung" }
+              - column: { name: model, value: "Galaxy S24" }
+              - column: { name: base_value, valueNumeric: 2400 }
+        - insert:
+            tableName: device_base_values
+            columns:
+              - column: { name: brand, value: "Samsung" }
+              - column: { name: model, value: "Galaxy S23" }
+              - column: { name: base_value, valueNumeric: 2000 }
+        - insert:
+            tableName: device_base_values
+            columns:
+              - column: { name: brand, value: "Samsung" }
+              - column: { name: model, value: "Galaxy Tab S9" }
+              - column: { name: base_value, valueNumeric: 2200 }
+        # Microsoft
+        - insert:
+            tableName: device_base_values
+            columns:
+              - column: { name: brand, value: "Microsoft" }
+              - column: { name: model, value: "Surface Pro 9" }
+              - column: { name: base_value, valueNumeric: 3200 }
+        - insert:
+            tableName: device_base_values
+            columns:
+              - column: { name: brand, value: "Microsoft" }
+              - column: { name: model, value: "Surface Laptop 5" }
+              - column: { name: base_value, valueNumeric: 2600 }

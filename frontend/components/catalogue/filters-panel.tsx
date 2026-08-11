@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo } from 'react'
 import { type Condition, conditionStyles, BRANDS, RAM_OPTIONS, SCREEN_OPTIONS, CONDITION_OPTIONS } from '@/lib/products'
 
 export type FilterState = {
@@ -28,24 +29,31 @@ function GroupLabel({ children }: { children: React.ReactNode }) {
   )
 }
 
-// brand counts from productlist
+// Counts from product list
 type BrandCount = { brand: string; count: number }
 type ConditionCount = { condition: Condition; count: number }
+export type RamCount = { ram: number; count: number }
+export type ScreenCount = { size: number; count: number }
 
 export function FiltersPanel({
   filters,
   onChange,
   brandCounts,
   conditionCounts,
+  ramCounts = [],
+  screenCounts = [],
 }: {
   filters: FilterState
   onChange: (filters: FilterState) => void
   brandCounts: BrandCount[]
   conditionCounts: ConditionCount[]
+  ramCounts?: RamCount[]
+  screenCounts?: ScreenCount[]
 }) {
   const toggleBrand = (brand: string) => {
-    const brands = filters.brands.includes(brand)
-      ? filters.brands.filter((b) => b !== brand)
+    const exists = filters.brands.some((b) => b.toLowerCase().trim() === brand.toLowerCase().trim())
+    const brands = exists
+      ? filters.brands.filter((b) => b.toLowerCase().trim() !== brand.toLowerCase().trim())
       : [...filters.brands, brand]
     onChange({ ...filters, brands })
   }
@@ -71,6 +79,22 @@ export function FiltersPanel({
     onChange({ ...filters, screenSizes })
   }
 
+  const availableRamOptions = useMemo(() => {
+    const list = [...RAM_OPTIONS] as number[]
+    ramCounts.forEach(rc => {
+      if (!list.includes(rc.ram)) list.push(rc.ram)
+    })
+    return list.sort((a, b) => a - b)
+  }, [ramCounts])
+
+  const availableScreenOptions = useMemo(() => {
+    const list = [...SCREEN_OPTIONS] as number[]
+    screenCounts.forEach(sc => {
+      if (!list.includes(sc.size)) list.push(sc.size)
+    })
+    return list.sort((a, b) => a - b)
+  }, [screenCounts])
+
   return (
     <div>
       {/* Brand */}
@@ -78,13 +102,13 @@ export function FiltersPanel({
         <GroupLabel>Marque</GroupLabel>
         <div className="grid grid-cols-1">
           {BRANDS.map((brand) => {
-            const count = brandCounts.find((b) => b.brand.toLowerCase() === brand.toLowerCase())?.count ?? 0
-            if (count === 0) return null
+            const count = brandCounts.find((b) => b.brand.toLowerCase().trim() === brand.toLowerCase().trim())?.count ?? 0
+            if (count === 0 && brandCounts.length > 0) return null
             return (
               <label key={brand} className="flex items-center gap-2 py-1 cursor-pointer text-sm text-[#1A1A1A]">
                 <input
                   type="checkbox"
-                  checked={filters.brands.includes(brand)}
+                  checked={filters.brands.some((b) => b.toLowerCase().trim() === brand.toLowerCase().trim())}
                   onChange={() => toggleBrand(brand)}
                   className="accent-[#1A3FA0] h-4 w-4 rounded"
                 />
@@ -177,17 +201,22 @@ export function FiltersPanel({
       <div className="border-b border-[#E2E2DF] pb-4 mb-4">
         <GroupLabel>Mémoire RAM</GroupLabel>
         <div className="grid grid-cols-2">
-          {RAM_OPTIONS.map((ram) => (
-            <label key={ram} className="flex items-center gap-2 py-1 cursor-pointer text-sm text-[#1A1A1A]">
-              <input
-                type="checkbox"
-                checked={filters.ramValues.includes(ram)}
-                onChange={() => toggleRam(ram)}
-                className="accent-[#1A3FA0] h-4 w-4 rounded"
-              />
-              <span>{ram} Go</span>
-            </label>
-          ))}
+          {availableRamOptions.map((ram) => {
+            const count = ramCounts.find((r) => r.ram === ram)?.count ?? 0
+            if (count === 0 && ramCounts.length > 0) return null
+            return (
+              <label key={ram} className="flex items-center gap-2 py-1 cursor-pointer text-sm text-[#1A1A1A]">
+                <input
+                  type="checkbox"
+                  checked={filters.ramValues.includes(ram)}
+                  onChange={() => toggleRam(ram)}
+                  className="accent-[#1A3FA0] h-4 w-4 rounded"
+                />
+                <span>{ram} Go</span>
+                {count > 0 && <span className="text-[#6B7280]">({count})</span>}
+              </label>
+            )
+          })}
         </div>
       </div>
 
@@ -195,19 +224,25 @@ export function FiltersPanel({
       <div className="pb-4 mb-4">
         <GroupLabel>Taille écran</GroupLabel>
         <div className="grid grid-cols-2">
-          {SCREEN_OPTIONS.map((size) => (
-            <label key={size} className="flex items-center gap-2 py-1 cursor-pointer text-sm text-[#1A1A1A]">
-              <input
-                type="checkbox"
-                checked={filters.screenSizes.includes(size)}
-                onChange={() => toggleScreen(size)}
-                className="accent-[#1A3FA0] h-4 w-4 rounded"
-              />
-              <span>{size}&quot;</span>
-            </label>
-          ))}
+          {availableScreenOptions.map((size) => {
+            const count = screenCounts.find((s) => Math.abs(s.size - size) < 0.5)?.count ?? 0
+            if (count === 0 && screenCounts.length > 0) return null
+            return (
+              <label key={size} className="flex items-center gap-2 py-1 cursor-pointer text-sm text-[#1A1A1A]">
+                <input
+                  type="checkbox"
+                  checked={filters.screenSizes.includes(size)}
+                  onChange={() => toggleScreen(size)}
+                  className="accent-[#1A3FA0] h-4 w-4 rounded"
+                />
+                <span>{size}&quot;</span>
+                {count > 0 && <span className="text-[#6B7280]">({count})</span>}
+              </label>
+            )
+          })}
         </div>
       </div>
     </div>
   )
 }
+

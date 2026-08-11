@@ -1,8 +1,9 @@
 package com.brnsmrt.africanet.domain;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Type;
 
 import java.math.BigDecimal;
 import java.util.Map;
@@ -28,8 +29,9 @@ public class OrderItem {
     @JoinColumn(name = "product_id")
     private Product product;
 
+    @Type(JsonType.class)
     @Column(name = "product_snapshot", nullable = false, columnDefinition = "jsonb")
-    private String productSnapshot;
+    private Map<String, Object> productSnapshot;
 
     @Column(nullable = false)
     private Integer quantity;
@@ -53,16 +55,5 @@ public class OrderItem {
             this.product = p;
         }
     }
-
-    public void setProductSnapshot(Map<String, Object> snapshot) {
-        if (snapshot == null) {
-            this.productSnapshot = null;
-            return;
-        }
-        try {
-            this.productSnapshot = new ObjectMapper().writeValueAsString(snapshot);
-        } catch (Exception e) {
-            this.productSnapshot = null;
-        }
-    }
 }
+
