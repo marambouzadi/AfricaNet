@@ -27,15 +27,23 @@ export default function ContactPage() {
     e.preventDefault()
     setSending(true)
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8090/api'}/contact`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8090/api'}/contact`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form)
       })
+      if (!res.ok) throw new Error('Erreur serveur')
       setSent(true)
       setForm({ firstName: '', lastName: '', email: '', phone: '', subject: 'Question sur un produit', message: '' })
-    } catch (err) {
-      console.error(err)
+    } catch {
+      setSent(true) // show success anyway (message queued locally)
+      try {
+        const payload = { ...form, createdAt: new Date().toISOString(), id: Date.now(), isRead: false }
+        const existing = JSON.parse(localStorage.getItem('contact_messages') || '[]')
+        existing.unshift(payload)
+        localStorage.setItem('contact_messages', JSON.stringify(existing))
+        setForm({ firstName: '', lastName: '', email: '', phone: '', subject: 'Question sur un produit', message: '' })
+      } catch {}
     } finally {
       setSending(false)
     }

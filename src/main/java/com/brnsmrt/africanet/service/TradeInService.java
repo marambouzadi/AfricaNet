@@ -171,12 +171,17 @@ public class TradeInService {
      * Synchronizes existing APPROVED trade-ins to the catalog on application startup.
      */
     @EventListener(ApplicationReadyEvent.class)
-    @Transactional
     public void syncApprovedTradeInsToCatalog() {
         try {
             tradeInRepository.findAll().stream()
                     .filter(t -> t.getStatus() == TradeInStatus.APPROVED || t.getStatus() == TradeInStatus.COMPLETED)
-                    .forEach(this::publishApprovedTradeInAsProduct);
+                    .forEach(t -> {
+                        try {
+                            publishApprovedTradeInAsProduct(t);
+                        } catch (Exception itemErr) {
+                            System.err.println("Could not sync trade-in #" + t.getId() + " to catalog: " + itemErr.getMessage());
+                        }
+                    });
         } catch (Exception e) {
             // Log error silently if database is not fully ready
         }
@@ -197,16 +202,28 @@ public class TradeInService {
             return;
         }
 
-        String brandName = tradeIn.getBrand() != null ? tradeIn.getBrand().getName() : "";
+        Brand brand = null;
+        if (tradeIn.getBrand() != null && tradeIn.getBrand().getId() != null) {
+            brand = brandRepository.findById(tradeIn.getBrand().getId()).orElse(null);
+        }
+        String brandName = brand != null ? brand.getName() : "";
         String productName = (brandName + " " + tradeIn.getModel()).trim();
         if (productName.isEmpty()) {
             productName = "Appareil Repris #" + tradeIn.getId();
         }
 
-        String slugCandidate = productName.toLowerCase()
+        String baseSlug = productName.toLowerCase()
                 .replaceAll("[^a-z0-9]", "-")
                 .replaceAll("-+", "-")
-                .replaceAll("^-|-$", "") + "-" + sku.toLowerCase();
+                .replaceAll("^-|-$", "");
+        if (baseSlug.isEmpty()) baseSlug = "trade-in";
+        baseSlug += "-" + sku.toLowerCase();
+
+        String slugCandidate = baseSlug;
+        int counter = 1;
+        while (productRepository.existsBySlug(slugCandidate)) {
+            slugCandidate = baseSlug + "-" + counter++;
+        }
 
         BigDecimal price = tradeIn.getFinalValue() != null ? tradeIn.getFinalValue()
                 : (tradeIn.getEstimatedValueAi() != null ? tradeIn.getEstimatedValueAi() : new BigDecimal("990.000"));
@@ -217,7 +234,7 @@ public class TradeInService {
         Product product = Product.builder()
                 .name(productName)
                 .slug(slugCandidate)
-                .brand(tradeIn.getBrand())
+                .brand(brand)
                 .category(category)
                 .condition(condition)
                 .basePrice(price)
@@ -250,6 +267,85 @@ public class TradeInService {
             productRepository.save(savedProduct);
         }
 
+        // Add specifications and technical ratings from tradeIn
+        Map<String, Object> details = tradeIn.getConditionDetails();
+        int sortOrder = 1;
+
+        if (details != null) {
+            if (details.get("cpu") != null) {
+                ProductSpecification spec = new ProductSpecification();
+                spec.setProduct(savedProduct);
+                spec.setSpecKey("Processeur");
+                spec.setSpecValue(String.valueOf(details.get("cpu")));
+                spec.setSortOrder(sortOrder++);
+                savedProduct.getSpecifications().add(spec);
+            }
+            if (details.get("ram") != null) {
+                ProductSpecification spec = new ProductSpecification();
+                spec.setProduct(savedProduct);
+                spec.setSpecKey("RAM");
+                spec.setSpecValue(String.valueOf(details.get("ram")));
+                spec.setSortOrder(sortOrder++);
+                savedProduct.getSpecifications().add(spec);
+            }
+            if (details.get("storage") != null) {
+                ProductSpecification spec = new ProductSpecification();
+                spec.setProduct(savedProduct);
+                spec.setSpecKey("Stockage");
+                spec.setSpecValue(String.valueOf(details.get("storage")));
+                spec.setSortOrder(sortOrder++);
+                savedProduct.getSpecifications().add(spec);
+            }
+            if (details.get("screenSize") != null) {
+                ProductSpecification spec = new ProductSpecification();
+                spec.setProduct(savedProduct);
+                spec.setSpecKey("Affichage");
+                spec.setSpecValue(String.valueOf(details.get("screenSize")) + "\"");
+                spec.setSortOrder(sortOrder++);
+                savedProduct.getSpecifications().add(spec);
+            }
+        }
+
+        // Add 4 component rating notes (Écran, Batterie, Performances, Esthétique)
+        int defaultScore = (tradeIn.getConditionOverall() == ConditionOverall.EXCELLENT) ? 9
+                : (tradeIn.getConditionOverall() == ConditionOverall.GOOD) ? 8
+                : (tradeIn.getConditionOverall() == ConditionOverall.FAIR) ? 6 : 4;
+
+        int screenScore = extractScore(details, "screen", defaultScore);
+        int batteryScore = extractScore(details, "battery", defaultScore);
+        int perfScore = extractScore(details, "performance", defaultScore);
+        int chassisScore = extractScore(details, "chassis", defaultScore);
+
+        ProductSpecification specEcran = new ProductSpecification();
+        specEcran.setProduct(savedProduct);
+        specEcran.setSpecKey("Écran");
+        specEcran.setSpecValue(String.valueOf(screenScore));
+        specEcran.setSortOrder(sortOrder++);
+        savedProduct.getSpecifications().add(specEcran);
+
+        ProductSpecification specBatt = new ProductSpecification();
+        specBatt.setProduct(savedProduct);
+        specBatt.setSpecKey("Batterie");
+        specBatt.setSpecValue(String.valueOf(batteryScore));
+        specBatt.setSortOrder(sortOrder++);
+        savedProduct.getSpecifications().add(specBatt);
+
+        ProductSpecification specPerf = new ProductSpecification();
+        specPerf.setProduct(savedProduct);
+        specPerf.setSpecKey("Performances");
+        specPerf.setSpecValue(String.valueOf(perfScore));
+        specPerf.setSortOrder(sortOrder++);
+        savedProduct.getSpecifications().add(specPerf);
+
+        ProductSpecification specEsth = new ProductSpecification();
+        specEsth.setProduct(savedProduct);
+        specEsth.setSpecKey("Esthétique");
+        specEsth.setSpecValue(String.valueOf(chassisScore));
+        specEsth.setSortOrder(sortOrder++);
+        savedProduct.getSpecifications().add(specEsth);
+
+        productRepository.save(savedProduct);
+
         // Add Inventory entry
         Inventory inventory = new Inventory();
         inventory.setProduct(savedProduct);
@@ -259,6 +355,20 @@ public class TradeInService {
         inventory.setWarehouseLocation("Tunis Entrepôt Principal");
         inventory.setLastUpdated(LocalDateTime.now());
         inventoryRepository.save(inventory);
+    }
+
+
+
+        private int extractScore(Map<String, Object> details, String key, int fallback) {
+        if (details == null) return fallback;
+        Object obj = details.get(key);
+        if (obj instanceof Map) {
+            Object scoreObj = ((Map<?, ?>) obj).get("score");
+            if (scoreObj instanceof Number) {
+                return ((Number) scoreObj).intValue();
+            }
+        }
+        return fallback;
     }
 
     /**

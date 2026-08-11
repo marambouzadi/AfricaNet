@@ -26,6 +26,7 @@ public class ProductService {
     private final CategoryRepository categoryRepository;
     private final BrandRepository brandRepository;
     private final TagRepository tagRepository;
+    private final InventoryRepository inventoryRepository;
     private final ProductMapper productMapper;
 
     public PagedResponse<ProductResponse> getProducts(
@@ -33,12 +34,12 @@ public class ProductService {
             BigDecimal minPrice, BigDecimal maxPrice, Pageable pageable) {
         Page<Product> products = productRepository.searchWithFilters(
                 categoryId, brandId, condition, minPrice, maxPrice, pageable);
-        return new PagedResponse<>(products.map(productMapper::toResponse));
+        return new PagedResponse<>(products.map(this::enrichResponseWithStock));
     }
 
     public PagedResponse<ProductResponse> search(String query, Pageable pageable) {
         Page<Product> results = productRepository.fullTextSearch(query, pageable);
-        return new PagedResponse<>(results.map(productMapper::toResponse));
+        return new PagedResponse<>(results.map(this::enrichResponseWithStock));
     }
 
     @Transactional
@@ -69,7 +70,7 @@ public class ProductService {
         attachSpecifications(product, req);
         attachTags(product, req);
 
-        return productMapper.toResponse(productRepository.save(product));
+        return enrichResponseWithStock(productRepository.save(product));
     }
 
     @Transactional
@@ -110,7 +111,7 @@ public class ProductService {
         attachSpecifications(product, req);
         attachTags(product, req);
 
-        return productMapper.toResponse(productRepository.save(product));
+        return enrichResponseWithStock(productRepository.save(product));
     }
 
     @Transactional
@@ -205,6 +206,21 @@ public class ProductService {
     public ProductResponse getById(Long id) {
         Product product = productRepository.findByIdAndIsActiveTrue(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Produit introuvable: " + id));
-        return productMapper.toResponse(product);
+        return enrichResponseWithStock(product);
+    }
+
+    private ProductResponse enrichResponseWithStock(Product product) {
+        ProductResponse res = productMapper.toResponse(product);
+        if (product != null && product.getId() != null) {
+            try {
+                inventoryRepository.findByProductId(product.getId()).ifPresentOrElse(
+                    inv -> res.setStock(Math.max(0, inv.getQuantity() - inv.getReservedQuantity())),
+                    () -> res.setStock(1)
+                );
+            } catch (Exception e) {
+                res.setStock(1);
+            }
+        }
+        return res;
     }
 }

@@ -49,6 +49,37 @@ export default function AdminProduitsPage() {
     notes: { ecran: '0', batterie: '0', performances: '0', esthetique: '0' },
   })
 
+  const calculateAiNotes = (condition: string, cpu?: string, ram?: string) => {
+    let ecran = 8
+    let batterie = 8
+    let performances = 8
+    let esthetique = 8
+
+    if (condition === 'Neuf') {
+      ecran = 10; batterie = 10; performances = 9; esthetique = 10
+    } else if (condition === 'Reconditionné') {
+      ecran = 9; batterie = 8; performances = 8; esthetique = 8
+    } else if (condition === 'Occasion') {
+      ecran = 7; batterie = 7; performances = 7; esthetique = 7
+    }
+
+    const cpuLower = (cpu || '').toLowerCase()
+    const ramLower = (ram || '').toLowerCase()
+    if (cpuLower.includes('i7') || cpuLower.includes('i9') || cpuLower.includes('ryzen 7') || cpuLower.includes('ryzen 9') || cpuLower.includes('m1') || cpuLower.includes('m2') || cpuLower.includes('m3')) {
+      performances = Math.min(10, performances + 1)
+    }
+    if (ramLower.includes('16') || ramLower.includes('32') || ramLower.includes('64')) {
+      performances = Math.min(10, performances + 1)
+    }
+
+    return {
+      ecran: String(ecran),
+      batterie: String(batterie),
+      performances: String(performances),
+      esthetique: String(esthetique),
+    }
+  }
+
   // File Upload State - multiple images
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
   const [uploadingImage, setUploadingImage] = useState(false)
@@ -91,9 +122,27 @@ export default function AdminProduitsPage() {
         }
       })
 
+      const getSpec = (specsList: any[] | undefined, keys: string[]) => {
+        if (!specsList || !Array.isArray(specsList)) return ''
+        const found = specsList.find((s: any) =>
+          s.specKey && keys.some(k => s.specKey.toLowerCase().trim() === k.toLowerCase().trim())
+        )
+        return found ? (found.specValue || '') : ''
+      }
+
       const mapped: ProductItem[] = rawProducts.map((p) => {
-        const primaryImg = p.images?.find((i: any) => i.isPrimary)?.imageUrl || p.images?.[0]?.imageUrl || ''
+        const primaryImg = p.images?.find((i: any) => i.isPrimary)?.url || p.images?.find((i: any) => i.isPrimary)?.imageUrl || p.images?.[0]?.url || p.images?.[0]?.imageUrl || ''
         const realStock = stockByProductId.has(p.id) ? stockByProductId.get(p.id)! : (p.stockQuantity ?? 0)
+
+        const proc = getSpec(p.specifications, ['Processeur', 'cpu', 'processor'])
+        const ram = getSpec(p.specifications, ['RAM', 'ram', 'mémoire', 'memoire', 'memory'])
+        const storage = getSpec(p.specifications, ['Stockage', 'stockage', 'ssd', 'hdd', 'disque', 'storage'])
+        const display = getSpec(p.specifications, ['Affichage', 'affichage', 'Écran', 'ecran', 'display', 'screen'])
+
+        const nEcran = getSpec(p.specifications, ['Écran', 'ecran', 'note_ecran'])
+        const nBatterie = getSpec(p.specifications, ['Batterie', 'batterie', 'note_batterie'])
+        const nPerf = getSpec(p.specifications, ['Performances', 'performance', 'note_perf'])
+        const nEsth = getSpec(p.specifications, ['Esthétique', 'esthetique', 'châssis', 'chassis', 'note_esth'])
 
         return {
           id: p.id,
@@ -106,18 +155,18 @@ export default function AdminProduitsPage() {
           stock: realStock,
           status: p.isActive !== false ? 'Actif' : 'Inactif',
           imageUrl: primaryImg,
-          imageUrls: p.images?.map((i: any) => i.imageUrl || i.url).filter(Boolean) ?? [],
+          imageUrls: p.images?.map((i: any) => i.url || i.imageUrl).filter(Boolean) ?? [],
           specs: {
-            processeur: p.specifications?.find((s: any) => s.specKey === 'Processeur')?.specValue || '',
-            ram: p.specifications?.find((s: any) => s.specKey === 'RAM')?.specValue || '',
-            stockage: p.specifications?.find((s: any) => s.specKey === 'Stockage')?.specValue || '',
-            affichage: p.specifications?.find((s: any) => s.specKey === 'Affichage')?.specValue || '',
+            processeur: proc,
+            ram: ram,
+            stockage: storage,
+            affichage: display,
           },
           notes: {
-            ecran: p.specifications?.find((s: any) => s.specKey === 'Écran')?.specValue || '0',
-            batterie: p.specifications?.find((s: any) => s.specKey === 'Batterie')?.specValue || '0',
-            performances: p.specifications?.find((s: any) => s.specKey === 'Performances')?.specValue || '0',
-            esthetique: p.specifications?.find((s: any) => s.specKey === 'Esthétique')?.specValue || '0',
+            ecran: nEcran || '0',
+            batterie: nBatterie || '0',
+            performances: nPerf || '0',
+            esthetique: nEsth || '0',
           },
         }
       })
@@ -850,7 +899,19 @@ export default function AdminProduitsPage() {
               </div>
 
               <div className="pt-2">
-                <h4 className="text-xs font-bold text-[#1A1A1A] mb-2">Notes Techniques (sur 10)</h4>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-xs font-bold text-[#1A1A1A]">Notes Techniques (sur 10)</h4>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const generated = calculateAiNotes(formData.condition, formData.specs.processeur, formData.specs.ram)
+                      setFormData(f => ({ ...f, notes: generated }))
+                    }}
+                    className="text-[11px] bg-[#E8EDF8] text-[#1A3FA0] font-semibold px-2.5 py-0.5 rounded hover:bg-[#1A3FA0] hover:text-white transition-colors flex items-center gap-1"
+                  >
+                    ⚡ Auto-évaluer par IA
+                  </button>
+                </div>
                 <div className="grid grid-cols-4 gap-3">
                   <div>
                     <label className="block text-[11px] font-semibold text-[#6B7280] mb-1 text-center">Écran</label>
@@ -1109,7 +1170,20 @@ export default function AdminProduitsPage() {
               </div>
 
               <div className="pt-2">
-                <h4 className="text-xs font-bold text-[#1A1A1A] mb-2">Notes Techniques (sur 10)</h4>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-xs font-bold text-[#1A1A1A]">Notes Techniques (sur 10)</h4>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!editingProduct) return
+                      const generated = calculateAiNotes(editingProduct.condition, editingProduct.specs?.processeur, editingProduct.specs?.ram)
+                      setEditingProduct(f => f ? ({ ...f, notes: generated }) : f)
+                    }}
+                    className="text-[11px] bg-[#E8EDF8] text-[#1A3FA0] font-semibold px-2.5 py-0.5 rounded hover:bg-[#1A3FA0] hover:text-white transition-colors flex items-center gap-1"
+                  >
+                    ⚡ Auto-évaluer par IA
+                  </button>
+                </div>
                 <div className="grid grid-cols-4 gap-3">
                   <div>
                     <label className="block text-[11px] font-semibold text-[#6B7280] mb-1 text-center">Écran</label>

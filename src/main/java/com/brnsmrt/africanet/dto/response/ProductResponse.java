@@ -34,4 +34,5 @@ public class ProductResponse {
     private List<ProductImageResponse> images;
     private List<ProductSpecResponse> specifications;
     private List<String> tags;
+    private Integer stock;
 }

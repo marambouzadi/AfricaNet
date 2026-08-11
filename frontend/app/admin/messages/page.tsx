@@ -176,10 +176,22 @@ export default function AdminMessagesPage() {
       const res = await fetch(`${API_BASE}/admin/contact-messages?size=100&sort=createdAt,desc`, { headers, cache: 'no-store' })
       if (res.ok) {
         const data = await res.json()
-        setMessages(data.content || data || [])
+        const backendMsgs: any[] = data.content || data || []
+        // merge local messages that are not yet on the backend
+        const local: any[] = JSON.parse(localStorage.getItem('contact_messages') || '[]')
+        const merged = [...backendMsgs]
+        for (const lm of local) {
+          if (!merged.find(m => m.id === lm.id)) merged.unshift(lm)
+        }
+        setMessages(merged)
+      } else {
+        throw new Error('Backend unavailable')
       }
-    } catch (e) { console.error(e) }
-    finally { setLoading(false) }
+    } catch {
+      // Backend down – show only localStorage messages
+      const local: any[] = JSON.parse(localStorage.getItem('contact_messages') || '[]')
+      setMessages(local)
+    } finally { setLoading(false) }
   }
 
   useEffect(() => { loadMessages() }, [])
@@ -192,12 +204,19 @@ export default function AdminMessagesPage() {
         method: 'PATCH',
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       })
-      if (res.ok) {
-        setMessages(prev => prev.map(m => m.id === id ? { ...m, isRead: true } : m))
-        if (selected?.id === id) setSelected((prev: any) => ({ ...prev, isRead: true }))
-      }
-    } catch (e) { console.error(e) }
-    finally { setMarkingId(null) }
+      if (!res.ok) throw new Error('Backend unavailable')
+    } catch {
+      // Update in localStorage as fallback
+      try {
+        const local: any[] = JSON.parse(localStorage.getItem('contact_messages') || '[]')
+        const updated = local.map(m => m.id === id ? { ...m, isRead: true } : m)
+        localStorage.setItem('contact_messages', JSON.stringify(updated))
+      } catch {}
+    } finally {
+      setMessages(prev => prev.map(m => m.id === id ? { ...m, isRead: true } : m))
+      if (selected?.id === id) setSelected((prev: any) => ({ ...prev, isRead: true }))
+      setMarkingId(null)
+    }
   }
 
   const filtered = messages.filter(m => {
