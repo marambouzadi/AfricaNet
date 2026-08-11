@@ -7,6 +7,11 @@ services:
       POSTGRES_PASSWORD: postgres
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d africanet_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -14,12 +19,19 @@ services:
     image: redis:7
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   backend:
     build: .
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     ports:
       - "8090:8090"
     environment:
@@ -28,19 +40,21 @@ services:
       SPRING_DATASOURCE_PASSWORD: postgres
       SPRING_DATA_REDIS_HOST: redis
       SPRING_PROFILES_ACTIVE: default
-      FLOUCI_PUBLIC_KEY: your_public_key_here
-      FLOUCI_PRIVATE_KEY: your_private_key_here
+      FLOUCI_PUBLIC_KEY: ${FLOUCI_PUBLIC_KEY:-your_public_key_here}
+      FLOUCI_PRIVATE_KEY: ${FLOUCI_PRIVATE_KEY:-your_private_key_here}
       FLOUCI_BASE_URL: https://developers.flouci.com/api
       FLOUCI_SUCCESS_LINK: http://localhost:3000/payment/success
       FLOUCI_FAIL_LINK: http://localhost:3000/payment/fail
-      FLOUCI_WEBHOOK: http://localhost:8081/api/payments/webhook
+      FLOUCI_WEBHOOK: http://localhost:8090/api/payments/webhook
 
   frontend:
-    build: ./sprint3-frontend
+    build: ./frontend
     depends_on:
       - backend
     ports:
       - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8090/api
 
 volumes:
   postgres_data:
