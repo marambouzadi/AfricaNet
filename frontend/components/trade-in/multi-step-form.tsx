@@ -20,9 +20,15 @@ const CONDITION_MAP: Record<string, { code: string; score: number }> = {
     'État correct': { code: 'POOR', score: 3 },
 }
 
+// PC options
 const RAM_OPTIONS = ['2 Go', '4 Go', '8 Go', '12 Go', '16 Go', '32 Go', '64 Go']
 const STORAGE_OPTIONS = ['128 Go SSD', '256 Go SSD', '512 Go SSD', '1 To SSD', '256 Go HDD', '512 Go HDD', '1 To HDD']
 const SCREEN_OPTIONS = ['11"', '12"', '13"', '13.3"', '14"', '15.6"', '16"', '17"', '17.3"']
+
+// Phone / Tablet options
+const PHONE_RAM_OPTIONS = ['2 Go', '3 Go', '4 Go', '6 Go', '8 Go', '12 Go', '16 Go']
+const PHONE_STORAGE_OPTIONS = ['16 Go', '32 Go', '64 Go', '128 Go', '256 Go', '512 Go', '1 To']
+const PHONE_SCREEN_OPTIONS = ['4.7"', '5.4"', '6.1"', '6.4"', '6.7"', '6.8"', '7"', '8"', '10"', '11"', '12"', '13"']
 
 export function MultiStepForm() {
     const { user } = useUser()
@@ -250,66 +256,137 @@ export function MultiStepForm() {
                                 Caractéristiques techniques <span className="text-[#6B7280] font-normal">(optionnel — améliore l'estimation)</span>
                             </p>
 
-                            {/* CPU */}
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-[#1A1A1A] flex items-center gap-1.5">
-                                    <Cpu className="h-3.5 w-3.5 text-[#6B7280]" /> Processeur (CPU)
-                                </label>
-                                <input
-                                    type="text"
-                                    placeholder="Ex: Intel Core i5-1135G7, AMD Ryzen 5 5500U..."
-                                    className="w-full border border-[#E2E2DF] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30 bg-white"
-                                    value={formData.cpu}
-                                    onChange={e => setFormData({...formData, cpu: e.target.value})}
-                                />
-                            </div>
+                            {formData.deviceType === 'phone' ? (
+                                /* ─── Smartphone / Tablette fields ─── */
+                                <>
+                                    {/* Puce / SoC */}
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-[#1A1A1A] flex items-center gap-1.5">
+                                            <Cpu className="h-3.5 w-3.5 text-[#6B7280]" /> Puce / SoC
+                                        </label>
+                                        <input
+                                            type="text"
+                                            placeholder="Ex: Apple A15 Bionic, Snapdragon 8 Gen 2..."
+                                            className="w-full border border-[#E2E2DF] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30 bg-white"
+                                            value={formData.cpu}
+                                            onChange={e => setFormData({...formData, cpu: e.target.value})}
+                                        />
+                                    </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                {/* RAM */}
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium text-[#1A1A1A]">RAM</label>
-                                    <select
-                                        className="w-full border border-[#E2E2DF] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30 bg-white"
-                                        value={formData.ram}
-                                        onChange={e => setFormData({...formData, ram: e.target.value})}
-                                    >
-                                        <option value="">-- Sélectionner --</option>
-                                        {RAM_OPTIONS.map(opt => (
-                                            <option key={opt} value={opt}>{opt}</option>
-                                        ))}
-                                    </select>
-                                </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                        {/* RAM */}
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium text-[#1A1A1A]">RAM</label>
+                                            <select
+                                                className="w-full border border-[#E2E2DF] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30 bg-white"
+                                                value={formData.ram}
+                                                onChange={e => setFormData({...formData, ram: e.target.value})}
+                                            >
+                                                <option value="">-- Sélectionner --</option>
+                                                {PHONE_RAM_OPTIONS.map(opt => (
+                                                    <option key={opt} value={opt}>{opt}</option>
+                                                ))}
+                                            </select>
+                                        </div>
 
-                                {/* Stockage */}
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium text-[#1A1A1A]">Stockage</label>
-                                    <select
-                                        className="w-full border border-[#E2E2DF] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30 bg-white"
-                                        value={formData.storage}
-                                        onChange={e => setFormData({...formData, storage: e.target.value})}
-                                    >
-                                        <option value="">-- Sélectionner --</option>
-                                        {STORAGE_OPTIONS.map(opt => (
-                                            <option key={opt} value={opt}>{opt}</option>
-                                        ))}
-                                    </select>
-                                </div>
+                                        {/* Stockage */}
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium text-[#1A1A1A]">Capacité</label>
+                                            <select
+                                                className="w-full border border-[#E2E2DF] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30 bg-white"
+                                                value={formData.storage}
+                                                onChange={e => setFormData({...formData, storage: e.target.value})}
+                                            >
+                                                <option value="">-- Sélectionner --</option>
+                                                {PHONE_STORAGE_OPTIONS.map(opt => (
+                                                    <option key={opt} value={opt}>{opt}</option>
+                                                ))}
+                                            </select>
+                                        </div>
 
-                                {/* Taille écran */}
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium text-[#1A1A1A]">Taille écran</label>
-                                    <select
-                                        className="w-full border border-[#E2E2DF] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30 bg-white"
-                                        value={formData.screenSize}
-                                        onChange={e => setFormData({...formData, screenSize: e.target.value})}
-                                    >
-                                        <option value="">-- Sélectionner --</option>
-                                        {SCREEN_OPTIONS.map(opt => (
-                                            <option key={opt} value={opt}>{opt}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </div>
+                                        {/* Taille écran */}
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium text-[#1A1A1A]">Taille écran</label>
+                                            <select
+                                                className="w-full border border-[#E2E2DF] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30 bg-white"
+                                                value={formData.screenSize}
+                                                onChange={e => setFormData({...formData, screenSize: e.target.value})}
+                                            >
+                                                <option value="">-- Sélectionner --</option>
+                                                {PHONE_SCREEN_OPTIONS.map(opt => (
+                                                    <option key={opt} value={opt}>{opt}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </>
+                            ) : (
+                                /* ─── PC Portable / PC de bureau fields ─── */
+                                <>
+                                    {/* CPU */}
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-[#1A1A1A] flex items-center gap-1.5">
+                                            <Cpu className="h-3.5 w-3.5 text-[#6B7280]" /> Processeur (CPU)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            placeholder="Ex: Intel Core i5-1135G7, AMD Ryzen 5 5500U..."
+                                            className="w-full border border-[#E2E2DF] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30 bg-white"
+                                            value={formData.cpu}
+                                            onChange={e => setFormData({...formData, cpu: e.target.value})}
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                        {/* RAM */}
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium text-[#1A1A1A]">RAM</label>
+                                            <select
+                                                className="w-full border border-[#E2E2DF] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30 bg-white"
+                                                value={formData.ram}
+                                                onChange={e => setFormData({...formData, ram: e.target.value})}
+                                            >
+                                                <option value="">-- Sélectionner --</option>
+                                                {RAM_OPTIONS.map(opt => (
+                                                    <option key={opt} value={opt}>{opt}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        {/* Stockage */}
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium text-[#1A1A1A]">Stockage</label>
+                                            <select
+                                                className="w-full border border-[#E2E2DF] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30 bg-white"
+                                                value={formData.storage}
+                                                onChange={e => setFormData({...formData, storage: e.target.value})}
+                                            >
+                                                <option value="">-- Sélectionner --</option>
+                                                {STORAGE_OPTIONS.map(opt => (
+                                                    <option key={opt} value={opt}>{opt}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        {/* Taille écran — only for laptops */}
+                                        {formData.deviceType === 'laptop' && (
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium text-[#1A1A1A]">Taille écran</label>
+                                                <select
+                                                    className="w-full border border-[#E2E2DF] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1A3FA0]/30 bg-white"
+                                                    value={formData.screenSize}
+                                                    onChange={e => setFormData({...formData, screenSize: e.target.value})}
+                                                >
+                                                    <option value="">-- Sélectionner --</option>
+                                                    {SCREEN_OPTIONS.map(opt => (
+                                                        <option key={opt} value={opt}>{opt}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        )}
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
                 )}
