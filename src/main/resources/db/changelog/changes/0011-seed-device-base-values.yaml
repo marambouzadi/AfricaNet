@@ -1,6 +1,45 @@
 databaseChangeLog:
   - changeSet:
-      id: 0011-seed-device-base-values
+      id: 0011-1-create-device-base-values-table
+      author: africanet
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: device_base_values
+      changes:
+        - createTable:
+            tableName: device_base_values
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: brand
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: model
+                  type: VARCHAR(200)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: base_value
+                  type: DOUBLE PRECISION
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: device_base_values
+            columnNames: brand, model
+            constraintName: uk_device_base_value_brand_model
+
+  - changeSet:
+      id: 0011-2-seed-device-base-values
       author: africanet
       preConditions:
         - onFail: MARK_RAN
