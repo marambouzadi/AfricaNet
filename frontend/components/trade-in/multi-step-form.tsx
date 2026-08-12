@@ -100,7 +100,7 @@ export function MultiStepForm() {
                 }
             }
 
-            const res = await fetch(`${API_URL}/trade-in/evaluate`, {
+            const res = await fetch(`/api/trade-in/evaluate`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -149,8 +149,7 @@ export function MultiStepForm() {
         setIsAccepting(true)
         try {
             const token = localStorage.getItem('accessToken')
-            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8090/api'
-            const res = await fetch(`${API_URL}/trade-in/${id}/accept`, {
+            const res = await fetch(`/api/trade-in/${id}/accept`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
