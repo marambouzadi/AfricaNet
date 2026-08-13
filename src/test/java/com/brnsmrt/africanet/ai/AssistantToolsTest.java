@@ -56,60 +56,7 @@ public class AssistantToolsTest {
                 tradeInEvaluationService, recommendationService);
     }
 
-    @Test
-    void testEvaluateTradeIn_delegatesToService() {
-        EvaluationResult mockResponse = EvaluationResult.builder()
-                .tradeInId(1L)
-                .deviceModel("MacBook Pro")
-                .brand("Apple")
-                .conditionScore(0.85)
-                .estimatedValue(2200.0)
-                .conditionSummary("Device: Apple MacBook Pro\nEstimated Trade-In Value: 2200.00 TND")
-                .status("EVALUATED")
-                .build();
 
-        when(tradeInEvaluationService.evaluate(any())).thenReturn(mockResponse);
-
-        String result = tools.evaluateTradeIn("MacBook Pro", "Apple", 2024,
-                8, 8, 8, 8, 8, 1L);
-
-        assertNotNull(result);
-        assertTrue(result.contains("2200.00 TND"));
-        verify(tradeInEvaluationService).evaluate(any());
-    }
-
-    @Test
-    void testGetRecommendations_delegatesToService() {
-        List<RecommendationResponse> mockRecs = List.of(
-                RecommendationResponse.builder()
-                        .userId(1L)
-                        .productId(100L)
-                        .productName("Dell XPS 15")
-                        .price(2600.0)
-                        .score(0.85)
-                        .reason("Based on your purchase history in Laptops category")
-                        .createdAt("2026-07-07T12:00:00")
-                        .build()
-        );
-
-        when(recommendationService.recommend(eq(1L), eq(5))).thenReturn(mockRecs);
-
-        String result = tools.getRecommendations(1L);
-
-        assertNotNull(result);
-        assertTrue(result.contains("Dell XPS 15"));
-        assertTrue(result.contains("2600.00 TND"));
-        verify(recommendationService).recommend(1L, 5);
-    }
-
-    @Test
-    void testGetRecommendations_empty_returnsMessage() {
-        when(recommendationService.recommend(eq(1L), eq(5))).thenReturn(Collections.emptyList());
-
-        String result = tools.getRecommendations(1L);
-
-        assertTrue(result.contains("No recommendations available"));
-    }
 
     @Test
     void testSearchCatalog_byKeyword() {

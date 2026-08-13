@@ -130,7 +130,7 @@ class RecommendationServiceTest {
         mockCounts.add(new Object[]{101L, 3L});
         when(orderItemRepository.countOrdersByProduct()).thenReturn(mockCounts);
 
-        when(productRepository.findAllById(any())).thenReturn(List.of(product2));
+        when(productRepository.findAllById(any())).thenReturn(List.of(product1, product2));
 
         List<RecommendationResponse> recs = service.recommend(1L, 5);
 

@@ -1,8 +1,8 @@
 package com.brnsmrt.africanet.config;
 
-import com.brnsmrt.africanet.ai.ChatWebSocketHandler;
+import com.brnsmrt.africanet.websocket.ChatWebSocketHandler;
 
-import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;

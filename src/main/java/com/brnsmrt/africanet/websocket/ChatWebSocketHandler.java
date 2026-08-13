@@ -1,6 +1,5 @@
 package com.brnsmrt.africanet.websocket;
 
-import com.brnsmrt.africanet.ai.Assistant;
 import com.brnsmrt.africanet.ai.ResilientAiWrapper;
 
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -13,7 +12,8 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-class ChatWebSocketHandler extends TextWebSocketHandler {
+@Component
+public class ChatWebSocketHandler extends TextWebSocketHandler {
 
 	private final ResilientAiWrapper resilientAiWrapper;
 	private final StringRedisTemplate redisTemplate;
@@ -46,10 +46,13 @@ class ChatWebSocketHandler extends TextWebSocketHandler {
 		    redisTemplate.expire(redisKey, SESSION_TTL_MINUTES, TimeUnit.MINUTES);
 		}
 		
-		UUID memoryId = UUID.fromString(memoryIdStr);
 		String userMessage = message.getPayload();
 
-		resilientAiWrapper.processChat(memoryId, userMessage, token -> sendToken(session, token));
+		resilientAiWrapper.processChat(memoryIdStr, userMessage, 
+		        token -> sendToken(session, token),
+		        () -> {}, // onComplete
+		        error -> error.printStackTrace() // onError
+		);
 	}
 
 	private void sendToken(WebSocketSession session, String token) {

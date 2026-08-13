@@ -11,7 +11,7 @@ class AfricanetApplicationTests {
     private dev.langchain4j.model.chat.StreamingChatModel streamingChatModel;
 
     @MockitoBean
-    private com.brnsmrt.africanet.ai.Assistant assistant;
+    private com.brnsmrt.africanet.ai.ResilientAiWrapper resilientAiWrapper;
 
     @MockitoBean
     private com.brnsmrt.africanet.ai.ChatbotService chatbotService;
@@ -60,6 +60,45 @@ class AfricanetApplicationTests {
 
     @MockitoBean
     private org.springframework.data.redis.core.StringRedisTemplate stringRedisTemplate;
+
+    @MockitoBean
+    private org.springframework.data.redis.connection.RedisConnectionFactory redisConnectionFactory;
+
+    @MockitoBean
+    private com.brnsmrt.africanet.repository.InventoryRepository inventoryRepository;
+
+    @MockitoBean
+    private com.brnsmrt.africanet.repository.ContactMessageRepository contactMessageRepository;
+
+    @MockitoBean
+    private com.brnsmrt.africanet.repository.FavoriteRepository favoriteRepository;
+
+    @MockitoBean
+    private com.brnsmrt.africanet.repository.InventoryMovementRepository inventoryMovementRepository;
+
+    @MockitoBean
+    private com.brnsmrt.africanet.repository.PaymentRepository paymentRepository;
+
+    @MockitoBean
+    private com.brnsmrt.africanet.repository.ProductImageRepository productImageRepository;
+
+    @MockitoBean
+    private com.brnsmrt.africanet.repository.ProductSpecificationRepository productSpecificationRepository;
+
+    @MockitoBean
+    private com.brnsmrt.africanet.repository.RefreshTokenRepository refreshTokenRepository;
+
+    @MockitoBean
+    private com.brnsmrt.africanet.repository.ShipmentRepository shipmentRepository;
+
+    @MockitoBean
+    private com.brnsmrt.africanet.repository.TagRepository tagRepository;
+
+    @MockitoBean
+    private com.brnsmrt.africanet.repository.UserAddressRepository userAddressRepository;
+
+    @MockitoBean
+    private com.brnsmrt.africanet.repository.VerificationTokenRepository verificationTokenRepository;
 
     @Test
     void contextLoads() {
