@@ -22,14 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * Service d'évaluation AI des appareils Trade-In (module Mohamed).
- * Utilise l'algorithme de scoring AfricaNet :
- *   1. Prix marché (40%)  2. Âge (20%)  3. État général (30%)  4. Composants (10%)
- *   Valeur finale = score * 0.75 (marge AfricaNet 25%)
- *
- * Utilise l'entité TradeInRequest (unifiée avec le système de Maram).
- */
+//Final Value = (Market 40% + Age 20% + Condition 30% + Components 10%) * 0.75 )
 @Service
 public class TradeInEvaluationService {
 
@@ -38,16 +31,13 @@ public class TradeInEvaluationService {
     private final BrandRepository brandRepository;
     private final DeviceBaseValueRepository deviceBaseValueRepository;
 
-    // Poids de la formule de scoring
     private static final double MARKET_PRICE_WEIGHT = 0.40;
     private static final double AGE_WEIGHT = 0.20;
     private static final double CONDITION_WEIGHT = 0.30;
     private static final double COMPONENT_WEIGHT = 0.10;
 
-    // Marge bénéficiaire Africa Net (25%)
     private static final double PROFIT_MARGIN_MULTIPLIER = 0.75;
 
-    // Valeur par défaut si marque/modèle non trouvé en base
     private static final double DEFAULT_BASE_VALUE = 1500.0;
 
     public TradeInEvaluationService(UserRepository userRepository,
@@ -60,17 +50,13 @@ public class TradeInEvaluationService {
         this.deviceBaseValueRepository = deviceBaseValueRepository;
     }
 
-    /**
-     * Évalue un appareil et persiste le résultat dans trade_in_requests.
-     */
     public EvaluationResult evaluate(TradeInEvaluationRequest request) {
         User user = null;
         if (request.getUserId() != null) {
             user = userRepository.findById(request.getUserId()).orElse(null);
         }
         if (user == null) {
-            user = userRepository.findAll().stream().findFirst()
-                    .orElseThrow(() -> new RuntimeException("Aucun utilisateur disponible en base"));
+            throw new IllegalArgumentException("Unauthenticated user: A valid userId is required to submit a trade-in");
         }
 
         String brandName = (request.getBrand() != null && !request.getBrand().trim().isEmpty())
@@ -90,17 +76,17 @@ public class TradeInEvaluationService {
                     newBrand.setIsActive(true);
                     return brandRepository.save(newBrand);
                 });
-        // 1. Prix de base marché depuis la DB (fallback par type d'appareil)
+        //Base market price
         double basePrice = computeBaseValue(request.getBrand(), request.getDeviceModel());
         if (basePrice == DEFAULT_BASE_VALUE) {
             basePrice = computeBaseValueByType(request.getDeviceType());
         }
 
-        // 2. Âge de l'appareil
+        //Device age penalty
         int age = computeAge(request.getYearOfPurchase());
         double ageFactor = computeAgeFactor(age);
 
-        // 3. Score état général (moyenne pondérée des 5 critères, échelle 1-10)
+        //Weighted overall condition score (1-10)
         double conditionOverallScore = computeOverallCondition(
                 request.getScreenScore(),
                 request.getKeyboardScore(),
@@ -109,7 +95,7 @@ public class TradeInEvaluationService {
                 request.getPerformanceScore()
         );
 
-        // 4. Score moyen des composants (simple, échelle 1-10)
+        //Average component score (1-10)
         double avgComponentScore = computeAvgComponentScore(
                 request.getScreenScore(),
                 request.getKeyboardScore(),
@@ -118,41 +104,36 @@ public class TradeInEvaluationService {
                 request.getPerformanceScore()
         );
 
-        // Application de la formule de scoring
+        //Compute final unadjusted score
         double score = 0;
         score += basePrice * MARKET_PRICE_WEIGHT;
         score += ageFactor * basePrice * AGE_WEIGHT;
         score += (conditionOverallScore / 10.0) * basePrice * CONDITION_WEIGHT;
         score += (avgComponentScore / 10.0) * basePrice * COMPONENT_WEIGHT;
 
-        // Application de la marge AfricaNet (25%)
+        //Apply 25% profit margin
         double estimatedValue = Math.round(score * PROFIT_MARGIN_MULTIPLIER * 100.0) / 100.0;
         BigDecimal finalEstimatedValue = BigDecimal.valueOf(estimatedValue);
 
         double conditionScore = conditionOverallScore / 10.0;
         ConditionOverall overall = mapScoreToOverallCondition(conditionOverallScore);
 
-        // Construction des détails condition (Map<String,Object> pour JSONB)
         Map<String, Object> conditionDetails = buildConditionDetailsMap(request);
-
-        // Résumé lisible
+        
         String conditionSummary = buildConditionSummary(
                 request, basePrice, age, ageFactor, conditionOverallScore,
                 avgComponentScore, score, estimatedValue);
 
-        // Évaluation AI (Map<String,Object> pour JSONB)
         Map<String, Object> aiEvaluation = new HashMap<>();
         aiEvaluation.put("summary", conditionSummary);
         aiEvaluation.put("score", conditionScore);
         aiEvaluation.put("method", "AI_SCORING_V1");
 
-        // Génération du numéro de référence unique
         String refNumber = generateReferenceNumber();
 
-        // Persistance via l'entité unifiée TradeInRequest
         TradeInRequest tradeIn = new TradeInRequest();
         tradeIn.setReferenceNumber(refNumber);
-        // Résolution du type d'appareil depuis la requête
+        
         DeviceType resolvedDeviceType = DeviceType.LAPTOP;
         if (request.getDeviceType() != null) {
             try {
@@ -195,8 +176,6 @@ public class TradeInEvaluationService {
                 .build();
     }
 
-    // ---- Helpers de calcul ----
-
     private ConditionOverall mapScoreToOverallCondition(double score) {
         if (score >= 9.0) return ConditionOverall.EXCELLENT;
         if (score >= 7.0) return ConditionOverall.GOOD;
@@ -211,7 +190,7 @@ public class TradeInEvaluationService {
         details.put("battery",     Map.of("score", request.getBatteryScore()));
         details.put("chassis",     Map.of("score", request.getChassisScore()));
         details.put("performance", Map.of("score", request.getPerformanceScore()));
-        // Caractéristiques techniques
+        //Technical specs
         if (request.getCpu() != null && !request.getCpu().isBlank())
             details.put("cpu", request.getCpu().trim());
         if (request.getRam() != null && !request.getRam().isBlank())
@@ -259,7 +238,7 @@ public class TradeInEvaluationService {
         return DEFAULT_BASE_VALUE;
     }
 
-    /** Fallback price by device type when no DB entry exists */
+    //Fallback price by device type when no DB entry exists 
     public double computeBaseValueByType(String deviceType) {
         if (deviceType == null) return DEFAULT_BASE_VALUE;
         return switch (deviceType.toUpperCase()) {
@@ -293,8 +272,6 @@ public class TradeInEvaluationService {
         if (request.getYearOfPurchase() != null) {
             sb.append(String.format(" (%d an%s)", age, age > 1 ? "s" : ""));
         }
-        sb.append("\n");
-        // Caractéristiques techniques
         if (request.getCpu() != null && !request.getCpu().isBlank())
             sb.append(String.format("Processeur : %s\n", request.getCpu()));
         if (request.getRam() != null && !request.getRam().isBlank())

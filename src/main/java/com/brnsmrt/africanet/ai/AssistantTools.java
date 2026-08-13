@@ -68,62 +68,9 @@ public class AssistantTools {
         return userRepository.findAll(pageable).getContent();
     }
 
-    @Tool("""
-          Evaluate a trade-in device and return an estimated value. \
-          Requires: deviceModel, brand, yearOfPurchase, \
-          and conditionScores (1-10) for screen, keyboard, battery, chassis, performance. \
-          Also requires the userId of the customer submitting the trade-in.""")
-    public String evaluateTradeIn(String deviceModel, String brand, Integer yearOfPurchase,
-                                   Integer screenScore, Integer keyboardScore,
-                                   Integer batteryScore, Integer chassisScore,
-                                   Integer performanceScore, Long userId) {
-        TradeInEvaluationRequest request = TradeInEvaluationRequest.builder()
-                .deviceModel(deviceModel)
-                .brand(brand)
-                .yearOfPurchase(yearOfPurchase)
-                .screenScore(screenScore)
-                .keyboardScore(keyboardScore)
-                .batteryScore(batteryScore)
-                .chassisScore(chassisScore)
-                .performanceScore(performanceScore)
-                .userId(userId)
-                .build();
-
-        EvaluationResult response = tradeInEvaluationService.evaluate(request);
-        return response.getConditionSummary();
-    }
-
-    @Tool("Get personalized product recommendations for a customer based on their purchase history. Requires the userId.")
-    public String getRecommendations(Long userId) {
-        List<RecommendationResponse> recommendations = recommendationService.recommend(userId, 5);
-
-        if (recommendations.isEmpty()) {
-            return "No recommendations available at this time. The customer may need to make some purchases first, or our catalog may be empty.";
-        }
-
-        return recommendations.stream()
-                .map(r -> String.format("• %s (%.2f TND) — Score: %.0f%% — %s",
-                        r.getProductName(), r.getPrice(), r.getScore() * 100, r.getReason()))
-                .collect(Collectors.joining("\n"));
-    }
-
     @Tool("List all product categories or item types available on Africa Net (e.g. PC Portables, Desktops, Accessoires)")
     public List<Category> populateProductCategories() {
         return this.categoryRepository.findAll();
-    }
-
-    @Tool("""
-          Register a brand new customer account on the Africa Net e-commerce platform. \
-          The profile must include a first name, last name, a valid email string, \
-          and a contact phone number.""")
-    public User registerNewCustomer(@jakarta.validation.Valid User newCustomer) {
-        newCustomer.setRole(com.brnsmrt.africanet.domain.enums.UserRole.CUSTOMER);
-        newCustomer.setIsActive(true);
-        // Provide dummy password and empty required fields for chatbot creation
-        newCustomer.setPasswordHash("chatbot_created_no_password");
-        newCustomer.setEmailVerified(false);
-
-        return userRepository.save(newCustomer);
     }
 
     @Tool("Search the Africa Net product catalog by keyword or max price filter. Returns a list of laptops with their price, SKU, and condition status.")
