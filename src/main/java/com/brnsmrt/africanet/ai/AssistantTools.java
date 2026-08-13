@@ -62,12 +62,6 @@ public class AssistantTools {
         return LocalTime.now().withNano(0).toString();
     }
 
-    @Tool("List the registered Africa Net customers: userId, name, email, phone number")
-    public List<User> getAllCustomers() {
-        Pageable pageable = PageRequest.of(0, 100);
-        return userRepository.findAll(pageable).getContent();
-    }
-
     @Tool("List all product categories or item types available on Africa Net (e.g. PC Portables, Desktops, Accessoires)")
     public List<Category> populateProductCategories() {
         return this.categoryRepository.findAll();
