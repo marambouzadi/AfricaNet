@@ -51,46 +51,35 @@ public class RecommendationService {
         this.productViewRepository = productViewRepository;
     }
 
-    /**
-     * Recommend products for a user.
-     * Uses content-based scoring from purchase/view history when available,
-     * falls back to popularity-based scoring otherwise.
-     * Blends both signals with configurable weights for hybrid results.
-     */
+    // Hybrid scoring: content-based (purchases/views) + popularity fallback
     public List<RecommendationResponse> recommend(Long userId, int maxResults) {
-        // Validate user exists
-        userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Customer not found with ID: " + userId));
+         // Validate user exists
+        userRepository.findById(userId).orElseThrow(() -> new RuntimeException("Customer not found with ID: " + userId));
 
         List<Order> userOrders = orderRepository.findByUserId(userId);
 
         Map<Long, Double> contentScores;
         Set<Long> purchasedProductIds = new HashSet<>();
 
-        if (userOrders.isEmpty()) {
-            // Check product views if user has no order history
+             if (userOrders.isEmpty()) {
             contentScores = viewBasedScores(userId);
-        } else {
-            // Content-based scoring from orders
+          } else {
             contentScores = contentBasedScores(userOrders);
-            for (Order order : userOrders) {
+                       for (Order order : userOrders) {
                 for (OrderItem item : order.getItems()) {
                     if (item.getProductId() != null) {
                         purchasedProductIds.add(item.getProductId());
                     }
                 }
-            }
+            } 
         }
 
         if (contentScores.isEmpty()) {
-            // Pure popularity fallback
             return popularityBasedRecommendations(userId, purchasedProductIds, maxResults);
-        }
+        } 
 
-        // Popularity scores for hybrid blending
         Map<Long, Double> popularityScores = popularityScores(purchasedProductIds);
 
-        // Merge into hybrid scores
         Set<Long> allCandidateIds = new HashSet<>();
         allCandidateIds.addAll(contentScores.keySet());
         allCandidateIds.addAll(popularityScores.keySet());
@@ -108,9 +97,7 @@ public class RecommendationService {
         return buildResponses(userId, scored, maxResults);
     }
 
-    /**
-     * Content-based scoring from user's product view history.
-     */
+    // Score based on category view frequency
     private Map<Long, Double> viewBasedScores(Long userId) {
         List<Object[]> categoryViews = productViewRepository.countViewsPerCategoryByUser(userId);
         if (categoryViews.isEmpty()) {
@@ -143,12 +130,21 @@ public class RecommendationService {
         return scores;
     }
 
-    /**
-     * Content-based scoring: products in the same categories the user has purchased from
-     * receive a score proportional to how many purchases fell in that category.
-     */
+    // Score based on category purchase frequency (batch fetch prevents N+1)
     private Map<Long, Double> contentBasedScores(List<Order> userOrders) {
-        // Count purchases per category
+        Set<Long> productIdsToFetch = new HashSet<>();
+        for (Order order : userOrders) {
+            for (OrderItem item : order.getItems()) {
+                if (item.getProductId() != null) {
+                    productIdsToFetch.add(item.getProductId());
+                }
+            }
+        }
+
+        List<Product> products = productRepository.findAllById(productIdsToFetch);
+        Map<Long, Product> productMap = products.stream()
+                .collect(Collectors.toMap(Product::getId, p -> p));
+
         Map<Long, Integer> categoryPurchaseCounts = new HashMap<>();
         Set<Long> purchasedProductIds = new HashSet<>();
         int totalPurchases = 0;
@@ -156,7 +152,7 @@ public class RecommendationService {
         for (Order order : userOrders) {
             for (OrderItem item : order.getItems()) {
                 if (item.getProductId() != null) {
-                    Product product = productRepository.findById(item.getProductId()).orElse(null);
+                    Product product = productMap.get(item.getProductId());
                     if (product != null && product.getCategory() != null) {
                         Long categoryId = product.getCategory().getId();
                         categoryPurchaseCounts.merge(categoryId, 1, Integer::sum);
@@ -171,14 +167,13 @@ public class RecommendationService {
             return Collections.emptyMap();
         }
 
-        // Find candidate products in those categories, excluding already purchased
         List<Long> affineCategoryIds = new ArrayList<>(categoryPurchaseCounts.keySet());
         List<Product> candidates = productRepository.findByCategoryIdIn(affineCategoryIds);
 
         Map<Long, Double> scores = new HashMap<>();
         for (Product candidate : candidates) {
             if (purchasedProductIds.contains(candidate.getId())) {
-                continue; // skip already-purchased
+                continue;
             }
             Long catId = candidate.getCategory().getId();
             double affinity = (double) categoryPurchaseCounts.get(catId) / totalPurchases;
@@ -188,9 +183,7 @@ public class RecommendationService {
         return scores;
     }
 
-    /**
-     * Popularity-based scoring: products ordered most frequently across all users.
-     */
+    // Score based on global order frequency
     private Map<Long, Double> popularityScores(Set<Long> excludeProductIds) {
         List<Object[]> productCounts = orderItemRepository.countOrdersByProduct();
 
@@ -220,9 +213,7 @@ public class RecommendationService {
         return scores;
     }
 
-    /**
-     * Pure popularity fallback when user has no purchase history.
-     */
+    // Pure popularity fallback for users with no history
     private List<RecommendationResponse> popularityBasedRecommendations(
             Long userId, Set<Long> excludeIds, int maxResults) {
         Map<Long, Double> popScores = popularityScores(excludeIds);
@@ -235,6 +226,7 @@ public class RecommendationService {
         return buildResponses(userId, scored, maxResults);
     }
 
+    // Map products to DTOs and persist recommendations to DB
     private List<RecommendationResponse> buildResponses(Long userId,
                                                          List<ScoredProduct> scored,
                                                          int maxResults) {
@@ -285,9 +277,7 @@ public class RecommendationService {
         return results;
     }
 
-    /**
-     * Mark a recommendation as clicked by the user for analytics.
-     */
+    // Track user click for analytics
     public boolean markClicked(Long recommendationId) {
         return aiRecommendationRepository.findById(recommendationId).map(rec -> {
             rec.setClickedAt(LocalDateTime.now());
@@ -296,9 +286,7 @@ public class RecommendationService {
         }).orElse(false);
     }
 
-    /**
-     * Mark a recommendation as purchased by the user for conversion tracking.
-     */
+    // Track conversion
     public boolean markPurchased(Long recommendationId) {
         return aiRecommendationRepository.findById(recommendationId).map(rec -> {
             rec.setPurchasedAt(LocalDateTime.now());
@@ -307,8 +295,5 @@ public class RecommendationService {
         }).orElse(false);
     }
 
-    /**
-     * Internal helper record for sorting scored products.
-     */
     private record ScoredProduct(Long productId, double score, String source) {}
 }

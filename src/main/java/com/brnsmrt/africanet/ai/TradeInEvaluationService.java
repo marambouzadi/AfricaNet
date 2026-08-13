@@ -185,11 +185,11 @@ public class TradeInEvaluationService {
 
     private Map<String, Object> buildConditionDetailsMap(TradeInEvaluationRequest request) {
         Map<String, Object> details = new HashMap<>();
-        details.put("screen",      Map.of("score", request.getScreenScore()));
-        details.put("keyboard",    Map.of("score", request.getKeyboardScore()));
-        details.put("battery",     Map.of("score", request.getBatteryScore()));
-        details.put("chassis",     Map.of("score", request.getChassisScore()));
-        details.put("performance", Map.of("score", request.getPerformanceScore()));
+        details.put("screen",      Map.of("score", safeScore(request.getScreenScore())));
+        details.put("keyboard",    Map.of("score", safeScore(request.getKeyboardScore())));
+        details.put("battery",     Map.of("score", safeScore(request.getBatteryScore())));
+        details.put("chassis",     Map.of("score", safeScore(request.getChassisScore())));
+        details.put("performance", Map.of("score", safeScore(request.getPerformanceScore())));
         //Technical specs
         if (request.getCpu() != null && !request.getCpu().isBlank())
             details.put("cpu", request.getCpu().trim());
@@ -206,12 +206,16 @@ public class TradeInEvaluationService {
         return details;
     }
 
-    public double computeOverallCondition(int screen, int keyboard, int battery, int chassis, int performance) {
-        return (screen * 0.25) + (keyboard * 0.15) + (battery * 0.25) + (chassis * 0.15) + (performance * 0.20);
+    private int safeScore(Integer score) {
+        return score != null ? score : 5;
     }
 
-    public double computeAvgComponentScore(int screen, int keyboard, int battery, int chassis, int performance) {
-        return (screen + keyboard + battery + chassis + performance) / 5.0;
+    public double computeOverallCondition(Integer screen, Integer keyboard, Integer battery, Integer chassis, Integer performance) {
+        return (safeScore(screen) * 0.25) + (safeScore(keyboard) * 0.15) + (safeScore(battery) * 0.25) + (safeScore(chassis) * 0.15) + (safeScore(performance) * 0.20);
+    }
+
+    public double computeAvgComponentScore(Integer screen, Integer keyboard, Integer battery, Integer chassis, Integer performance) {
+        return (safeScore(screen) + safeScore(keyboard) + safeScore(battery) + safeScore(chassis) + safeScore(performance)) / 5.0;
     }
 
     public int computeAge(Integer yearOfPurchase) {
@@ -281,8 +285,8 @@ public class TradeInEvaluationService {
         if (request.getScreenSize() != null)
             sb.append(String.format("Taille écran : %.1f\"\n", request.getScreenSize()));
         sb.append(String.format("Écran: %d/10 | Clavier: %d/10 | Batterie: %d/10 | Châssis: %d/10 | Perf: %d/10\n",
-                request.getScreenScore(), request.getKeyboardScore(), request.getBatteryScore(),
-                request.getChassisScore(), request.getPerformanceScore()));
+                safeScore(request.getScreenScore()), safeScore(request.getKeyboardScore()), safeScore(request.getBatteryScore()),
+                safeScore(request.getChassisScore()), safeScore(request.getPerformanceScore())));
         sb.append(String.format("Prix marché de base : %.2f TND\n", basePrice));
         sb.append(String.format("Facteur âge : %.1f (%d an%s)\n", ageFactor, age, age > 1 ? "s" : ""));
         sb.append(String.format("Score état général : %.1f/10\n", conditionOverallScore));
