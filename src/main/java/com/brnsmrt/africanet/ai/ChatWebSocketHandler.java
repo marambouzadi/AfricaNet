@@ -15,12 +15,12 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 @Component
 public class ChatWebSocketHandler extends TextWebSocketHandler {
 
-    private final ChatbotService chatbotService;
+    private final ResilientAiWrapper resilientAiWrapper;
     private final ObjectMapper objectMapper;
     private final ChatHistoryService chatHistoryService;
 
-    public ChatWebSocketHandler(ChatbotService chatbotService, ObjectMapper objectMapper, ChatHistoryService chatHistoryService) {
-        this.chatbotService = chatbotService;
+    public ChatWebSocketHandler(ResilientAiWrapper resilientAiWrapper, ObjectMapper objectMapper, ChatHistoryService chatHistoryService) {
+        this.resilientAiWrapper = resilientAiWrapper;
         this.objectMapper = objectMapper;
         this.chatHistoryService = chatHistoryService;
     }
@@ -40,16 +40,21 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
         StringBuilder aiResponseBuilder = new StringBuilder();
 
-        chatbotService.chat(clientSessionId, userMessage)
-                .onPartialResponse(token -> {
+        // Call the Circuit Breaker instead of calling AI directly!
+        resilientAiWrapper.processChat(
+                clientSessionId, 
+                userMessage,
+                token -> {
                     aiResponseBuilder.append(token);
                     sendResponse(session, clientSessionId, token);
-                })
-                .onCompleteResponse(response -> {
+                },
+                () -> {
                     chatHistoryService.logMessage(clientSessionId, "ASSISTANT", aiResponseBuilder.toString());
-                })
-                .onError(error -> sendResponse(session, clientSessionId, "Error: " + error.getMessage()))
-                .start();
+                },
+                error -> {
+                    sendResponse(session, clientSessionId, "Error: " + error.getMessage());
+                }
+        );
     }
 
     private void sendResponse(WebSocketSession session, String clientSessionId, String token) {
