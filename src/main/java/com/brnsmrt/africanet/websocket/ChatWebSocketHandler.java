@@ -9,6 +9,9 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -17,12 +20,14 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
 	private final ResilientAiWrapper resilientAiWrapper;
 	private final StringRedisTemplate redisTemplate;
+	private final ObjectMapper objectMapper;
 	private static final String REDIS_KEY_PREFIX = "chat:context:";
 	private static final long SESSION_TTL_MINUTES = 30;
 
-	ChatWebSocketHandler(ResilientAiWrapper resilientAiWrapper, StringRedisTemplate redisTemplate) {
+	ChatWebSocketHandler(ResilientAiWrapper resilientAiWrapper, StringRedisTemplate redisTemplate, ObjectMapper objectMapper) {
 		this.resilientAiWrapper = resilientAiWrapper;
 		this.redisTemplate = redisTemplate;
+		this.objectMapper = objectMapper;
 	}
 
 	@Override
@@ -57,7 +62,11 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
 	private void sendToken(WebSocketSession session, String token) {
 		try {
-			session.sendMessage(new TextMessage(token));
+			Map<String, String> response = new HashMap<>();
+			response.put("sessionId", session.getId());
+			response.put("response", token);
+			String json = objectMapper.writeValueAsString(response);
+			session.sendMessage(new TextMessage(json));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
