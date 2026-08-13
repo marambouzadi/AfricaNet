@@ -34,3 +34,6 @@ databaseChangeLog:
 
   - include:
       file: db/changelog/changes/0011-seed-device-base-values.yaml
+
+  - include:
+      file: db/changelog/changes/0013-create-ai-schema.yaml
