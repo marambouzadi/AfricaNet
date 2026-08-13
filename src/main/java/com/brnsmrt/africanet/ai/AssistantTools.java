@@ -11,8 +11,11 @@ import com.brnsmrt.africanet.repository.OrderRepository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.brnsmrt.africanet.dto.response.RecommendationResponse;
 
@@ -62,20 +65,35 @@ public class AssistantTools {
         return LocalTime.now().withNano(0).toString();
     }
 
+    @Transactional(readOnly = true)
     @Tool("List all product categories or item types available on Africa Net (e.g. PC Portables, Desktops, Accessoires)")
-    public List<Category> populateProductCategories() {
-        return this.categoryRepository.findAll();
+    public List<Map<String, String>> populateProductCategories() {
+        return this.categoryRepository.findAll().stream()
+                .map(c -> Map.of("id", String.valueOf(c.getId()), "name", c.getName(), "slug", c.getSlug()))
+                .collect(Collectors.toList());
     }
 
-    @Tool("Search the Africa Net product catalog by keyword or max price filter. Returns a list of laptops with their price, SKU, and condition status.")
-    public List<Product> searchCatalog(String keyword, Double maxPrice) {
+    @Transactional(readOnly = true)
+    @Tool("Search the Africa Net product catalog by keyword or max price filter. Returns products with name, brand, price, SKU, and condition status.")
+    public List<Map<String, Object>> searchCatalog(String keyword, Double maxPrice) {
+        List<Product> products;
         if (maxPrice != null) {
-            return productRepository.findByBasePriceLessThanEqual(BigDecimal.valueOf(maxPrice));
+            products = productRepository.findByBasePriceLessThanEqual(BigDecimal.valueOf(maxPrice));
+        } else if (keyword == null || keyword.isBlank()) {
+            products = productRepository.findAll();
+        } else {
+            products = productRepository.findByNameContainingIgnoreCase(keyword);
         }
-        if (keyword == null || keyword.isBlank()) {
-            return productRepository.findAll();
-        }
-        return productRepository.findByNameContainingIgnoreCase(keyword);
+
+        return products.stream().map(p -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("name", p.getName());
+            m.put("brand", p.getBrand() != null ? p.getBrand().getName() : "N/A");
+            m.put("price", p.getBasePrice() != null ? p.getBasePrice().toPlainString() : "0");
+            m.put("sku", p.getSku());
+            m.put("condition", p.getCondition() != null ? p.getCondition().name() : "N/A");
+            return m;
+        }).collect(Collectors.toList());
     }
 
     @Tool("Get the current real-time shipping and payment status of a purchase using its unique order number (e.g., ORD-2025-00001)")

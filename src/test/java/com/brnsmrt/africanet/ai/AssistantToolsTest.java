@@ -65,10 +65,10 @@ public class AssistantToolsTest {
         product.setName("Dell XPS");
         when(productRepository.findByNameContainingIgnoreCase("Dell")).thenReturn(List.of(product));
 
-        List<Product> results = tools.searchCatalog("Dell", null);
+        List<java.util.Map<String, Object>> results = tools.searchCatalog("Dell", null);
 
         assertEquals(1, results.size());
-        assertEquals("Dell XPS", results.get(0).getName());
+        assertEquals("Dell XPS", results.get(0).get("name"));
         verify(productRepository).findByNameContainingIgnoreCase("Dell");
     }
 
@@ -79,7 +79,7 @@ public class AssistantToolsTest {
         product.setBasePrice(BigDecimal.valueOf(1000.0));
         when(productRepository.findByBasePriceLessThanEqual(BigDecimal.valueOf(1500.0))).thenReturn(List.of(product));
 
-        List<Product> results = tools.searchCatalog(null, 1500.0);
+        List<java.util.Map<String, Object>> results = tools.searchCatalog(null, 1500.0);
 
         assertEquals(1, results.size());
         verify(productRepository).findByBasePriceLessThanEqual(BigDecimal.valueOf(1500.0));
