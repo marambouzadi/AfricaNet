@@ -56,8 +56,11 @@ services:
       FLOUCI_FAIL_LINK: http://localhost:3000/payment/fail
       FLOUCI_WEBHOOK: http://localhost:8090/api/payments/webhook
 
-  frontend:
-    build: ./frontend
+frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8090/api
     depends_on:
       - backend
     ports:
