@@ -71,7 +71,7 @@ public class TradeInEvaluationServiceTest {
         request.setUserId(1L);
         request.setBrand("Apple");
         request.setDeviceModel("MacBook Pro");
-        request.setYearOfPurchase(LocalDate.now().getYear() - 2); 
+        request.setYearOfPurchase(java.time.Year.of(LocalDate.now().getYear() - 2)); 
         request.setScreenScore(10);
         request.setKeyboardScore(10);
         request.setBatteryScore(10);
@@ -141,7 +141,7 @@ public class TradeInEvaluationServiceTest {
         request.setBrand("UnknownBrand");
         request.setDeviceModel("FutureTech");
         request.setDeviceType("LAPTOP");
-        request.setYearOfPurchase(LocalDate.now().getYear() + 5); 
+        request.setYearOfPurchase(java.time.Year.of(LocalDate.now().getYear() + 5)); 
         request.setScreenScore(10);
         request.setKeyboardScore(10);
         request.setBatteryScore(10);

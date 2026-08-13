@@ -55,8 +55,6 @@ services:
       FLOUCI_SUCCESS_LINK: http://localhost:3000/payment/success
       FLOUCI_FAIL_LINK: http://localhost:3000/payment/fail
       FLOUCI_WEBHOOK: http://localhost:8090/api/payments/webhook
-      LANGCHAIN4J_OLLAMA_CHAT_MODEL_BASE_URL: http://host.docker.internal:11434
-      LANGCHAIN4J_OLLAMA_STREAMING_CHAT_MODEL_BASE_URL: http://host.docker.internal:11434
 
   frontend:
     build:

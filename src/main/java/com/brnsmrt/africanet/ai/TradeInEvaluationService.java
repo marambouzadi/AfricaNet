@@ -144,7 +144,7 @@ public class TradeInEvaluationService {
         tradeIn.setBrand(brand);
         tradeIn.setModel(request.getDeviceModel());
         tradeIn.setManufactureYear(request.getYearOfPurchase() != null
-                ? request.getYearOfPurchase().shortValue() : null);
+                ? (short) request.getYearOfPurchase().getValue() : null);
         tradeIn.setConditionOverall(overall);
         tradeIn.setConditionDetails(conditionDetails);
         tradeIn.setEstimatedValueAi(finalEstimatedValue);
@@ -218,10 +218,13 @@ public class TradeInEvaluationService {
         return (safeScore(screen) + safeScore(keyboard) + safeScore(battery) + safeScore(chassis) + safeScore(performance)) / 5.0;
     }
 
-    public int computeAge(Integer yearOfPurchase) {
-        if (yearOfPurchase == null) return 3;
-        int age = LocalDate.now().getYear() - yearOfPurchase;
-        return Math.max(age, 0);
+    public int computeAge(java.time.Year yearOfPurchase) {
+        if (yearOfPurchase != null) {
+            int currentYear = java.time.Year.now().getValue();
+            int age = currentYear - yearOfPurchase.getValue();
+            return Math.max(age, 0);
+        }
+        return 3;
     }
 
     public double computeAgeFactor(int age) {
@@ -276,6 +279,7 @@ public class TradeInEvaluationService {
         if (request.getYearOfPurchase() != null) {
             sb.append(String.format(" (%d an%s)", age, age > 1 ? "s" : ""));
         }
+        sb.append("\n");
         if (request.getCpu() != null && !request.getCpu().isBlank())
             sb.append(String.format("Processeur : %s\n", request.getCpu()));
         if (request.getRam() != null && !request.getRam().isBlank())

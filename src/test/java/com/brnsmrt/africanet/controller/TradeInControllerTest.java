@@ -49,7 +49,7 @@ public class TradeInControllerTest {
         TradeInEvaluationRequest request = TradeInEvaluationRequest.builder()
                 .deviceModel("ThinkPad X1")
                 .brand("Lenovo")
-                .yearOfPurchase(2023)
+                .yearOfPurchase(java.time.Year.of(2023))
                 .screenScore(9)
                 .keyboardScore(9)
                 .batteryScore(8)

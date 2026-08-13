@@ -4,6 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.PastOrPresent;
 
 /**
  * DTO pour l'évaluation AI d'un appareil (module Mohamed).
@@ -16,12 +19,24 @@ import lombok.NoArgsConstructor;
 public class TradeInEvaluationRequest {
     private String deviceModel;
     private String brand;
-    private Integer yearOfPurchase;
+    @PastOrPresent(message = "L'année doit être passée ou présente")
+    private java.time.Year yearOfPurchase;
+    
+    @Min(1) @Max(10)
     private Integer screenScore;      // 1-10
+    
+    @Min(1) @Max(10)
     private Integer keyboardScore;    // 1-10
+    
+    @Min(1) @Max(10)
     private Integer batteryScore;     // 1-10
+    
+    @Min(1) @Max(10)
     private Integer chassisScore;     // 1-10
+    
+    @Min(1) @Max(10)
     private Integer performanceScore; // 1-10
+    
     private String notes;             // notes libres (optionnel)
     private Long userId;
 

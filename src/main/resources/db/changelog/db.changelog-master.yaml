@@ -36,4 +36,7 @@ databaseChangeLog:
       file: db/changelog/changes/0011-seed-device-base-values.yaml
 
   - include:
-      file: db/changelog/changes/0013-create-ai-schema.yaml
+      file: db/changelog/changes/0013-create-ai-schema.yaml
+
+  - include:
+      file: db/changelog/changes/0014-create-favorites-contact.yaml
