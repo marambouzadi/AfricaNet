@@ -2,6 +2,11 @@ databaseChangeLog:
   - changeSet:
       id: create-favorites-table
       author: ai
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: favorites
       changes:
         - createTable:
             tableName: favorites
@@ -44,6 +49,11 @@ databaseChangeLog:
   - changeSet:
       id: create-contact-messages-table
       author: ai
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: contact_messages
       changes:
         - createTable:
             tableName: contact_messages

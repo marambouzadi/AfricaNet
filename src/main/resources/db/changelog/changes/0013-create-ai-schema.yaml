@@ -2,11 +2,16 @@ databaseChangeLog:
   - changeSet:
       id: 0013-1
       author: AfricaNet
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: chat_sessions
       changes:
         - sql:
             sql: |
               -- Sessions de chat
-              CREATE TABLE chat_sessions (
+              CREATE TABLE IF NOT EXISTS chat_sessions (
                id BIGSERIAL PRIMARY KEY,
                user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
                session_token VARCHAR(255) NOT NULL UNIQUE,
@@ -17,7 +22,7 @@ databaseChangeLog:
               );
 
               -- Messages du chatbot
-              CREATE TABLE chat_messages (
+              CREATE TABLE IF NOT EXISTS chat_messages (
                id BIGSERIAL PRIMARY KEY,
                session_id BIGINT NOT NULL REFERENCES chat_sessions(id) ON DELETE CASCADE,
                role VARCHAR(20) NOT NULL,
@@ -28,7 +33,7 @@ databaseChangeLog:
               );
 
               -- Recommandations générées par l'IA
-              CREATE TABLE ai_recommendations (
+              CREATE TABLE IF NOT EXISTS ai_recommendations (
                id BIGSERIAL PRIMARY KEY,
                user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
                session_id VARCHAR(255),
@@ -42,7 +47,7 @@ databaseChangeLog:
               );
 
               -- Vues produits (pour recommandations et analytics)
-              CREATE TABLE product_views (
+              CREATE TABLE IF NOT EXISTS product_views (
                id BIGSERIAL PRIMARY KEY,
                product_id BIGINT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
                user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
