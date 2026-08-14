@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 import path from "path";
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8090';
+const BACKEND_URL = process.env.BACKEND_URL || (process.env.NODE_ENV === 'production' ? 'http://backend:8090' : 'http://localhost:8090');
 
 const nextConfig: NextConfig = {
   output: 'standalone',
