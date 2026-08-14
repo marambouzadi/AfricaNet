@@ -56,7 +56,7 @@ services:
       FLOUCI_FAIL_LINK: http://localhost:3000/payment/fail
       FLOUCI_WEBHOOK: http://localhost:8090/api/payments/webhook
 
-  frontend:
+frontend:
     build:
       context: ./frontend
       args:
@@ -67,6 +67,7 @@ services:
       - "3000:3000"
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8090/api
+      BACKEND_URL: http://backend:8090
 
 volumes:
   postgres_data:
